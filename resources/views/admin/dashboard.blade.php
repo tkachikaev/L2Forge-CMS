@@ -23,13 +23,14 @@
         <span class="section-arrow" aria-hidden="true">→</span>
     </a>
 
-    <article class="admin-section-card planned">
+    <a class="admin-section-card available" href="{{ route('admin.settings.general') }}">
         <div>
-            <span class="section-status">В разработке</span>
+            <span class="section-status">Доступно</span>
             <h2>Настройки</h2>
-            <p>Основные параметры сайта, сервера и подключений.</p>
+            <p>Название сайта, описание, логотип, favicon, часовой пояс и контакты.</p>
         </div>
-    </article>
+        <span class="section-arrow" aria-hidden="true">→</span>
+    </a>
 
     <article class="admin-section-card planned">
         <div>

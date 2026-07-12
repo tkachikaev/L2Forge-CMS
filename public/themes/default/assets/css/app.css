@@ -81,3 +81,8 @@
 @media (max-width: 680px) {
     .news-preview-banner { align-items: flex-start; flex-direction: column; gap: 2px; text-align: left; }
 }
+
+/* Site settings 0.7.0 */
+.brand-logo { display: block; width: auto; max-width: 230px; height: auto; max-height: 54px; object-fit: contain; }
+.footer-brand-logo { max-width: 250px; max-height: 64px; }
+@media(max-width:780px){.brand-logo{max-width:180px;max-height:44px}.footer-brand-logo{max-width:220px;max-height:56px}}

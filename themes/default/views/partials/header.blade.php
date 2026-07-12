@@ -1,8 +1,12 @@
 <header class="site-header">
     <div class="container header-inner">
-        <a class="brand" href="{{ route('home') }}" aria-label="На главную">
-            <span class="brand-mark">L2</span>
-            <span><strong>{{ config('app.name') }}</strong><small>LINEAGE II</small></span>
+        <a class="brand" href="{{ route('home') }}" aria-label="{{ site_name() }} — на главную">
+            @if (site_logo_url())
+                <img class="brand-logo" src="{{ site_logo_url() }}" alt="{{ site_name() }}">
+            @else
+                <span class="brand-mark">L2</span>
+                <span><strong>{{ site_name() }}</strong><small>LINEAGE II</small></span>
+            @endif
         </a>
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-menu">Меню</button>
         <nav id="main-menu" class="main-nav" aria-label="Основная навигация">

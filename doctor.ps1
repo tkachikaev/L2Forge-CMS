@@ -61,6 +61,20 @@ if (Test-Path $newsUploadPath) {
 }
 Test-ItemStatus 'News upload directory' $newsUploadWritable $(if (-not (Test-Path $newsUploadPath)) { 'missing; run .\setup.ps1 or .\update.ps1' } elseif ($newsUploadWritable) { 'present and writable' } else { 'present but not writable' })
 
+$settingsUploadPath = 'public\uploads\settings'
+$settingsUploadWritable = $false
+if (Test-Path $settingsUploadPath) {
+    try {
+        $writeTestPath = Join-Path $settingsUploadPath ('.l2forge-write-test-' + [Guid]::NewGuid().ToString('N'))
+        [System.IO.File]::WriteAllText($writeTestPath, 'ok')
+        Remove-Item $writeTestPath -Force
+        $settingsUploadWritable = $true
+    } catch {
+        $settingsUploadWritable = $false
+    }
+}
+Test-ItemStatus 'Settings upload directory' $settingsUploadWritable $(if (-not (Test-Path $settingsUploadPath)) { 'missing; run .\setup.ps1 or .\update.ps1' } elseif ($settingsUploadWritable) { 'present and writable' } else { 'present but not writable' })
+
 if ((Test-Path 'vendor\autoload.php') -and (Test-Path '.env')) {
     Write-Host ''
     Write-Host 'Laravel check:'

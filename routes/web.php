@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminSessi
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\NewsImageController as AdminNewsImageController;
+use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsController;
@@ -45,6 +46,11 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
         Route::post('/themes/{theme}/activate', [AdminThemeController::class, 'activate'])
             ->where('theme', '[a-z0-9][a-z0-9_-]*')
             ->name('themes.activate');
+
+        Route::get('/settings', [AdminSettingsController::class, 'general'])->name('settings.general');
+        Route::put('/settings', [AdminSettingsController::class, 'updateGeneral'])->name('settings.general.update');
+        Route::get('/settings/game-server', [AdminSettingsController::class, 'gameServer'])->name('settings.game-server');
+        Route::get('/settings/login-server', [AdminSettingsController::class, 'loginServer'])->name('settings.login-server');
 
         Route::post('/logout', [AdminSessionController::class, 'destroy'])->name('logout');
     });

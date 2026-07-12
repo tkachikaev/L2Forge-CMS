@@ -2,12 +2,24 @@
 
 return [
     'name' => 'L2Forge CMS',
-    'version' => '0.6.2',
+    'version' => '0.7.0',
     'theme' => env('CMS_THEME', 'default'),
     'themes_path' => base_path('themes'),
 
     'news' => [
         'uploads_path' => env('NEWS_UPLOADS_PATH', public_path('uploads')),
+    ],
+
+    'settings' => [
+        'uploads_path' => env('SETTINGS_UPLOADS_PATH', public_path('uploads')),
+    ],
+
+    'site_defaults' => [
+        'name' => env('SITE_NAME', env('APP_NAME', 'L2Forge CMS')),
+        'description' => env('SITE_DESCRIPTION', 'Бесплатная open-source CMS для серверов Lineage II.'),
+        'timezone' => env('APP_TIMEZONE', 'Europe/Moscow'),
+        'admin_email' => env('SITE_ADMIN_EMAIL', ''),
+        'footer_text' => env('SITE_FOOTER_TEXT', '© 2026 L2Forge-CMS'),
     ],
 
     'admin' => [

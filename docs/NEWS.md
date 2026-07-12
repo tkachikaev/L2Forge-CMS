@@ -1,6 +1,6 @@
 # News management
 
-L2Forge CMS 0.6.2 includes formatted news, preview before saving, deletion from the news list, pagination, cover images and inline images.
+L2Forge CMS includes formatted news, preview before saving, deletion from the news list, pagination, cover images and inline images.
 
 ## Administrator routes
 

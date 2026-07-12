@@ -34,7 +34,9 @@ $directories = @(
     'storage\framework\views',
     'storage\logs',
     'public\uploads\news\covers',
-    'public\uploads\news\content'
+    'public\uploads\news\content',
+    'public\uploads\settings\logo',
+    'public\uploads\settings\favicon'
 )
 
 foreach ($directory in $directories) {

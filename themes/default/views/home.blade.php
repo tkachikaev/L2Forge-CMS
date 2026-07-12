@@ -1,5 +1,5 @@
 @extends('theme::layouts.app')
-@section('title', config('app.name').' — '.config('cms.server.chronicle'))
+@section('title', site_name().' — '.config('cms.server.chronicle'))
 @section('content')
 <section class="hero">
     <div class="hero-overlay"></div>
@@ -7,7 +7,9 @@
         <p class="eyebrow">КЛАССИЧЕСКИЙ МИР · ТВОЯ ЛЕГЕНДА</p>
         <h1>LINEAGE II</h1>
         <h2>{{ config('cms.server.chronicle') }} · {{ config('cms.server.rates') }}</h2>
-        <p class="hero-copy">Мир осад, клановых войн и больших приключений. Без доната, платных преимуществ и скрытых условий.</p>
+        @if (site_description() !== '')
+            <p class="hero-copy">{{ site_description() }}</p>
+        @endif
         <div class="hero-actions"><a class="button button-gold button-large" href="{{ route('register') }}">Начать игру</a><a class="button button-ghost button-large" href="{{ route('downloads') }}">Скачать клиент</a></div>
     </div>
 </section>

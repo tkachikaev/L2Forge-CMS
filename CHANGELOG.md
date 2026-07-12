@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.0 - 2026-07-12
+
+### Added
+
+- Administrator settings section at `/admin/settings` with top-level tabs for General, Game Server and Login Server.
+- General settings for site name, short description, logo, favicon, timezone, administrator email and footer text.
+- Default footer text: `© 2026 L2Forge-CMS`.
+- Secure logo and favicon uploads with random filenames, strict format checks and automatic cleanup when images are replaced or removed.
+- Public-theme integration for page titles, meta description, logo, favicon, hero description and footer text.
+- Runtime application of the configured timezone with `.env` as the safe fallback.
+- Environment diagnostics for the settings upload directory.
+- Automated feature coverage for settings access, saving, uploads, replacement, removal, unsafe SVG rejection and placeholder tabs.
+
+### Security
+
+- SVG files are rejected for both logo and favicon uploads.
+- Site images are stored only inside `public/uploads/settings` and database values are normalized before use or deletion.
+- Database, SMTP and application secrets remain outside the administrator settings and continue to live in `.env`.
+
 ## 0.6.2 - 2026-07-12
 
 ### Changed

@@ -77,3 +77,27 @@ Render the full body only as trusted output from `safeBodyHtml()`:
 ```
 
 Do not render `$news->body` directly. Themes are responsible only for visual styling of the allowed HTML elements and `data-color` / `data-align` attributes.
+
+## Настройки сайта в теме
+
+Начиная с L2Forge CMS 0.7.0 тема может использовать безопасные функции:
+
+```blade
+{{ site_name() }}
+{{ site_description() }}
+{{ site_footer_text() }}
+```
+
+Для изображений:
+
+```blade
+@if (site_logo_url())
+    <img src="{{ site_logo_url() }}" alt="{{ site_name() }}">
+@endif
+
+@if (site_favicon_url())
+    <link rel="icon" href="{{ site_favicon_url() }}">
+@endif
+```
+
+Функции возвращают уже нормализованные значения. Тема не должна самостоятельно читать таблицу `cms_settings` или строить путь к загруженным файлам.

@@ -5,10 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#090d10">
+    @if (site_description() !== '')
+        <meta name="description" content="{{ site_description() }}">
+    @endif
+    @if (site_favicon_url())
+        <link rel="icon" href="{{ site_favicon_url() }}">
+    @endif
     @if (! empty($isPreview))
         <meta name="robots" content="noindex, nofollow, noarchive">
     @endif
-    <title>@yield('title', config('app.name'))</title>
+    <title>@yield('title', site_name())</title>
     <link rel="stylesheet" href="{{ theme_asset('css/app.css') }}">
 </head>
 <body>

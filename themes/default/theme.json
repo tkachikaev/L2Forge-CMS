@@ -1,9 +1,9 @@
 {
   "name": "L2 Dark Classic",
   "slug": "default",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "author": "L2Forge Community",
-  "cms_min": "0.6.0",
-  "description": "Стандартная тёмная тема L2Forge CMS с поддержкой оформленных новостей и изображений.",
+  "cms_min": "0.7.0",
+  "description": "Стандартная тёмная тема L2Forge CMS с поддержкой настроек сайта, оформленных новостей и изображений.",
   "preview": "assets/images/hero.webp"
 }

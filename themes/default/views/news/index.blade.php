@@ -1,5 +1,5 @@
 @extends('theme::layouts.app')
-@section('title', 'Новости — '.config('app.name'))
+@section('title', 'Новости — '.site_name())
 @section('content')
 <section class="page-hero">
     <div class="container">

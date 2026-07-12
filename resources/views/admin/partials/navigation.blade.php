@@ -14,10 +14,9 @@
     </a>
 
     <p class="admin-menu-title">Система</p>
-    <span class="admin-menu-item disabled" aria-disabled="true">
+    <a @class(['admin-menu-item', 'active' => request()->routeIs('admin.settings.*')]) href="{{ route('admin.settings.general') }}">
         <span>Настройки</span>
-        <small>Скоро</small>
-    </span>
+    </a>
     <span class="admin-menu-item disabled" aria-disabled="true">
         <span>Модули</span>
         <small>Скоро</small>
