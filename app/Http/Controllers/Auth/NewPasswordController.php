@@ -35,6 +35,10 @@ class NewPasswordController extends Controller
             'email.required' => 'Укажите email.',
             'email.email' => 'Email указан неверно.',
             'password.required' => 'Укажите новый пароль.',
+            'password.string' => 'Пароль должен быть строкой.',
+            'password.min' => 'Пароль должен содержать не менее 8 символов.',
+            'password.letters' => 'Пароль должен содержать хотя бы одну букву.',
+            'password.numbers' => 'Пароль должен содержать хотя бы одну цифру.',
             'password.confirmed' => 'Пароли не совпадают.',
         ]);
 

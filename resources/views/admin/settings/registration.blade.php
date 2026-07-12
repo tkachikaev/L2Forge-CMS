@@ -18,6 +18,26 @@
             </div>
         </div>
 
+        <div class="registration-rules-card" aria-label="Правила регистрации пользователей">
+            <div>
+                <h3>Требования к логину</h3>
+                <ul>
+                    <li>от 3 до 32 символов;</li>
+                    <li>латинские буквы;</li>
+                    <li>цифры;</li>
+                    <li>дефис и подчёркивание.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Требования к паролю</h3>
+                <ul>
+                    <li>не менее 8 символов;</li>
+                    <li>минимум одна буква;</li>
+                    <li>минимум одна цифра.</li>
+                </ul>
+            </div>
+        </div>
+
         <label class="settings-toggle-row" for="registration_enabled">
             <span>
                 <strong>Разрешить регистрацию новых пользователей</strong>

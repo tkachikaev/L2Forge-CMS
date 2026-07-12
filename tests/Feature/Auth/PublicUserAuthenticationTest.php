@@ -31,6 +31,29 @@ class PublicUserAuthenticationTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_password_validation_messages_are_in_russian(): void
+    {
+        app(RegistrationSettings::class)->update(true, false);
+
+        $this->post('/register', [
+            'name' => 'player',
+            'email' => 'player@example.com',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+        ])->assertSessionHasErrors([
+            'password' => 'Пароль должен содержать хотя бы одну букву.',
+        ]);
+
+        $this->post('/register', [
+            'name' => 'player',
+            'email' => 'player@example.com',
+            'password' => 'abcdefgh',
+            'password_confirmation' => 'abcdefgh',
+        ])->assertSessionHasErrors([
+            'password' => 'Пароль должен содержать хотя бы одну цифру.',
+        ]);
+    }
+
     public function test_user_can_register_without_email_verification(): void
     {
         app(RegistrationSettings::class)->update(true, false);

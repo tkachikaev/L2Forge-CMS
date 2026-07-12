@@ -45,6 +45,10 @@ class RegisterRequest extends FormRequest
             'email.email' => 'Email указан неверно.',
             'email.unique' => 'Этот email уже используется.',
             'password.required' => 'Укажите пароль.',
+            'password.string' => 'Пароль должен быть строкой.',
+            'password.min' => 'Пароль должен содержать не менее 8 символов.',
+            'password.letters' => 'Пароль должен содержать хотя бы одну букву.',
+            'password.numbers' => 'Пароль должен содержать хотя бы одну цифру.',
             'password.confirmed' => 'Пароли не совпадают.',
         ];
     }

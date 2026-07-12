@@ -23,7 +23,11 @@ class AdminRegistrationMailSettingsTest extends TestCase
             ->get('/admin/settings/registration')
             ->assertOk()
             ->assertSee('Регистрация пользователей')
-            ->assertSee('Требовать подтверждение регистрации по email');
+            ->assertSee('Требовать подтверждение регистрации по email')
+            ->assertSee('Требования к логину')
+            ->assertSee('от 3 до 32 символов')
+            ->assertSee('Требования к паролю')
+            ->assertSee('не менее 8 символов');
 
         $this->actingAs($admin, 'admin')
             ->get('/admin/settings/mail')

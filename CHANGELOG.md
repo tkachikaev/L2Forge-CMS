@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.1 - 2026-07-13
+
+### Добавлено
+
+- В настройках регистрации отображаются требования к логину и паролю.
+- Добавлен базовый русский файл сообщений валидации для публичных форм.
+- Добавлены тесты правил регистрации и русских сообщений проверки пароля.
+
+### Исправлено
+
+- Сообщения о необходимости буквы, цифры и минимальной длине пароля теперь выводятся на русском языке.
+- Те же русские сообщения применяются при установке нового пароля через восстановление доступа.
+
 ## 0.8.0 - 2026-07-13
 
 ### Added
@@ -13,7 +26,6 @@
 - Signed email-verification links with resend support.
 - Password-reset request and reset flows using one-time database tokens.
 - Custom Russian verification and password-reset notifications.
-- Default-theme fallback views for authentication pages when a compatible custom theme does not provide the new templates.
 - Rate limits for login, registration, verification email resend and password recovery.
 - Automated coverage for registration settings, encrypted SMTP storage, user registration, login, verification and password recovery.
 
