@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\News\NewsHtmlSanitizer;
+use App\Services\GameServerSettings;
 use App\Services\News\NewsImageStorage;
 use App\Services\Settings\SettingsImageStorage;
 use App\Services\SiteSettings;
@@ -13,6 +14,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(GameServerSettings::class);
         $this->app->singleton(NewsHtmlSanitizer::class);
         $this->app->singleton(NewsImageStorage::class);
         $this->app->singleton(SettingsImageStorage::class);

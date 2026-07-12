@@ -101,3 +101,25 @@ Do not render `$news->body` directly. Themes are responsible only for visual sty
 ```
 
 Функции возвращают уже нормализованные значения. Тема не должна самостоятельно читать таблицу `cms_settings` или строить путь к загруженным файлам.
+
+Начиная с 0.7.2 список игровых серверов доступен через:
+
+```blade
+@foreach (game_servers() as $serverSettings)
+    {{ $serverSettings['name'] }}
+
+    @if ($serverSettings['show_chronicle'])
+        {{ $serverSettings['chronicle'] }}
+    @endif
+
+    @if ($serverSettings['show_rates'])
+        {{ $serverSettings['rates'] }}
+    @endif
+
+    @if ($serverSettings['show_mode'])
+        {{ $serverSettings['mode'] }}
+    @endif
+@endforeach
+```
+
+Ключи `show_chronicle`, `show_rates` и `show_mode` уже учитывают пустые значения. `show_mode` также скрывает специальное значение `None`. Функция `game_server_settings()` сохранена как сокращение для получения первого сервера и может вернуть `null`, если список пуст.

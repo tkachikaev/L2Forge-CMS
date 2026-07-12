@@ -182,15 +182,9 @@ class AdminSettingsManagementTest extends TestCase
         $this->assertDatabaseMissing('cms_settings', ['key' => 'site.logo']);
     }
 
-    public function test_future_settings_tabs_are_visible_as_placeholders(): void
+    public function test_login_server_tab_is_visible_as_placeholder(): void
     {
         $admin = $this->createAdmin();
-
-        $this->actingAs($admin, 'admin')
-            ->get('/admin/settings/game-server')
-            ->assertOk()
-            ->assertSee('Игровой сервер')
-            ->assertSee('Раздел находится в разработке');
 
         $this->actingAs($admin, 'admin')
             ->get('/admin/settings/login-server')

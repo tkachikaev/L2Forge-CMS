@@ -547,3 +547,159 @@ a.admin-section-card:hover { border-color: #bfdbfe; box-shadow: 0 8px 24px rgba(
     .settings-actions { position: sticky; bottom: 0; z-index: 5; }
     .settings-actions .button { width: 100%; }
 }
+
+/* Game server settings 0.7.1 */
+.settings-game-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, .9fr);
+    gap: 16px;
+    align-items: start;
+}
+.settings-card-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+.settings-card-heading h2 { margin: 0; }
+.settings-card-heading p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.settings-coming-soon {
+    flex: 0 0 auto;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.settings-disabled-notice {
+    margin-bottom: 16px;
+    padding: 11px 12px;
+    border: 1px solid #dbeafe;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 12px;
+}
+.settings-disabled-fields {
+    display: grid;
+    grid-template-columns: 1fr 150px;
+    gap: 0 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.settings-disabled-fields .form-group:nth-child(3),
+.settings-disabled-fields .form-group:nth-child(4),
+.settings-disabled-full { grid-column: 1 / -1; }
+.settings-disabled-fields input:disabled {
+    border-color: #e5e7eb;
+    background: #f8fafc;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+.settings-disabled-fields input:disabled::placeholder { color: #9ca3af; }
+.settings-security-note {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+@media (max-width: 1080px) {
+    .settings-game-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+    .settings-disabled-fields { grid-template-columns: 1fr; }
+    .settings-disabled-fields .form-group { grid-column: 1; }
+}
+
+/* Multiple game servers 0.7.2 */
+.settings-server-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 16px;
+    padding: 15px 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+.settings-server-toolbar > div > span,
+.settings-server-toolbar > div > strong { display: block; }
+.settings-server-toolbar > div > span { color: var(--muted); font-size: 11px; }
+.settings-server-toolbar > div > strong { margin-top: 2px; font-size: 21px; }
+.settings-add-server { position: relative; }
+.settings-add-server > summary { list-style: none; }
+.settings-add-server > summary::-webkit-details-marker { display: none; }
+.settings-add-server[open] > summary { background: var(--accent-hover); }
+.settings-add-server > form {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(760px, calc(100vw - var(--sidebar-width) - 86px));
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .18);
+}
+.settings-server-list { display: grid; gap: 16px; }
+.settings-server-card { padding: 0; overflow: hidden; }
+.settings-server-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    background: #f8fafc;
+}
+.settings-server-card-header h2 { margin: 3px 0 0; font-size: 20px; }
+.settings-server-number { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.settings-server-edit-form { padding: 20px; }
+.settings-server-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 16px; }
+.settings-server-fields .form-group,
+.settings-server-fields .form-group + .form-group { margin-top: 0; }
+.settings-inline-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
+.settings-connection-placeholder { border-top: 1px solid var(--border); background: #f9fafb; }
+.settings-connection-placeholder > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 15px 20px;
+    cursor: pointer;
+    list-style: none;
+}
+.settings-connection-placeholder > summary::-webkit-details-marker { display: none; }
+.settings-connection-placeholder > summary:hover { background: #f3f4f6; }
+.settings-connection-placeholder > summary strong,
+.settings-connection-placeholder > summary small { display: block; }
+.settings-connection-placeholder > summary small { margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 400; }
+.settings-connection-placeholder[open] { padding-bottom: 18px; }
+.settings-connection-placeholder[open] > summary { margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.settings-connection-placeholder .settings-disabled-notice,
+.settings-connection-placeholder .settings-disabled-fields,
+.settings-connection-placeholder .settings-security-note { margin-right: 20px; margin-left: 20px; }
+
+@media (max-width: 980px) {
+    .settings-add-server > form { width: min(720px, calc(100vw - 70px)); }
+}
+
+@media (max-width: 760px) {
+    .settings-server-toolbar { align-items: stretch; flex-direction: column; }
+    .settings-add-server > summary { width: 100%; }
+    .settings-add-server > form { position: static; width: 100%; margin-top: 10px; box-shadow: none; }
+    .settings-server-fields { grid-template-columns: 1fr; }
+    .settings-server-card-header { align-items: flex-start; }
+    .settings-server-card-header .button-danger { flex: 0 0 auto; }
+    .settings-inline-actions .button { width: 100%; }
+}

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SaveGameServerSettingsRequest;
 use App\Http\Requests\Admin\SaveGeneralSettingsRequest;
+use App\Models\GameServer;
+use App\Services\GameServerSettings;
 use App\Services\Settings\SettingsImageStorage;
 use App\Services\SiteSettings;
 use Illuminate\Http\RedirectResponse;
@@ -78,12 +81,64 @@ class SettingsController extends Controller
             ->with('status', 'Основные настройки сохранены.');
     }
 
-    public function gameServer(): View
+    public function gameServer(GameServerSettings $gameServerSettings): View
     {
-        return $this->placeholder(
-            title: 'Игровой сервер',
-            description: 'Здесь появятся параметры подключения и отображения игрового сервера.',
-        );
+        return view('admin.settings.game-server', [
+            'servers' => $gameServerSettings->all(),
+        ]);
+    }
+
+    public function storeGameServer(
+        SaveGameServerSettingsRequest $request,
+        GameServerSettings $gameServerSettings,
+    ): RedirectResponse {
+        $validated = $request->validated();
+
+        $gameServerSettings->create($this->gameServerValues($validated));
+
+        return redirect()
+            ->route('admin.settings.game-server')
+            ->with('status', 'Игровой сервер добавлен.');
+    }
+
+    public function updateGameServer(
+        SaveGameServerSettingsRequest $request,
+        GameServer $gameServer,
+        GameServerSettings $gameServerSettings,
+    ): RedirectResponse {
+        $validated = $request->validated();
+
+        $gameServerSettings->update($gameServer, $this->gameServerValues($validated));
+
+        return redirect()
+            ->route('admin.settings.game-server')
+            ->with('status', 'Настройки игрового сервера сохранены.');
+    }
+
+    public function destroyGameServer(
+        GameServer $gameServer,
+        GameServerSettings $gameServerSettings,
+    ): RedirectResponse {
+        $name = $gameServer->name;
+        $gameServerSettings->delete($gameServer);
+
+        return redirect()
+            ->route('admin.settings.game-server')
+            ->with('status', 'Игровой сервер «'.$name.'» удалён.');
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     * @return array{name: string, rates: string|null, chronicle: string|null, mode: string|null}
+     */
+    private function gameServerValues(array $validated): array
+    {
+        return [
+            'name' => (string) $validated['server_name'],
+            'rates' => isset($validated['server_rates']) ? (string) $validated['server_rates'] : null,
+            'chronicle' => isset($validated['server_chronicle']) ? (string) $validated['server_chronicle'] : null,
+            'mode' => isset($validated['server_mode']) ? (string) $validated['server_mode'] : null,
+        ];
     }
 
     public function loginServer(): View

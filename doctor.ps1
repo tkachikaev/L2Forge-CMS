@@ -18,6 +18,26 @@ function Test-ItemStatus {
     }
 }
 
+function Test-DirectoriesWritable {
+    param([string[]]$Paths)
+
+    foreach ($path in $Paths) {
+        if (-not (Test-Path $path)) {
+            return $false
+        }
+
+        try {
+            $writeTestPath = Join-Path $path ('.l2forge-write-test-' + [Guid]::NewGuid().ToString('N'))
+            [System.IO.File]::WriteAllText($writeTestPath, 'ok')
+            Remove-Item $writeTestPath -Force
+        } catch {
+            return $false
+        }
+    }
+
+    return $true
+}
+
 Write-Host 'L2Forge CMS environment check'
 Write-Host "Project: $PSScriptRoot"
 Write-Host ''
@@ -47,33 +67,35 @@ Test-ItemStatus 'SQLite database' (Test-Path 'database\database.sqlite') $(if (T
 Test-ItemStatus 'Bootstrap cache directory' (Test-Path 'bootstrap\cache') $(if (Test-Path 'bootstrap\cache') { 'present' } else { 'missing' })
 Test-ItemStatus 'Storage views directory' (Test-Path 'storage\framework\views') $(if (Test-Path 'storage\framework\views') { 'present' } else { 'missing' })
 Test-ItemStatus 'Reserved public/admin path' (-not (Test-Path 'public\admin')) $(if (Test-Path 'public\admin') { 'conflicts with the /admin Laravel route; move assets to public\assets\admin' } else { 'not present' })
-$newsUploadPath = 'public\uploads\news'
-$newsUploadWritable = $false
-if (Test-Path $newsUploadPath) {
-    try {
-        $writeTestPath = Join-Path $newsUploadPath ('.l2forge-write-test-' + [Guid]::NewGuid().ToString('N'))
-        [System.IO.File]::WriteAllText($writeTestPath, 'ok')
-        Remove-Item $writeTestPath -Force
-        $newsUploadWritable = $true
-    } catch {
-        $newsUploadWritable = $false
-    }
+$newsUploadPaths = @(
+    'public\uploads\news\covers',
+    'public\uploads\news\content'
+)
+$newsUploadWritable = Test-DirectoriesWritable -Paths $newsUploadPaths
+$missingNewsUploadPaths = @($newsUploadPaths | Where-Object { -not (Test-Path $_) })
+$newsUploadDetails = if ($missingNewsUploadPaths.Count -gt 0) {
+    'missing: ' + ($missingNewsUploadPaths -join ', ') + '; run .\setup.ps1 or .\update.ps1'
+} elseif ($newsUploadWritable) {
+    'cover and content directories are writable'
+} else {
+    'one or more media directories are not writable'
 }
-Test-ItemStatus 'News upload directory' $newsUploadWritable $(if (-not (Test-Path $newsUploadPath)) { 'missing; run .\setup.ps1 or .\update.ps1' } elseif ($newsUploadWritable) { 'present and writable' } else { 'present but not writable' })
+Test-ItemStatus 'News upload directories' $newsUploadWritable $newsUploadDetails
 
-$settingsUploadPath = 'public\uploads\settings'
-$settingsUploadWritable = $false
-if (Test-Path $settingsUploadPath) {
-    try {
-        $writeTestPath = Join-Path $settingsUploadPath ('.l2forge-write-test-' + [Guid]::NewGuid().ToString('N'))
-        [System.IO.File]::WriteAllText($writeTestPath, 'ok')
-        Remove-Item $writeTestPath -Force
-        $settingsUploadWritable = $true
-    } catch {
-        $settingsUploadWritable = $false
-    }
+$settingsUploadPaths = @(
+    'public\uploads\settings\logo',
+    'public\uploads\settings\favicon'
+)
+$settingsUploadWritable = Test-DirectoriesWritable -Paths $settingsUploadPaths
+$missingSettingsUploadPaths = @($settingsUploadPaths | Where-Object { -not (Test-Path $_) })
+$settingsUploadDetails = if ($missingSettingsUploadPaths.Count -gt 0) {
+    'missing: ' + ($missingSettingsUploadPaths -join ', ') + '; run .\setup.ps1 or .\update.ps1'
+} elseif ($settingsUploadWritable) {
+    'logo and favicon directories are writable'
+} else {
+    'one or more image directories are not writable'
 }
-Test-ItemStatus 'Settings upload directory' $settingsUploadWritable $(if (-not (Test-Path $settingsUploadPath)) { 'missing; run .\setup.ps1 or .\update.ps1' } elseif ($settingsUploadWritable) { 'present and writable' } else { 'present but not writable' })
+Test-ItemStatus 'Settings upload directories' $settingsUploadWritable $settingsUploadDetails
 
 if ((Test-Path 'vendor\autoload.php') -and (Test-Path '.env')) {
     Write-Host ''

@@ -1,24 +1,75 @@
 @extends('theme::layouts.app')
-@section('title', site_name().' — '.config('cms.server.chronicle'))
+
+@php
+    $heroDetails = $server
+        ? array_values(array_filter([
+            $server['show_chronicle'] ? $server['chronicle'] : null,
+            $server['show_rates'] ? $server['rates'] : null,
+        ], static fn ($value) => is_string($value) && $value !== ''))
+        : [];
+@endphp
+
+@section('title', site_name().($server && $server['show_chronicle'] ? ' — '.$server['chronicle'] : ''))
+
 @section('content')
 <section class="hero">
     <div class="hero-overlay"></div>
     <div class="container hero-content">
         <p class="eyebrow">КЛАССИЧЕСКИЙ МИР · ТВОЯ ЛЕГЕНДА</p>
         <h1>LINEAGE II</h1>
-        <h2>{{ config('cms.server.chronicle') }} · {{ config('cms.server.rates') }}</h2>
+        @if ($heroDetails !== [])
+            <h2>{{ implode(' · ', $heroDetails) }}</h2>
+        @endif
         @if (site_description() !== '')
             <p class="hero-copy">{{ site_description() }}</p>
         @endif
-        <div class="hero-actions"><a class="button button-gold button-large" href="{{ route('register') }}">Начать игру</a><a class="button button-ghost button-large" href="{{ route('downloads') }}">Скачать клиент</a></div>
+        <div class="hero-actions">
+            <a class="button button-gold button-large" href="{{ route('register') }}">Начать игру</a>
+            <a class="button button-ghost button-large" href="{{ route('downloads') }}">Скачать клиент</a>
+        </div>
     </div>
 </section>
 
 <section class="container dashboard">
-    <article class="panel server-panel">
-        <div class="panel-title"><h2>Статус сервера</h2><span class="status {{ $server['online'] ? 'online' : 'offline' }}">{{ $server['online'] ? 'Онлайн' : 'Офлайн' }}</span></div>
-        <div class="server-row"><div><strong>{{ $server['name'] }}</strong><span>{{ number_format($server['players'], 0, '.', ' ') }} / {{ number_format($server['max_players'], 0, '.', ' ') }}</span></div><div class="progress"><span style="width: {{ min(100, ($server['players'] / max(1, $server['max_players'])) * 100) }}%"></span></div><dl><div><dt>Версия</dt><dd>{{ $server['chronicle'] }}</dd></div><div><dt>Рейты</dt><dd>{{ $server['rates'] }}</dd></div><div><dt>Режим</dt><dd>{{ $server['mode'] }}</dd></div></dl></div>
-    </article>
+    @if ($servers !== [])
+        <article class="panel server-panel">
+            <div class="panel-title">
+                <h2>{{ count($servers) > 1 ? 'Игровые серверы' : 'Статус сервера' }}</h2>
+            </div>
+
+            <div class="server-list">
+                @foreach ($servers as $currentServer)
+                    <div class="server-row">
+                        <div class="server-summary">
+                            <strong>{{ $currentServer['name'] }}</strong>
+                            <span class="status {{ $currentServer['online'] ? 'online' : 'offline' }}">
+                                {{ $currentServer['online'] ? 'Онлайн' : 'Офлайн' }}
+                            </span>
+                            <small>{{ number_format($currentServer['players'], 0, '.', ' ') }} / {{ number_format($currentServer['max_players'], 0, '.', ' ') }} игроков</small>
+                        </div>
+
+                        <div class="progress" aria-label="Заполнение сервера">
+                            <span style="width: {{ min(100, ($currentServer['players'] / max(1, $currentServer['max_players'])) * 100) }}%"></span>
+                        </div>
+
+                        @if ($currentServer['show_chronicle'] || $currentServer['show_rates'] || $currentServer['show_mode'])
+                            <dl>
+                                @if ($currentServer['show_chronicle'])
+                                    <div><dt>Хроники</dt><dd>{{ $currentServer['chronicle'] }}</dd></div>
+                                @endif
+                                @if ($currentServer['show_rates'])
+                                    <div><dt>Рейты</dt><dd>{{ $currentServer['rates'] }}</dd></div>
+                                @endif
+                                @if ($currentServer['show_mode'])
+                                    <div><dt>Режим</dt><dd>{{ $currentServer['mode'] }}</dd></div>
+                                @endif
+                            </dl>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </article>
+    @endif
 
     <div class="content-grid">
         <section class="panel news-panel">

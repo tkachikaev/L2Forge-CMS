@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\GameServerSettings;
 use App\Services\SiteSettings;
 use App\Support\Themes\ThemeManager;
 
@@ -42,5 +43,32 @@ if (! function_exists('site_footer_text')) {
     function site_footer_text(): string
     {
         return app(SiteSettings::class)->footerText();
+    }
+}
+
+if (! function_exists('game_server_settings')) {
+    /**
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     rates: string,
+     *     chronicle: string,
+     *     mode: string,
+     *     show_rates: bool,
+     *     show_chronicle: bool,
+     *     show_mode: bool
+     * }|null
+     */
+    function game_server_settings(): ?array
+    {
+        return app(GameServerSettings::class)->primary();
+    }
+}
+
+if (! function_exists('game_servers')) {
+    /** @return array<int, array<string, int|string|bool>> */
+    function game_servers(): array
+    {
+        return app(GameServerSettings::class)->all();
     }
 }

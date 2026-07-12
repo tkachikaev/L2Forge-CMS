@@ -50,6 +50,9 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
         Route::get('/settings', [AdminSettingsController::class, 'general'])->name('settings.general');
         Route::put('/settings', [AdminSettingsController::class, 'updateGeneral'])->name('settings.general.update');
         Route::get('/settings/game-server', [AdminSettingsController::class, 'gameServer'])->name('settings.game-server');
+        Route::post('/settings/game-server', [AdminSettingsController::class, 'storeGameServer'])->name('settings.game-server.store');
+        Route::put('/settings/game-server/{gameServer}', [AdminSettingsController::class, 'updateGameServer'])->name('settings.game-server.update');
+        Route::delete('/settings/game-server/{gameServer}', [AdminSettingsController::class, 'destroyGameServer'])->name('settings.game-server.destroy');
         Route::get('/settings/login-server', [AdminSettingsController::class, 'loginServer'])->name('settings.login-server');
 
         Route::post('/logout', [AdminSessionController::class, 'destroy'])->name('logout');

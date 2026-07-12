@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.7.2 - 2026-07-12
+
+### Added
+
+- Database-backed list of game servers with create, edit and delete actions in the administrator settings.
+- Automatic migration of existing 0.7.1 `server.*` settings into the first game-server record.
+- Public rendering of multiple game servers in the default theme and on the basic About page.
+- Confirmation dialog before deleting a game server.
+- Automated coverage for optional fields, multiple servers, deletion and legacy migration.
+
+### Changed
+
+- Server rates and chronicles are now optional and disappear from the public theme when empty.
+- The public label `Версия` was renamed to `Хроники`.
+- Future database connection placeholders are grouped separately for each saved game server.
+
+### Fixed
+
+- The default hero background is aligned to the top so the character head is no longer cropped behind the upper page area.
+
+## 0.7.1 - 2026-07-12
+
+### Added
+
+- Working **Game Server** settings tab at `/admin/settings/game-server`.
+- Display settings for server name, rates, chronicle and mode.
+- Public-theme integration for the hero block, server status panel and the basic information page.
+- Special `None` or empty mode value that hides the Mode item from the public server panel.
+- Prepared disabled fields for the future game-database host, port, database name, user and password.
+- Automated coverage for access control, validation, public rendering, hidden mode and protection against storing placeholder connection values.
+
+### Security
+
+- Database connection placeholders are disabled, have no submitted names and are not stored in `cms_settings`.
+- Game-server display values are validated and escaped by Blade before public rendering.
+
+### Fixed
+
+- `doctor.ps1` now checks the real writable leaf directories used for news covers, news content, logos and favicons instead of only their parent folders.
+
 ## 0.7.0 - 2026-07-12
 
 ### Added
