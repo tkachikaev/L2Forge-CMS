@@ -1,0 +1,9 @@
+{
+  "name": "L2 Dark Classic",
+  "slug": "default",
+  "version": "0.1.1",
+  "author": "L2CMS Community",
+  "cms": "^0.1",
+  "description": "Default dark Lineage II inspired theme.",
+  "assets": "public/themes/default/assets"
+}

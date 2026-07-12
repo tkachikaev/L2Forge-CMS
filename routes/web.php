@@ -1,0 +1,28 @@
+<?php
+
+use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminSessionController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NewsController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', HomeController::class)->name('home');
+Route::get('/news', [NewsController::class, 'index'])->name('news.index');
+Route::get('/news/{news:slug}', [NewsController::class, 'show'])->name('news.show');
+
+Route::view('/login', 'theme::auth.login')->name('login');
+Route::view('/register', 'theme::auth.register')->name('register');
+Route::view('/downloads', 'theme::pages.downloads')->name('downloads');
+Route::view('/about', 'theme::pages.about')->name('about');
+
+Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(function (): void {
+    Route::middleware('admin.guest')->group(function (): void {
+        Route::get('/login', [AdminSessionController::class, 'create'])->name('login');
+        Route::post('/login', [AdminSessionController::class, 'store'])->name('login.store');
+    });
+
+    Route::middleware('admin.auth')->group(function (): void {
+        Route::get('/', AdminDashboardController::class)->name('dashboard');
+        Route::post('/logout', [AdminSessionController::class, 'destroy'])->name('logout');
+    });
+});
