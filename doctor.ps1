@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Continue'
+﻿$ErrorActionPreference = 'Continue'
 Set-Location $PSScriptRoot
 
 $failed = $false
@@ -46,6 +46,7 @@ Test-ItemStatus 'Composer dependencies' (Test-Path 'vendor\autoload.php') $(if (
 Test-ItemStatus 'SQLite database' (Test-Path 'database\database.sqlite') $(if (Test-Path 'database\database.sqlite') { 'present' } else { 'missing' })
 Test-ItemStatus 'Bootstrap cache directory' (Test-Path 'bootstrap\cache') $(if (Test-Path 'bootstrap\cache') { 'present' } else { 'missing' })
 Test-ItemStatus 'Storage views directory' (Test-Path 'storage\framework\views') $(if (Test-Path 'storage\framework\views') { 'present' } else { 'missing' })
+Test-ItemStatus 'Reserved public/admin path' (-not (Test-Path 'public\admin')) $(if (Test-Path 'public\admin') { 'conflicts with the /admin Laravel route; move assets to public\assets\admin' } else { 'not present' })
 
 if ((Test-Path 'vendor\autoload.php') -and (Test-Path '.env')) {
     Write-Host ''

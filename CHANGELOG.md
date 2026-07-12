@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2 - 2026-07-12
+
+### Fixed
+
+- Moved administrator static assets from `public/admin` to `public/assets/admin`.
+- Fixed the physical directory collision that caused PHP's development server to return its own 404 page for `/admin`.
+- Added an environment diagnostic check preventing the reserved `public/admin` path from returning.
+
 ## 0.3.1 - 2026-07-12
 
 ### Changed

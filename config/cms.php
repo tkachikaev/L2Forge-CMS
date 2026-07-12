@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'version' => '0.3.1',
+    'version' => '0.3.2',
     'theme' => env('CMS_THEME', 'default'),
     'themes_path' => base_path('themes'),
 
