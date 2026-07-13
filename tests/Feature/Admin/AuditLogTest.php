@@ -66,8 +66,8 @@ class AuditLogTest extends TestCase
         $details = $log?->fresh()->details ?? [];
         $encoded = json_encode($details, JSON_UNESCAPED_UNICODE);
 
-        $this->assertSame('[СКРЫТО]', $details['smtp_password']);
-        $this->assertSame('[СКРЫТО]', $details['nested']['reset_token']);
+        $this->assertSame('[REDACTED]', $details['smtp_password']);
+        $this->assertSame('[REDACTED]', $details['nested']['reset_token']);
         $this->assertSame('smtp.example.com', $details['nested']['host']);
         $this->assertStringNotContainsString('SecretPassword123', (string) $encoded);
         $this->assertStringNotContainsString('TopSecretToken', (string) $encoded);

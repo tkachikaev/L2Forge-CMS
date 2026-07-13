@@ -17,7 +17,7 @@
 
 <div class="settings-server-toolbar">
     <div>
-        <span>{{ __('Game servers') }}</span>
+        <span>{{ __('Game server count') }}</span>
         <strong>{{ count($servers) }}</strong>
     </div>
 

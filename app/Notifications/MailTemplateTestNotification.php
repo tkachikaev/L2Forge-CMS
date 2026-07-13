@@ -13,7 +13,7 @@ class MailTemplateTestNotification extends Notification
 
     public function __construct(
         private readonly string $templateKey,
-        private readonly ?string $locale = null,
+        private readonly ?string $templateLocale = null,
     ) {
     }
 
@@ -26,7 +26,7 @@ class MailTemplateTestNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $templates = app(MailTemplateSettings::class);
-        $variables = $templates->demoVariables($this->templateKey, $this->locale);
+        $variables = $templates->demoVariables($this->templateKey, $this->templateLocale);
         $actionUrl = null;
 
         if ($this->templateKey === MailTemplateSettings::EMAIL_VERIFICATION) {
@@ -35,6 +35,6 @@ class MailTemplateTestNotification extends Notification
             $actionUrl = $variables['reset_url'];
         }
 
-        return $templates->mailMessage($this->templateKey, $variables, $actionUrl, $this->locale);
+        return $templates->mailMessage($this->templateKey, $variables, $actionUrl, $this->templateLocale);
     }
 }
