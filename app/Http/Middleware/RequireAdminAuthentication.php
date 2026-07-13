@@ -11,8 +11,21 @@ class RequireAdminAuthentication
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Auth::guard('admin')->check()) {
+        $guard = Auth::guard('admin');
+        $administrator = $guard->user();
+
+        if ($administrator === null) {
             return redirect()->guest(route('admin.login'));
+        }
+
+        if (! $administrator->is_active) {
+            $guard->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('admin.login')
+                ->with('status', 'Учётная запись администратора отключена.');
         }
 
         return $next($request);

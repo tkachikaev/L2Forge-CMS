@@ -40,13 +40,14 @@
         </div>
     </article>
 
-    <article class="admin-section-card planned">
+    <a class="admin-section-card available" href="{{ route('admin.administrators.index') }}">
         <div>
-            <span class="section-status">В разработке</span>
+            <span class="section-status">Доступно</span>
             <h2>Администраторы</h2>
-            <p>Учётные записи, роли и права доступа.</p>
+            <p>Создание, изменение и отключение учётных записей панели управления.</p>
         </div>
-    </article>
+        <span class="section-arrow" aria-hidden="true">→</span>
+    </a>
 
     <a class="admin-section-card available" href="{{ route('admin.logs.index') }}">
         <div>

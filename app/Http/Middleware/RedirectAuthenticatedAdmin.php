@@ -11,7 +11,18 @@ class RedirectAuthenticatedAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::guard('admin')->check()) {
+        $guard = Auth::guard('admin');
+        $administrator = $guard->user();
+
+        if ($administrator !== null && ! $administrator->is_active) {
+            $guard->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return $next($request);
+        }
+
+        if ($administrator !== null) {
             return redirect()->route('admin.dashboard');
         }
 

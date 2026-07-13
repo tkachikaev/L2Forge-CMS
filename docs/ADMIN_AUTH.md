@@ -38,14 +38,8 @@ ADMIN_LOGIN_DECAY_SECONDS=60
 
 Every login result is written to `admin_login_logs`. Passwords are never logged.
 
-## Disable an administrator
+## Administrator management
 
-Until the administrator management screen is implemented, use Tinker:
+After creating the first account, additional administrators are created and managed at `/admin/administrators`. Accounts are disabled instead of being physically deleted. The current administrator and the last active administrator cannot be disabled.
 
-```powershell
-php artisan tinker
-```
-
-```php
-App\Models\Admin::where('email', 'admin@example.com')->update(['is_active' => false]);
-```
+Details: [ADMINISTRATORS.md](ADMINISTRATORS.md).

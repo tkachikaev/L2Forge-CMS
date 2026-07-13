@@ -6,6 +6,7 @@ return [
     'email' => 'Поле «:attribute» должно содержать корректный email.',
     'unique' => 'Такое значение поля «:attribute» уже используется.',
     'confirmed' => 'Подтверждение поля «:attribute» не совпадает.',
+    'boolean' => 'Поле «:attribute» должно иметь значение да или нет.',
     'alpha_dash' => 'Поле «:attribute» может содержать только буквы, цифры, дефис и подчёркивание.',
     'lowercase' => 'Поле «:attribute» должно быть в нижнем регистре.',
     'min' => [
@@ -32,5 +33,7 @@ return [
         'email' => 'email',
         'password' => 'пароль',
         'password_confirmation' => 'подтверждение пароля',
+        'current_password' => 'текущий пароль',
+        'is_active' => 'статус',
     ],
 ];

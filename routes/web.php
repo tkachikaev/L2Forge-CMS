@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminSessionController;
+use App\Http\Controllers\Admin\AdministratorController as AdminAdministratorController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
@@ -89,6 +90,16 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
         Route::post('/themes/{theme}/activate', [AdminThemeController::class, 'activate'])
             ->where('theme', '[a-z0-9][a-z0-9_-]*')
             ->name('themes.activate');
+
+        Route::get('/administrators', [AdminAdministratorController::class, 'index'])->name('administrators.index');
+        Route::get('/administrators/create', [AdminAdministratorController::class, 'create'])->name('administrators.create');
+        Route::post('/administrators', [AdminAdministratorController::class, 'store'])->name('administrators.store');
+        Route::get('/administrators/{administrator}/edit', [AdminAdministratorController::class, 'edit'])->name('administrators.edit');
+        Route::put('/administrators/{administrator}', [AdminAdministratorController::class, 'update'])->name('administrators.update');
+        Route::put('/administrators/{administrator}/password', [AdminAdministratorController::class, 'updatePassword'])
+            ->middleware('throttle:5,1')
+            ->name('administrators.password');
+        Route::patch('/administrators/{administrator}/status', [AdminAdministratorController::class, 'updateStatus'])->name('administrators.status');
 
         Route::get('/logs', [AdminAuditLogController::class, 'index'])->name('logs.index');
         Route::get('/logs/{auditLog}', [AdminAuditLogController::class, 'show'])->name('logs.show');
