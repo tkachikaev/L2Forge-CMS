@@ -4,6 +4,8 @@ namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class CustomHtmlMail extends Mailable
@@ -16,10 +18,17 @@ class CustomHtmlMail extends Mailable
     ) {
     }
 
-    public function build(): static
+    public function envelope(): Envelope
     {
-        return $this
-            ->subject($this->mailSubject)
-            ->html($this->htmlContent);
+        return new Envelope(
+            subject: $this->mailSubject,
+        );
+    }
+
+    public function content(): Content
+    {
+        return new Content(
+            htmlString: $this->htmlContent,
+        );
     }
 }
