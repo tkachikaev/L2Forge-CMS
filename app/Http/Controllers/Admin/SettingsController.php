@@ -12,6 +12,7 @@ use App\Http\Requests\Admin\SaveRegistrationSettingsRequest;
 use App\Http\Requests\Admin\SendCustomMailRequest;
 use App\Http\Requests\Admin\SendMailTemplateTestRequest;
 use App\Http\Requests\Admin\SendTestMailRequest;
+use App\Mail\CustomHtmlMail;
 use App\Models\GameServer;
 use App\Notifications\MailTemplateTestNotification;
 use App\Services\AuditLogger;
@@ -337,9 +338,7 @@ class SettingsController extends Controller
         $mailSettings->applyConfiguration();
 
         try {
-            Mail::html($safeHtml, function (Message $message) use ($address, $subject): void {
-                $message->to($address)->subject($subject);
-            });
+            Mail::to($address)->send(new CustomHtmlMail($subject, $safeHtml));
         } catch (Throwable $exception) {
             Log::warning('Custom email sending failed.', [
                 'exception' => $exception::class,

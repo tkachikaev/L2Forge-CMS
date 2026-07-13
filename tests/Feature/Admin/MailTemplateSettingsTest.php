@@ -5,10 +5,12 @@ namespace Tests\Feature\Admin;
 use App\Models\Admin;
 use App\Models\CmsSetting;
 use App\Models\User;
+use App\Mail\CustomHtmlMail;
 use App\Notifications\MailTemplateTestNotification;
 use App\Notifications\PasswordChangedNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
+use App\Services\CmsSettings;
 use App\Services\MailSettings;
 use App\Services\MailTemplateSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,6 +124,11 @@ class MailTemplateSettingsTest extends TestCase
 
     public function test_saved_templates_are_used_by_user_notifications(): void
     {
+        app(CmsSettings::class)->setMany([
+            'site.name' => 'Eternal World',
+            'site.name.ru' => 'Eternal World',
+        ]);
+
         $templates = app(MailTemplateSettings::class);
         $templates->update(MailTemplateSettings::EMAIL_VERIFICATION, [
             'subject' => 'Проверка {{site_name}} для {{username}}',
@@ -202,6 +209,12 @@ class MailTemplateSettingsTest extends TestCase
             ])
             ->assertRedirect(route('admin.settings.mail.custom'))
             ->assertSessionHas('status');
+
+        Mail::assertSent(CustomHtmlMail::class, function (CustomHtmlMail $mail): bool {
+            return $mail->hasTo('recipient@example.com')
+                && $mail->hasSubject('Новость сервера')
+                && str_contains($mail->htmlContent, '<h1>Событие</h1>');
+        });
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'mail.custom_sent',

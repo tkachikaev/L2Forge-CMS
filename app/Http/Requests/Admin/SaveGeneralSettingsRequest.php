@@ -61,12 +61,12 @@ class SaveGeneralSettingsRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'site_name' => __('site name'),
-            'site_description' => __('short description'),
-            'timezone' => __('time zone'),
-            'admin_email' => __('administrator email'),
-            'footer_text' => __('footer text'),
-            'logo' => __('logo'),
+            'site_name' => __('Site name validation attribute'),
+            'site_description' => __('Short description validation attribute'),
+            'timezone' => __('Time zone validation attribute'),
+            'admin_email' => __('Administrator email validation attribute'),
+            'footer_text' => __('Footer text validation attribute'),
+            'logo' => __('Logo validation attribute'),
             'favicon' => 'favicon',
         ];
     }

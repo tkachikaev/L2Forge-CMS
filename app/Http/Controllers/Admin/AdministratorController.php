@@ -137,8 +137,8 @@ class AdministratorController extends Controller
             ],
             [],
             [
-                'current_password' => __('current password'),
-                'password' => __('new password'),
+                'current_password' => __('Current password validation attribute'),
+                'password' => __('New password validation attribute'),
                 'password_confirmation' => __('new password confirmation'),
             ],
         );
@@ -270,7 +270,7 @@ class AdministratorController extends Controller
             [
                 'name' => __('administrator name'),
                 'email' => 'email',
-                'password' => __('password'),
+                'password' => __('Password validation attribute'),
                 'password_confirmation' => __('password confirmation'),
             ],
         )->validate();

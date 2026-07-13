@@ -30,7 +30,7 @@
                             aria-selected="{{ $code === $defaultLocale ? 'true' : 'false' }}"
                         >
                             {{ $language['native_name'] }}
-                            @if ($code === $defaultLocale)<small>{{ __('default') }}</small>@endif
+                            @if ($code === $defaultLocale)<small>{{ __('Default locale marker') }}</small>@endif
                         </button>
                     @endforeach
                 </div>

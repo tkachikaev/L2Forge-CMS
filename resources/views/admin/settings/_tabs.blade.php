@@ -6,7 +6,7 @@
         {{ __('Game server') }}
     </a>
     <a @class(['settings-tab', 'active' => request()->routeIs('admin.settings.login-server')]) href="{{ route('admin.settings.login-server') }}">
-        {{ __('Login server') }}
+        {{ __('Login Server') }}
     </a>
     <a @class(['settings-tab', 'active' => request()->routeIs('admin.settings.registration')]) href="{{ route('admin.settings.registration') }}">
         {{ __('Registration') }}

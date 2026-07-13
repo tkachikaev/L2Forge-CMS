@@ -118,9 +118,9 @@ class SaveNewsRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'title' => __('title'),
-            'excerpt' => __('short description'),
-            'body' => __('news text'),
+            'title' => __('Title validation attribute'),
+            'excerpt' => __('Short description validation attribute'),
+            'body' => __('News text validation attribute'),
             'cover_image' => __('cover image'),
             'remove_cover_image' => __('remove cover image'),
             'published_at' => __('publication date'),

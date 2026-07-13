@@ -39,9 +39,9 @@ class SaveGameServerSettingsRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'server_name' => __('server name'),
-            'server_rates' => __('server rates'),
-            'server_chronicle' => __('chronicle'),
+            'server_name' => __('Server name validation attribute'),
+            'server_rates' => __('Server rates validation attribute'),
+            'server_chronicle' => __('Chronicle validation attribute'),
             'server_mode' => __('server mode'),
         ];
     }

@@ -5,7 +5,7 @@
 @section('content')
 <section class="auth-page">
     <div class="panel auth-card auth-message-card">
-        <p class="eyebrow">{{ __('SECURITY') }}</p>
+        <p class="eyebrow">{{ __('Security eyebrow') }}</p>
         <h1>{{ __('Verify your email') }}</h1>
         <p class="muted">{!! __('A verification link was sent to :email. Your account will open after you follow the link.', ['email' => '<strong>'.e(auth()->user()->email).'</strong>']) !!}</p>
 
