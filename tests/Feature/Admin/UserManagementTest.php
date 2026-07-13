@@ -203,8 +203,16 @@ class UserManagementTest extends TestCase
 
     private function createUser(array $attributes = []): User
     {
-        $managed = array_intersect_key($attributes, array_flip(['is_active', 'last_login_at']));
-        unset($attributes['is_active'], $attributes['last_login_at']);
+        $managed = array_intersect_key($attributes, array_flip([
+            'email_verified_at',
+            'is_active',
+            'last_login_at',
+        ]));
+        unset(
+            $attributes['email_verified_at'],
+            $attributes['is_active'],
+            $attributes['last_login_at'],
+        );
 
         $user = User::query()->create(array_merge([
             'name' => 'player_'.strtolower(str()->random(8)),

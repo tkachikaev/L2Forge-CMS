@@ -14,7 +14,7 @@ class RequireActiveSiteUser
         $guard = Auth::guard('web');
         $user = $guard->user();
 
-        if ($user !== null && ! $user->is_active) {
+        if ($user !== null && $user->is_active === false) {
             $guard->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

@@ -281,26 +281,27 @@ final class SystemInformation
         }
 
         $testFile = null;
+        $written = false;
 
         try {
             $testFile = rtrim($path, '/\\').DIRECTORY_SEPARATOR.'.l2forge-system-check-'.bin2hex(random_bytes(8));
-
-            if (file_put_contents($testFile, 'ok', LOCK_EX) === false || ! is_file($testFile)) {
-                return false;
-            }
-
-            if (! unlink($testFile)) {
-                return false;
-            }
-
-            return true;
+            $written = file_put_contents($testFile, 'ok', LOCK_EX) !== false && is_file($testFile);
         } catch (Throwable) {
+            $written = false;
+        } finally {
             if (is_string($testFile) && is_file($testFile)) {
-                @unlink($testFile);
-            }
+                for ($attempt = 0; $attempt < 3; $attempt++) {
+                    if (@unlink($testFile) || ! is_file($testFile)) {
+                        break;
+                    }
 
-            return false;
+                    usleep(100000);
+                    clearstatcache(true, $testFile);
+                }
+            }
         }
+
+        return $written;
     }
 
     private function relativeProjectPath(string $path): string

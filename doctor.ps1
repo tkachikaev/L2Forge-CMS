@@ -1,7 +1,8 @@
-﻿$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'Continue'
 Set-Location $PSScriptRoot
 
 $failed = $false
+$script:directoryWriteFailures = @()
 
 function Test-ItemStatus {
     param(
@@ -18,24 +19,55 @@ function Test-ItemStatus {
     }
 }
 
-function Test-DirectoriesWritable {
-    param([string[]]$Paths)
+function Remove-WriteTestFile {
+    param([string]$Path)
 
-    foreach ($path in $Paths) {
-        if (-not (Test-Path $path)) {
-            return $false
-        }
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return
+    }
 
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
         try {
-            $writeTestPath = Join-Path $path ('.l2forge-write-test-' + [Guid]::NewGuid().ToString('N'))
-            [System.IO.File]::WriteAllText($writeTestPath, 'ok')
-            Remove-Item $writeTestPath -Force
+            Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
+            return
         } catch {
-            return $false
+            if ($attempt -lt 3) {
+                Start-Sleep -Milliseconds 100
+            }
         }
     }
 
-    return $true
+    Write-Host "[WARN] Could not remove diagnostic file: $Path" -ForegroundColor Yellow
+}
+
+function Test-DirectoriesWritable {
+    param([string[]]$Paths)
+
+    $script:directoryWriteFailures = @()
+
+    foreach ($path in $Paths) {
+        if (-not (Test-Path -LiteralPath $path -PathType Container)) {
+            $script:directoryWriteFailures += "$path (directory is missing)"
+            continue
+        }
+
+        $writeTestPath = Join-Path $path ('.l2forge-write-test-' + [Guid]::NewGuid().ToString('N') + '.tmp')
+
+        try {
+            $utf8 = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($writeTestPath, 'ok', $utf8)
+
+            if (-not (Test-Path -LiteralPath $writeTestPath -PathType Leaf)) {
+                throw 'The diagnostic file was not created.'
+            }
+        } catch {
+            $script:directoryWriteFailures += "$path ($($_.Exception.Message))"
+        } finally {
+            Remove-WriteTestFile -Path $writeTestPath
+        }
+    }
+
+    return $script:directoryWriteFailures.Count -eq 0
 }
 
 $versionFilePresent = Test-Path 'VERSION'
@@ -73,18 +105,20 @@ Test-ItemStatus 'SQLite database' (Test-Path 'database\database.sqlite') $(if (T
 Test-ItemStatus 'Bootstrap cache directory' (Test-Path 'bootstrap\cache') $(if (Test-Path 'bootstrap\cache') { 'present' } else { 'missing' })
 Test-ItemStatus 'Storage views directory' (Test-Path 'storage\framework\views') $(if (Test-Path 'storage\framework\views') { 'present' } else { 'missing' })
 Test-ItemStatus 'Reserved public/admin path' (-not (Test-Path 'public\admin')) $(if (Test-Path 'public\admin') { 'conflicts with the /admin Laravel route; move assets to public\assets\admin' } else { 'not present' })
+
 $newsUploadPaths = @(
     'public\uploads\news\covers',
     'public\uploads\news\content'
 )
 $newsUploadWritable = Test-DirectoriesWritable -Paths $newsUploadPaths
-$missingNewsUploadPaths = @($newsUploadPaths | Where-Object { -not (Test-Path $_) })
+$newsUploadFailures = @($script:directoryWriteFailures)
+$missingNewsUploadPaths = @($newsUploadPaths | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Container) })
 $newsUploadDetails = if ($missingNewsUploadPaths.Count -gt 0) {
     'missing: ' + ($missingNewsUploadPaths -join ', ') + '; run .\setup.ps1 or .\update.ps1'
 } elseif ($newsUploadWritable) {
     'cover and content directories are writable'
 } else {
-    'one or more media directories are not writable'
+    'write failed: ' + ($newsUploadFailures -join '; ')
 }
 Test-ItemStatus 'News upload directories' $newsUploadWritable $newsUploadDetails
 
@@ -93,13 +127,14 @@ $settingsUploadPaths = @(
     'public\uploads\settings\favicon'
 )
 $settingsUploadWritable = Test-DirectoriesWritable -Paths $settingsUploadPaths
-$missingSettingsUploadPaths = @($settingsUploadPaths | Where-Object { -not (Test-Path $_) })
+$settingsUploadFailures = @($script:directoryWriteFailures)
+$missingSettingsUploadPaths = @($settingsUploadPaths | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Container) })
 $settingsUploadDetails = if ($missingSettingsUploadPaths.Count -gt 0) {
     'missing: ' + ($missingSettingsUploadPaths -join ', ') + '; run .\setup.ps1 or .\update.ps1'
 } elseif ($settingsUploadWritable) {
     'logo and favicon directories are writable'
 } else {
-    'one or more image directories are not writable'
+    'write failed: ' + ($settingsUploadFailures -join '; ')
 }
 Test-ItemStatus 'Settings upload directories' $settingsUploadWritable $settingsUploadDetails
 
