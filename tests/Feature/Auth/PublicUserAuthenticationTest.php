@@ -69,6 +69,7 @@ class PublicUserAuthenticationTest extends TestCase
         $this->assertSame('player_one', $user->name);
         $this->assertSame('player@example.com', $user->email);
         $this->assertTrue($user->hasVerifiedEmail());
+        $this->assertNotNull($user->last_login_at);
         $this->assertAuthenticatedAs($user);
     }
 

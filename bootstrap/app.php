@@ -3,6 +3,7 @@
 use App\Http\Middleware\AdminSecurityHeaders;
 use App\Http\Middleware\RedirectAuthenticatedAdmin;
 use App\Http\Middleware\RequireAdminAuthentication;
+use App\Http\Middleware\RequireActiveSiteUser;
 use App\Http\Middleware\RequireConfiguredEmailVerification;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.auth' => RequireAdminAuthentication::class,
             'admin.guest' => RedirectAuthenticatedAdmin::class,
             'admin.headers' => AdminSecurityHeaders::class,
+            'site.active' => RequireActiveSiteUser::class,
             'site.verified' => RequireConfiguredEmailVerification::class,
         ]);
     })

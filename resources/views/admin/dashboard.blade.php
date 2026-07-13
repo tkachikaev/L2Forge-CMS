@@ -32,6 +32,15 @@
         <span class="section-arrow" aria-hidden="true">→</span>
     </a>
 
+    <a class="admin-section-card available" href="{{ route('admin.users.index') }}">
+        <div>
+            <span class="section-status">Доступно</span>
+            <h2>Пользователи</h2>
+            <p>Поиск, просмотр активности и управление учётными записями сайта.</p>
+        </div>
+        <span class="section-arrow" aria-hidden="true">→</span>
+    </a>
+
     <article class="admin-section-card planned">
         <div>
             <span class="section-status">В разработке</span>

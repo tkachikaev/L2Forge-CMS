@@ -28,6 +28,7 @@ class AuthenticatedSessionController extends Controller
         if (! $guard->attempt([
             $field => $login,
             'password' => (string) $request->validated()['password'],
+            'is_active' => true,
         ], $request->boolean('remember'))) {
             $auditLogger->failed(
                 category: 'user',
@@ -43,10 +44,14 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+
+        $user = $guard->user();
+        $user?->forceFill(['last_login_at' => now()])->save();
+
         $auditLogger->success(
             category: 'user',
             action: 'auth.login',
-            actor: $guard->user(),
+            actor: $user,
             target: 'Личный кабинет',
         );
 

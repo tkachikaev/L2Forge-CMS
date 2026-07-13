@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\NewsImageController as AdminNewsImageController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AccountController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -48,7 +49,7 @@ Route::middleware('guest')->group(function (): void {
         ->name('password.store');
 });
 
-Route::middleware('auth')->group(function (): void {
+Route::middleware(['auth', 'site.active'])->group(function (): void {
     Route::get('/email/verify', EmailVerificationPromptController::class)->name('verification.notice');
     Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])
@@ -90,6 +91,16 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
         Route::post('/themes/{theme}/activate', [AdminThemeController::class, 'activate'])
             ->where('theme', '[a-z0-9][a-z0-9_-]*')
             ->name('themes.activate');
+
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
+        Route::patch('/users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.status');
+        Route::post('/users/{user}/verification', [AdminUserController::class, 'resendVerification'])
+            ->middleware('throttle:6,1')
+            ->name('users.verification');
+        Route::post('/users/{user}/password-reset', [AdminUserController::class, 'sendPasswordReset'])
+            ->middleware('throttle:5,1')
+            ->name('users.password-reset');
 
         Route::get('/administrators', [AdminAdministratorController::class, 'index'])->name('administrators.index');
         Route::get('/administrators/create', [AdminAdministratorController::class, 'create'])->name('administrators.create');

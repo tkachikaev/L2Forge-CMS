@@ -62,6 +62,8 @@ class RegisteredUserController extends Controller
             $user->markEmailAsVerified();
         }
 
+        $user->forceFill(['last_login_at' => now()])->save();
+
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
 
