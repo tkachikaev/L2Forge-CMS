@@ -14,20 +14,20 @@ if (-not (Test-Path '.env')) {
 }
 
 if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete 0.9.4 patch with file replacement enabled.'
+    throw 'VERSION is missing. Re-extract the complete 0.9.5 patch with file replacement enabled.'
 }
 
 $cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
 
-if ($cmsVersion -ne '0.9.4') {
+if ($cmsVersion -ne '0.9.5') {
     throw "Unexpected patch version: $cmsVersion"
 }
 
 Write-Host "L2Forge CMS $cmsVersion update"
-Write-Host 'Adding editable mail templates with safe defaults.'
+Write-Host 'Fixing the mail template editor Blade view.'
 Write-Host ''
 
-$previousPatchScript = Join-Path $PSScriptRoot 'apply-0.9.3.ps1'
+$previousPatchScript = Join-Path $PSScriptRoot 'apply-0.9.4.ps1'
 if (Test-Path $previousPatchScript) {
     Remove-Item $previousPatchScript -Force -ErrorAction SilentlyContinue
 }

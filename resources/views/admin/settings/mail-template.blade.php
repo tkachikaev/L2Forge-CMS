@@ -77,7 +77,8 @@
             <p>Нажмите переменную, чтобы вставить её в последнее выбранное поле.</p>
             <div class="mail-template-variable-list">
                 @foreach ($template['variables'] as $variable)
-                    <button class="mail-template-variable" type="button" data-template-variable="{{ $variable }}">{{ '{{'.$variable.'}}' }}</button>
+                    @php($placeholder = chr(123).chr(123).$variable.chr(125).chr(125))
+                    <button class="mail-template-variable" type="button" data-template-variable="{{ $variable }}">{{ $placeholder }}</button>
                 @endforeach
             </div>
         </section>
