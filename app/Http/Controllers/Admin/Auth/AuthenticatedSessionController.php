@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\AdminLoginLog;
 use App\Services\AuditLogger;
+use App\Services\SecuritySettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,8 +22,11 @@ class AuthenticatedSessionController extends Controller
         return view('admin.auth.login');
     }
 
-    public function store(Request $request, AuditLogger $auditLogger): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        AuditLogger $auditLogger,
+        SecuritySettings $securitySettings,
+    ): RedirectResponse {
         $validated = $request->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string', 'max:4096'],
@@ -31,8 +35,9 @@ class AuthenticatedSessionController extends Controller
 
         $email = Str::lower(trim($validated['email']));
         $throttleKey = $this->throttleKey($email, $request->ip());
-        $maxAttempts = (int) config('cms.admin.login_max_attempts', 5);
-        $decaySeconds = (int) config('cms.admin.login_decay_seconds', 60);
+        $security = $securitySettings->values();
+        $maxAttempts = $security['login_max_attempts'];
+        $decaySeconds = $security['login_decay_seconds'];
 
         if (RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($throttleKey);

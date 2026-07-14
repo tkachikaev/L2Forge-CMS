@@ -14,6 +14,8 @@ use App\Services\Pages\PageHtmlSanitizer;
 use App\Services\Pages\PageImageStorage;
 use App\Services\Pages\PageNavigation;
 use App\Services\RegistrationSettings;
+use App\Services\SecurityLogMaintenance;
+use App\Services\SecuritySettings;
 use App\Services\Settings\SettingsImageStorage;
 use App\Services\SiteSettings;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -38,13 +40,19 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PageImageStorage::class);
         $this->app->singleton(PageNavigation::class);
         $this->app->singleton(RegistrationSettings::class);
+        $this->app->singleton(SecurityLogMaintenance::class);
+        $this->app->singleton(SecuritySettings::class);
         $this->app->singleton(SettingsImageStorage::class);
         $this->app->singleton(SiteSettings::class);
     }
 
-    public function boot(SiteSettings $siteSettings, MailSettings $mailSettings, LanguageManager $languages): void
-    {
-        $this->configureRateLimiters();
+    public function boot(
+        SiteSettings $siteSettings,
+        MailSettings $mailSettings,
+        LanguageManager $languages,
+        SecuritySettings $securitySettings,
+    ): void {
+        $this->configureRateLimiters($securitySettings);
 
         $defaultLocale = $languages->default();
         $fallbackLocale = $languages->fallback();
@@ -60,17 +68,17 @@ class AppServiceProvider extends ServiceProvider
         }
     }
 
-    private function configureRateLimiters(): void
+    private function configureRateLimiters(SecuritySettings $securitySettings): void
     {
-        RateLimiter::for('admin-login-ip', static function (Request $request): array {
+        RateLimiter::for('admin-login-ip', static function (Request $request) use ($securitySettings): array {
             $ip = $request->ip() ?? 'unknown';
             $key = 'admin-login-ip:'.hash('sha256', $ip);
 
+            $settings = $securitySettings->values();
+
             return [
-                Limit::perMinute(max(1, (int) config('cms.admin.login_ip_max_attempts_per_minute', 10)))
-                    ->by($key.':minute'),
-                Limit::perHour(max(1, (int) config('cms.admin.login_ip_max_attempts_per_hour', 100)))
-                    ->by($key.':hour'),
+                Limit::perMinute($settings['login_ip_per_minute'])->by($key.':minute'),
+                Limit::perHour($settings['login_ip_per_hour'])->by($key.':hour'),
             ];
         });
     }

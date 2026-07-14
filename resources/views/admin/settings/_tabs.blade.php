@@ -17,6 +17,9 @@
     <a @class(['settings-tab', 'active' => request()->routeIs('admin.settings.languages')]) href="{{ route('admin.settings.languages') }}">
         {{ __('Languages') }}
     </a>
+    <a @class(['settings-tab', 'active' => request()->routeIs('admin.settings.security*')]) href="{{ route('admin.settings.security') }}">
+        {{ __('Security') }}
+    </a>
     <a @class(['settings-tab', 'active' => request()->routeIs('admin.settings.system')]) href="{{ route('admin.settings.system') }}">
         {{ __('System') }}
     </a>

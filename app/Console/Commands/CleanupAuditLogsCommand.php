@@ -2,16 +2,13 @@
 
 namespace App\Console\Commands;
 
-use App\Models\AdminLoginLog;
-use App\Models\AuditLog;
 use App\Services\AuditLogger;
-use Carbon\CarbonInterface;
+use App\Services\SecurityLogMaintenance;
+use App\Services\SecuritySettings;
 use Illuminate\Console\Command;
 
 class CleanupAuditLogsCommand extends Command
 {
-    private const BATCH_SIZE = 1000;
-
     protected $signature = 'l2forge:logs-clean
         {--days= : Delete audit entries older than the specified number of days}
         {--admin-login-days= : Delete administrator login entries older than the specified number of days}
@@ -19,14 +16,18 @@ class CleanupAuditLogsCommand extends Command
 
     protected $description = 'Remove expired audit and administrator login log entries';
 
-    public function handle(AuditLogger $auditLogger): int
-    {
+    public function handle(
+        AuditLogger $auditLogger,
+        SecuritySettings $securitySettings,
+        SecurityLogMaintenance $logs,
+    ): int {
+        $settings = $securitySettings->values();
         $auditDays = $this->option('days') !== null
             ? (int) $this->option('days')
-            : (int) config('cms.audit.retention_days', 90);
+            : $settings['audit_retention_days'];
         $adminLoginDays = $this->option('admin-login-days') !== null
             ? (int) $this->option('admin-login-days')
-            : (int) config('cms.admin.login_log_retention_days', 30);
+            : $settings['admin_login_retention_days'];
 
         if (! $this->validRetentionDays($auditDays) || ! $this->validRetentionDays($adminLoginDays)) {
             $this->error(__('The number of days must be between 1 and 3650.'));
@@ -34,41 +35,41 @@ class CleanupAuditLogsCommand extends Command
             return self::FAILURE;
         }
 
-        $auditThreshold = now()->subDays($auditDays);
-        $adminLoginThreshold = now()->subDays($adminLoginDays);
-        $auditCount = AuditLog::query()->where('created_at', '<', $auditThreshold)->count();
-        $adminLoginCount = AdminLoginLog::query()->where('created_at', '<', $adminLoginThreshold)->count();
+        $statistics = $logs->statistics($auditDays, $adminLoginDays);
 
         if ($this->option('dry-run')) {
-            $this->info(__('Audit log').': '.__('Entries to delete: :count.', ['count' => $auditCount]));
+            $this->info(__('Audit log').': '.__('Entries to delete: :count.', [
+                'count' => $statistics['audit_expired'],
+            ]));
             $this->line(__('Audit log').': '.__('Retention threshold: :date.', [
-                'date' => $auditThreshold->format('d.m.Y H:i:s'),
+                'date' => $statistics['audit_threshold']->format('d.m.Y H:i:s'),
             ]));
             $this->info(__('Administrator login log').': '.__('Entries to delete: :count.', [
-                'count' => $adminLoginCount,
+                'count' => $statistics['admin_login_expired'],
             ]));
             $this->line(__('Administrator login log').': '.__('Retention threshold: :date.', [
-                'date' => $adminLoginThreshold->format('d.m.Y H:i:s'),
+                'date' => $statistics['admin_login_threshold']->format('d.m.Y H:i:s'),
             ]));
 
             return self::SUCCESS;
         }
 
-        $deletedAudit = $this->deleteAuditLogs($auditThreshold);
-        $deletedAdminLogin = $this->deleteAdminLoginLogs($adminLoginThreshold);
+        $result = $logs->cleanup($auditDays, $adminLoginDays);
 
-        if ($deletedAudit > 0 || $deletedAdminLogin > 0) {
+        if ($result['audit_deleted'] > 0 || $result['admin_login_deleted'] > 0) {
             $auditLogger->system('system', 'audit.cleaned', details: [
                 'audit_retention_days' => $auditDays,
-                'audit_deleted_count' => $deletedAudit,
+                'audit_deleted_count' => $result['audit_deleted'],
                 'admin_login_retention_days' => $adminLoginDays,
-                'admin_login_deleted_count' => $deletedAdminLogin,
+                'admin_login_deleted_count' => $result['admin_login_deleted'],
             ]);
         }
 
-        $this->info(__('Audit log').': '.__('Deleted entries: :count.', ['count' => $deletedAudit]));
+        $this->info(__('Audit log').': '.__('Deleted entries: :count.', [
+            'count' => $result['audit_deleted'],
+        ]));
         $this->info(__('Administrator login log').': '.__('Deleted entries: :count.', [
-            'count' => $deletedAdminLogin,
+            'count' => $result['admin_login_deleted'],
         ]));
 
         return self::SUCCESS;
@@ -77,49 +78,5 @@ class CleanupAuditLogsCommand extends Command
     private function validRetentionDays(int $days): bool
     {
         return $days >= 1 && $days <= 3650;
-    }
-
-    private function deleteAuditLogs(CarbonInterface $threshold): int
-    {
-        $deleted = 0;
-
-        do {
-            $ids = AuditLog::query()
-                ->where('created_at', '<', $threshold)
-                ->orderBy('id')
-                ->limit(self::BATCH_SIZE)
-                ->pluck('id')
-                ->all();
-
-            if ($ids === []) {
-                break;
-            }
-
-            $deleted += AuditLog::query()->whereIn('id', $ids)->delete();
-        } while (count($ids) === self::BATCH_SIZE);
-
-        return $deleted;
-    }
-
-    private function deleteAdminLoginLogs(CarbonInterface $threshold): int
-    {
-        $deleted = 0;
-
-        do {
-            $ids = AdminLoginLog::query()
-                ->where('created_at', '<', $threshold)
-                ->orderBy('id')
-                ->limit(self::BATCH_SIZE)
-                ->pluck('id')
-                ->all();
-
-            if ($ids === []) {
-                break;
-            }
-
-            $deleted += AdminLoginLog::query()->whereIn('id', $ids)->delete();
-        } while (count($ids) === self::BATCH_SIZE);
-
-        return $deleted;
     }
 }

@@ -66,6 +66,7 @@ class AuditLog extends Model
             'settings.registration_updated' => __('Registration settings changed'),
             'settings.mail_updated' => __('Mail settings changed'),
             'settings.languages_updated' => __('Language settings changed'),
+            'settings.security_updated' => __('Security settings changed'),
             'mail.template_updated' => __('Mail template changed'),
             'mail.template_reset' => __('Mail template restored'),
             'mail.template_test_sent' => __('Mail template test sent'),
@@ -93,6 +94,7 @@ class AuditLog extends Model
             'mail.password_changed_sent' => __('Password change notification sent'),
             'mail.password_changed_failed' => __('Password change notification failed'),
             'audit.cleaned' => __('Audit log cleaned'),
+            'security.logs_cleaned' => __('Expired security logs cleaned'),
             default => str((string) $this->action)->replace(['.', '_', '-'], ' ')->headline()->toString(),
         };
     }

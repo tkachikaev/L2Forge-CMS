@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Http\Requests\Admin\CleanupSecurityLogsRequest;
 use App\Http\Requests\Admin\SaveGameServerSettingsRequest;
 use App\Http\Requests\Admin\SaveGeneralSettingsRequest;
 use App\Http\Requests\Admin\SaveLanguageSettingsRequest;
@@ -10,6 +11,7 @@ use App\Http\Requests\Admin\SaveMailTemplateRequest;
 use App\Http\Requests\Admin\SaveNewsRequest;
 use App\Http\Requests\Admin\SavePageRequest;
 use App\Http\Requests\Admin\SaveRegistrationSettingsRequest;
+use App\Http\Requests\Admin\SaveSecuritySettingsRequest;
 use App\Http\Requests\Admin\SendCustomMailRequest;
 use App\Http\Requests\Admin\SendMailTemplateTestRequest;
 use App\Http\Requests\Admin\SendTestMailRequest;
@@ -47,6 +49,7 @@ class AdminFormRequestAuthorizationTest extends TestCase
     public static function adminRequestClasses(): array
     {
         return [
+            'security log cleanup' => [CleanupSecurityLogsRequest::class],
             'game server settings' => [SaveGameServerSettingsRequest::class],
             'general settings' => [SaveGeneralSettingsRequest::class],
             'language settings' => [SaveLanguageSettingsRequest::class],
@@ -55,6 +58,7 @@ class AdminFormRequestAuthorizationTest extends TestCase
             'news' => [SaveNewsRequest::class],
             'page' => [SavePageRequest::class],
             'registration settings' => [SaveRegistrationSettingsRequest::class],
+            'security settings' => [SaveSecuritySettingsRequest::class],
             'custom mail' => [SendCustomMailRequest::class],
             'mail template test' => [SendMailTemplateTestRequest::class],
             'mail test' => [SendTestMailRequest::class],

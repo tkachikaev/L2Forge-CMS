@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Services\SecuritySettings;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,7 +13,7 @@ class AuditLogController extends Controller
     /** @var array<int, string> */
     private const DEFAULT_CATEGORIES = ['admin', 'user', 'mail', 'system'];
 
-    public function index(Request $request): View
+    public function index(Request $request, SecuritySettings $securitySettings): View
     {
         $category = strtolower(trim((string) $request->query('category')));
 
@@ -41,7 +42,7 @@ class AuditLogController extends Controller
             'counts' => $counts,
             'categories' => $categories,
             'totalCount' => AuditLog::query()->count(),
-            'retentionDays' => (int) config('cms.audit.retention_days', 90),
+            'retentionDays' => $securitySettings->values()['audit_retention_days'],
         ]);
     }
 

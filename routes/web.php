@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\NewsImageController as AdminNewsImageController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PageImageController as AdminPageImageController;
+use App\Http\Controllers\Admin\SecuritySettingsController as AdminSecuritySettingsController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -204,6 +205,16 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
             ->where('template', 'email_verification|password_reset|password_changed')
             ->middleware('throttle:5,1')
             ->name('settings.mail.template.test');
+        Route::get('/settings/security', [AdminSecuritySettingsController::class, 'index'])
+            ->name('settings.security');
+        Route::put('/settings/security', [AdminSecuritySettingsController::class, 'update'])
+            ->name('settings.security.update');
+        Route::post('/settings/security/logs/preview', [AdminSecuritySettingsController::class, 'preview'])
+            ->middleware('throttle:10,1')
+            ->name('settings.security.logs.preview');
+        Route::post('/settings/security/logs/cleanup', [AdminSecuritySettingsController::class, 'cleanup'])
+            ->middleware('throttle:3,1')
+            ->name('settings.security.logs.cleanup');
         Route::get('/settings/system', [AdminSettingsController::class, 'system'])->name('settings.system');
         Route::get('/settings/languages', [AdminSettingsController::class, 'languages'])->name('settings.languages');
         Route::put('/settings/languages', [AdminSettingsController::class, 'updateLanguages'])->name('settings.languages.update');
