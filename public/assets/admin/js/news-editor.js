@@ -266,7 +266,7 @@
         form.addEventListener('submit', (event) => {
             syncSource();
 
-            const isPreview = event.submitter?.matches('[data-news-preview]') ?? false;
+            const isPreview = event.submitter?.matches('[data-news-preview], [data-content-preview]') ?? false;
             const methodOverride = form.querySelector('input[name="_method"]');
 
             if (isPreview && methodOverride) {

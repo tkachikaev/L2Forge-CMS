@@ -150,6 +150,21 @@ $newsUploadDetails = if ($missingNewsUploadPaths.Count -gt 0) {
 }
 Test-ItemStatus 'News upload directories' $newsUploadWritable $newsUploadDetails
 
+$pageUploadPaths = @(
+    'public\uploads\pages\content'
+)
+$pageUploadWritable = Test-DirectoriesWritable -Paths $pageUploadPaths
+$pageUploadFailures = @($script:directoryWriteFailures)
+$missingPageUploadPaths = @($pageUploadPaths | Where-Object { -not (Test-Path -LiteralPath (Get-ProjectPath -RelativePath $_) -PathType Container) })
+$pageUploadDetails = if ($missingPageUploadPaths.Count -gt 0) {
+    'missing: ' + ($missingPageUploadPaths -join ', ') + '; run .\setup.ps1 or .\update.ps1'
+} elseif ($pageUploadWritable) {
+    'content directory is writable'
+} else {
+    'write failed: ' + ($pageUploadFailures -join '; ')
+}
+Test-ItemStatus 'Page upload directory' $pageUploadWritable $pageUploadDetails
+
 $settingsUploadPaths = @(
     'public\uploads\settings\logo',
     'public\uploads\settings\favicon'

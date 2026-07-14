@@ -1,4 +1,4 @@
-﻿param(
+param(
     [switch]$SkipTests
 )
 
@@ -52,6 +52,7 @@ $directories = @(
     'storage\logs',
     'public\uploads\news\covers',
     'public\uploads\news\content',
+    'public\uploads\pages\content',
     'public\uploads\settings\logo',
     'public\uploads\settings\favicon'
 )

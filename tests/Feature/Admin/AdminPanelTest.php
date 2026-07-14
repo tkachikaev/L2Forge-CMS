@@ -26,6 +26,7 @@ class AdminPanelTest extends TestCase
             ->assertSee('Панель управления')
             ->assertSee('Темы')
             ->assertSee('Новости')
+            ->assertSee('Страницы')
             ->assertSee('Журнал действий')
             ->assertSee('assets/admin/css/app.css');
     }

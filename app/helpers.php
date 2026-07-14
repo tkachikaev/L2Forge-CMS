@@ -152,13 +152,55 @@ if (! function_exists('localized_current_url')) {
         }
 
         $segments = array_values(array_filter(explode('/', trim($path, '/')), static fn (string $segment): bool => $segment !== ''));
+        $sourceLocale = null;
         if ($segments !== [] && $languages->isInstalled($segments[0])) {
-            array_shift($segments);
+            $sourceLocale = $languages->normalizeCode(array_shift($segments));
         }
 
         if ($segments !== [] && in_array(strtolower($segments[0]), ['admin', 'language'], true)) {
             $segments = [];
             $query = '';
+        }
+
+        if (($segments[0] ?? null) === 'pages' && isset($segments[1])) {
+            try {
+                $sourceSlug = rawurldecode((string) $segments[1]);
+                if ($sourceLocale !== null) {
+                    $sourceCandidates = array_values(array_unique(array_filter([
+                        $sourceLocale,
+                        $languages->fallback(),
+                        $languages->default(),
+                        'ru',
+                    ])));
+                    $translation = null;
+
+                    foreach ($sourceCandidates as $candidate) {
+                        $translation = \App\Models\PageTranslation::query()
+                            ->where('locale', $candidate)
+                            ->where('slug', $sourceSlug)
+                            ->first();
+
+                        if ($translation !== null) {
+                            break;
+                        }
+                    }
+
+                    $page = $translation?->page;
+                } else {
+                    $page = \App\Models\Page::query()->where('slug', $sourceSlug)->first();
+                }
+
+                if ($page instanceof \App\Models\Page && $page->isLive()) {
+                    $target = route('localized.pages.show', [
+                        'locale' => $locale,
+                        'slug' => $page->slugFor($locale),
+                    ]);
+
+                    return $target.($query !== '' ? '?'.$query : '');
+                }
+            } catch (\Throwable) {
+                // Fall back to the generic localized path during installation or migration.
+            }
         }
 
         $target = '/'.$locale;
@@ -191,5 +233,23 @@ if (! function_exists('news_url')) {
         }
 
         return route('news.show', ['news' => $news]);
+    }
+}
+
+
+if (! function_exists('page_url')) {
+    function page_url(\App\Models\Page $page, ?string $locale = null): string
+    {
+        $routeLocale = request()->route('locale');
+        $locale ??= is_string($routeLocale) ? $routeLocale : null;
+
+        if ($locale !== null && language_manager()->isEnabled($locale)) {
+            return route('localized.pages.show', [
+                'locale' => $locale,
+                'slug' => $page->slugFor($locale),
+            ]);
+        }
+
+        return route('pages.show', ['page' => $page]);
     }
 }

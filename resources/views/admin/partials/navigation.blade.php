@@ -7,6 +7,9 @@
     <a @class(['admin-menu-item', 'active' => request()->routeIs('admin.news.*')]) href="{{ route('admin.news.index') }}">
         <span>{{ __('News') }}</span>
     </a>
+    <a @class(['admin-menu-item', 'active' => request()->routeIs('admin.pages.*')]) href="{{ route('admin.pages.index') }}">
+        <span>{{ __('Pages') }}</span>
+    </a>
 
     <p class="admin-menu-title">{{ __('Appearance') }}</p>
     <a @class(['admin-menu-item', 'active' => request()->routeIs('admin.themes.*')]) href="{{ route('admin.themes.index') }}">

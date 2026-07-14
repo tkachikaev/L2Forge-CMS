@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#090d10">
-    @if (site_description() !== '')
+    @hasSection('meta_description')
+        <meta name="description" content="@yield('meta_description')">
+    @elseif (site_description() !== '')
         <meta name="description" content="{{ site_description() }}">
     @endif
     @if (site_favicon_url())
@@ -20,7 +22,7 @@
 <body>
     @if (! empty($isPreview))
         <aside class="news-preview-banner" role="status">
-            <strong>{{ __('Preview news') }}</strong>
+            <strong>{{ ($previewKind ?? 'news') === 'page' ? __('Preview page') : __('Preview news') }}</strong>
             <span>{{ __('Changes are not saved or published. Close this tab after checking the page.') }}</span>
         </aside>
     @endif

@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\NewsImageController as AdminNewsImageController;
+use App\Http\Controllers\Admin\PageController as AdminPageController;
+use App\Http\Controllers\Admin\PageImageController as AdminPageImageController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\Localization\LocaleController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +37,14 @@ $registerPublicRoutes = static function (bool $localized = false): void {
             ->name($namePrefix.'news.show');
     } else {
         Route::get('/news/{news:slug}', [NewsController::class, 'show'])->name($namePrefix.'news.show');
+    }
+
+    if ($localized) {
+        Route::get('/pages/{slug}', [PageController::class, 'showLocalized'])
+            ->where('slug', '[^/]+')
+            ->name($namePrefix.'pages.show');
+    } else {
+        Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name($namePrefix.'pages.show');
     }
 
     Route::view('/downloads', 'theme::pages.downloads')->name($namePrefix.'downloads');
@@ -117,6 +128,19 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
         Route::get('/news/{news}/edit', [AdminNewsController::class, 'edit'])->name('news.edit');
         Route::put('/news/{news}', [AdminNewsController::class, 'update'])->name('news.update');
         Route::delete('/news/{news}', [AdminNewsController::class, 'destroy'])->name('news.destroy');
+
+        Route::get('/pages', [AdminPageController::class, 'index'])->name('pages.index');
+        Route::get('/pages/create', [AdminPageController::class, 'create'])->name('pages.create');
+        Route::post('/pages/preview', [AdminPageController::class, 'preview'])
+            ->middleware('throttle:20,1')
+            ->name('pages.preview');
+        Route::post('/pages', [AdminPageController::class, 'store'])->name('pages.store');
+        Route::post('/pages/images', [AdminPageImageController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('pages.images.store');
+        Route::get('/pages/{page}/edit', [AdminPageController::class, 'edit'])->name('pages.edit');
+        Route::put('/pages/{page}', [AdminPageController::class, 'update'])->name('pages.update');
+        Route::delete('/pages/{page}', [AdminPageController::class, 'destroy'])->name('pages.destroy');
 
         Route::get('/themes', [AdminThemeController::class, 'index'])->name('themes.index');
         Route::post('/themes/{theme}/activate', [AdminThemeController::class, 'activate'])

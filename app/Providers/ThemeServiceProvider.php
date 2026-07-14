@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\CmsSettings;
 use App\Support\Themes\ThemeManager;
+use App\Services\Pages\PageNavigation;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,9 +21,17 @@ class ThemeServiceProvider extends ServiceProvider
         ));
     }
 
-    public function boot(ThemeManager $themes): void
+    public function boot(ThemeManager $themes, PageNavigation $pages): void
     {
         $themes->boot();
         view()->share('activeTheme', $themes->manifest());
+
+        view()->composer('theme::partials.header', function ($view) use ($pages): void {
+            $view->with('headerPages', $pages->header());
+        });
+
+        view()->composer('theme::partials.footer', function ($view) use ($pages): void {
+            $view->with('footerPages', $pages->footer());
+        });
     }
 }

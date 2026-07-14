@@ -9,6 +9,10 @@
         <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('News') }}</h2><p>{{ __('Create, illustrate and publish website news.') }}</p></div>
         <span class="section-arrow" aria-hidden="true">→</span>
     </a>
+    <a class="admin-section-card available" href="{{ route('admin.pages.index') }}">
+        <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('Pages') }}</h2><p>{{ __('Create multilingual pages, navigation links and SEO descriptions.') }}</p></div>
+        <span class="section-arrow" aria-hidden="true">→</span>
+    </a>
     <a class="admin-section-card available" href="{{ route('admin.themes.index') }}">
         <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('Themes') }}</h2><p>{{ __('Review installed themes and select the public website design.') }}</p></div>
         <span class="section-arrow" aria-hidden="true">→</span>

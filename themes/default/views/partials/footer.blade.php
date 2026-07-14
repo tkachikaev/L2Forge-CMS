@@ -13,7 +13,14 @@
             @endif
         </div>
         <div><h3>{{ __('Navigation') }}</h3><a href="{{ public_route('news.index') }}">{{ __('News') }}</a><a href="{{ public_route('downloads') }}">{{ __('Download client') }}</a><a href="{{ public_route('about') }}">{{ __('Server description') }}</a></div>
-        <div><h3>{{ __('Documents') }}</h3><a href="#">{{ __('Rules') }}</a><a href="#">{{ __('Privacy') }}</a><a href="#">{{ __('Contacts') }}</a></div>
+        <div>
+            <h3>{{ __('Documents') }}</h3>
+            @forelse ($footerPages ?? [] as $menuPage)
+                <a href="{{ page_url($menuPage) }}">{{ $menuPage->titleFor() }}</a>
+            @empty
+                <span class="footer-empty">{{ __('No published pages') }}</span>
+            @endforelse
+        </div>
         <div><h3>{{ __('Community') }}</h3><div class="socials"><a href="#">VK</a><a href="#">Discord</a><a href="#">Telegram</a></div></div>
     </div>
     <div class="container footer-bottom">

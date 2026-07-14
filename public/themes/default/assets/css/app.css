@@ -201,3 +201,8 @@
 @media (max-width: 980px) {
     .language-switcher { margin-inline-start: auto; }
 }
+
+/* CMS content pages */
+.cms-page { max-width: 980px; }
+.cms-page-prose { padding: clamp(24px, 4vw, 48px); }
+.footer-empty { display: block; color: var(--muted); font-size: 13px; }

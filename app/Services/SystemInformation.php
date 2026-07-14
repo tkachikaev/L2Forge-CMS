@@ -133,6 +133,7 @@ final class SystemInformation
             __('Storage directory') => storage_path(),
             __('Bootstrap cache directory') => base_path('bootstrap/cache'),
             __('News image uploads') => public_path('uploads/news'),
+            __('Page image uploads') => public_path('uploads/pages'),
             __('Logo and favicon uploads') => public_path('uploads/settings'),
         ] as $label => $path) {
             $writable = $this->canWriteDirectory($path);

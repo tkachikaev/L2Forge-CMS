@@ -1573,3 +1573,25 @@ a.admin-section-card:hover { border-color: #bfdbfe; box-shadow: 0 8px 24px rgba(
     .custom-mail-form textarea { min-height: 440px; }
     .custom-mail-preview-frame { min-height: 520px; }
 }
+
+/* Content pages */
+.page-row-preview {
+    background: linear-gradient(135deg, #eff6ff, #e0e7ff);
+    color: #3157a4;
+    font-weight: 900;
+    letter-spacing: .08em;
+}
+.input-prefix-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    background: #f8fafc;
+}
+.input-prefix-row:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.input-prefix-row > span { padding: 0 0 0 12px; color: var(--muted); font: 12px/1.2 Consolas, "Cascadia Code", monospace; }
+.input-prefix-row input { border: 0; box-shadow: none !important; }
+.seo-fields { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.seo-fields h3 { margin: 0 0 16px; font-size: 14px; }

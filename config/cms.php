@@ -9,6 +9,10 @@ return [
         'uploads_path' => env('NEWS_UPLOADS_PATH', public_path('uploads')),
     ],
 
+    'pages' => [
+        'uploads_path' => env('PAGE_UPLOADS_PATH', public_path('uploads')),
+    ],
+
     'settings' => [
         'uploads_path' => env('SETTINGS_UPLOADS_PATH', public_path('uploads')),
     ],
