@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Admin;
 use App\Models\AdminLoginLog;
+use App\Models\AuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -57,6 +58,12 @@ class AdminAuthenticationTest extends TestCase
             'successful' => false,
             'failure_reason' => 'invalid_credentials',
         ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'auth.login_failed',
+            'actor_type' => 'admin',
+            'actor_id' => (string) $admin->id,
+            'result' => 'failed',
+        ]);
     }
 
     public function test_inactive_admin_cannot_login(): void
@@ -104,7 +111,55 @@ class AdminAuthenticationTest extends TestCase
         ])->assertSessionHasErrors('email');
 
         $this->assertGuest('admin');
-        $this->assertSame(6, AdminLoginLog::query()->count());
+        $this->assertSame(5, AdminLoginLog::query()->count());
+        $this->assertDatabaseMissing('admin_login_logs', [
+            'failure_reason' => 'throttled',
+        ]);
+    }
+
+    public function test_ip_limit_cannot_be_bypassed_by_changing_email(): void
+    {
+        config()->set('cms.admin.login_ip_max_attempts_per_minute', 3);
+        config()->set('cms.admin.login_ip_max_attempts_per_hour', 30);
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10']);
+
+        foreach (range(1, 3) as $attempt) {
+            $this->post('/admin/login', [
+                'email' => "unknown{$attempt}@example.com",
+                'password' => 'WrongPassword123',
+            ])->assertSessionHasErrors('email');
+        }
+
+        $this->post('/admin/login', [
+            'email' => 'another-address@example.com',
+            'password' => 'WrongPassword123',
+        ])->assertStatus(429);
+
+        $this->assertSame(3, AdminLoginLog::query()->count());
+        $this->assertSame(0, AuditLog::query()
+            ->where('action', 'auth.login_failed')
+            ->count());
+    }
+
+    public function test_hourly_ip_limit_is_also_applied(): void
+    {
+        config()->set('cms.admin.login_ip_max_attempts_per_minute', 100);
+        config()->set('cms.admin.login_ip_max_attempts_per_hour', 3);
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.11']);
+
+        foreach (range(1, 3) as $attempt) {
+            $this->post('/admin/login', [
+                'email' => "hourly{$attempt}@example.com",
+                'password' => 'WrongPassword123',
+            ])->assertSessionHasErrors('email');
+        }
+
+        $this->post('/admin/login', [
+            'email' => 'hourly-limit@example.com',
+            'password' => 'WrongPassword123',
+        ])->assertStatus(429);
+
+        $this->assertSame(3, AdminLoginLog::query()->count());
     }
 
     private function createAdmin(array $attributes = []): Admin

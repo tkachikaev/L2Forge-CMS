@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Admin;
+use App\Models\AdminLoginLog;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -125,15 +126,44 @@ class AuditLogTest extends TestCase
             'result' => 'success',
             'created_at' => now()->subDays(120),
         ]);
+        $oldAdminLogin = AdminLoginLog::query()->create([
+            'email' => 'old@example.com',
+            'ip_address' => '203.0.113.20',
+            'successful' => false,
+            'failure_reason' => 'invalid_credentials',
+        ]);
+        $oldAdminLogin->forceFill([
+            'created_at' => now()->subDays(45),
+            'updated_at' => now()->subDays(45),
+        ])->save();
 
-        $this->artisan('l2forge:logs-clean', ['--days' => 90, '--dry-run' => true])
+        $recentAdminLogin = AdminLoginLog::query()->create([
+            'email' => 'recent@example.com',
+            'ip_address' => '203.0.113.21',
+            'successful' => false,
+            'failure_reason' => 'invalid_credentials',
+        ]);
+        $recentAdminLogin->forceFill([
+            'created_at' => now()->subDays(5),
+            'updated_at' => now()->subDays(5),
+        ])->save();
+
+        $options = [
+            '--days' => 90,
+            '--admin-login-days' => 30,
+        ];
+
+        $this->artisan('l2forge:logs-clean', [...$options, '--dry-run' => true])
             ->assertExitCode(0);
         $this->assertDatabaseHas('audit_logs', ['action' => 'old.event']);
+        $this->assertDatabaseHas('admin_login_logs', ['email' => 'old@example.com']);
 
-        $this->artisan('l2forge:logs-clean', ['--days' => 90])
+        $this->artisan('l2forge:logs-clean', $options)
             ->assertExitCode(0);
 
         $this->assertDatabaseMissing('audit_logs', ['action' => 'old.event']);
+        $this->assertDatabaseMissing('admin_login_logs', ['email' => 'old@example.com']);
+        $this->assertDatabaseHas('admin_login_logs', ['email' => 'recent@example.com']);
         $this->assertDatabaseHas('audit_logs', [
             'category' => 'system',
             'action' => 'audit.cleaned',

@@ -109,7 +109,9 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
 
     Route::middleware('admin.guest')->group(function (): void {
         Route::get('/login', [AdminSessionController::class, 'create'])->name('login');
-        Route::post('/login', [AdminSessionController::class, 'store'])->name('login.store');
+        Route::post('/login', [AdminSessionController::class, 'store'])
+            ->middleware('throttle:admin-login-ip')
+            ->name('login.store');
     });
 
     Route::middleware('admin.auth')->group(function (): void {

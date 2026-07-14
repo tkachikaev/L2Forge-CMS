@@ -16,6 +16,9 @@ use App\Services\Pages\PageNavigation;
 use App\Services\RegistrationSettings;
 use App\Services\Settings\SettingsImageStorage;
 use App\Services\SiteSettings;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -41,6 +44,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(SiteSettings $siteSettings, MailSettings $mailSettings, LanguageManager $languages): void
     {
+        $this->configureRateLimiters();
+
         $defaultLocale = $languages->default();
         $fallbackLocale = $languages->fallback();
         config()->set('app.locale', $defaultLocale);
@@ -53,5 +58,20 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.force_https')) {
             URL::forceScheme('https');
         }
+    }
+
+    private function configureRateLimiters(): void
+    {
+        RateLimiter::for('admin-login-ip', static function (Request $request): array {
+            $ip = $request->ip() ?? 'unknown';
+            $key = 'admin-login-ip:'.hash('sha256', $ip);
+
+            return [
+                Limit::perMinute(max(1, (int) config('cms.admin.login_ip_max_attempts_per_minute', 10)))
+                    ->by($key.':minute'),
+                Limit::perHour(max(1, (int) config('cms.admin.login_ip_max_attempts_per_hour', 100)))
+                    ->by($key.':hour'),
+            ];
+        });
     }
 }

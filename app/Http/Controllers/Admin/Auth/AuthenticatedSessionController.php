@@ -31,20 +31,11 @@ class AuthenticatedSessionController extends Controller
 
         $email = Str::lower(trim($validated['email']));
         $throttleKey = $this->throttleKey($email, $request->ip());
-        $maxAttempts = config('cms.admin.login_max_attempts', 5);
-        $decaySeconds = config('cms.admin.login_decay_seconds', 60);
+        $maxAttempts = (int) config('cms.admin.login_max_attempts', 5);
+        $decaySeconds = (int) config('cms.admin.login_decay_seconds', 60);
 
         if (RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($throttleKey);
-            $this->writeLoginLog($request, $email, false, 'throttled');
-            $auditLogger->failed(
-                category: 'admin',
-                action: 'auth.login_failed',
-                actor: $email,
-                target: __('Control panel'),
-                details: ['reason' => 'throttled'],
-                actorType: 'admin',
-            );
 
             throw ValidationException::withMessages([
                 'email' => __('Too many sign-in attempts. Try again in :seconds seconds.', ['seconds' => $seconds]),
@@ -63,14 +54,16 @@ class AuthenticatedSessionController extends Controller
             $admin = Admin::query()->where('email', $email)->first();
             $reason = $admin && ! $admin->is_active ? 'inactive' : 'invalid_credentials';
             $this->writeLoginLog($request, $email, false, $reason, $admin);
-            $auditLogger->failed(
-                category: 'admin',
-                action: 'auth.login_failed',
-                actor: $admin ?? $email,
-                target: __('Control panel'),
-                details: ['reason' => $reason],
-                actorType: $admin === null ? 'admin' : null,
-            );
+
+            if ($admin !== null) {
+                $auditLogger->failed(
+                    category: 'admin',
+                    action: 'auth.login_failed',
+                    actor: $admin,
+                    target: __('Control panel'),
+                    details: ['reason' => $reason],
+                );
+            }
 
             throw ValidationException::withMessages([
                 'email' => __('Invalid email address or password.'),

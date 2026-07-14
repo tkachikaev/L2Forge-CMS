@@ -14,20 +14,20 @@ if (-not (Test-Path '.env')) {
 }
 
 if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete 0.11.7 patch with file replacement enabled.'
+    throw 'VERSION is missing. Re-extract the complete 0.11.8 patch with file replacement enabled.'
 }
 
 $cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
-if ($cmsVersion -ne '0.11.7') {
+if ($cmsVersion -ne '0.11.8') {
     throw "Unexpected patch version: $cmsVersion"
 }
 
 Write-Host "L2Forge CMS $cmsVersion update"
-Write-Host 'Applying PHPStan type-safety fixes for the quality gate.'
+Write-Host 'Applying administrator login rate limits, log cleanup and daily file rotation.'
 Write-Host ''
 
 Get-ChildItem -LiteralPath $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -ne 'apply-0.11.7.ps1' } |
+    Where-Object { $_.Name -ne 'apply-0.11.8.ps1' } |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
 $obsoleteFiles = @(
