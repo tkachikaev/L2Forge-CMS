@@ -33,12 +33,7 @@ final class SiteSettings
         $defaults = $this->defaults();
         $locale = $this->normalizeLocale($locale);
         $localeDefaults = $this->localizedDefaults($locale);
-        $candidates = array_values(array_unique([
-            $locale,
-            $this->languages->fallback(),
-            $this->languages->default(),
-            'ru',
-        ]));
+        $candidates = $this->languages->fallbackCandidates($locale);
 
         $localizedDefaults = [];
         foreach ($candidates as $candidate) {
@@ -46,10 +41,6 @@ final class SiteSettings
             $localizedDefaults[$this->localizedKey(self::KEY_DESCRIPTION, $candidate)] = null;
             $localizedDefaults[$this->localizedKey(self::KEY_FOOTER_TEXT, $candidate)] = null;
         }
-
-        $legacyName = $this->settings->get(self::KEY_NAME);
-        $legacyDescription = $this->settings->get(self::KEY_DESCRIPTION);
-        $legacyFooterText = $this->settings->get(self::KEY_FOOTER_TEXT);
 
         $values = $this->settings->getMany(array_merge([
             self::KEY_NAME => $defaults['name'],
@@ -73,14 +64,14 @@ final class SiteSettings
                 $values,
                 self::KEY_NAME,
                 $candidates,
-                $this->legacyOrLocalizedDefault($legacyName, $localeDefaults['name']),
+                $localeDefaults['name'],
                 true,
             ),
             'description' => $this->localizedValue(
                 $values,
                 self::KEY_DESCRIPTION,
                 $candidates,
-                $this->legacyOrLocalizedDefault($legacyDescription, $localeDefaults['description']),
+                $localeDefaults['description'],
             ),
             'logo' => $logo,
             'logo_url' => $this->images->publicUrl($logo),
@@ -92,7 +83,7 @@ final class SiteSettings
                 $values,
                 self::KEY_FOOTER_TEXT,
                 $candidates,
-                $this->legacyOrLocalizedDefault($legacyFooterText, $localeDefaults['footer_text']),
+                $localeDefaults['footer_text'],
             ),
             'locale' => $locale,
         ];
@@ -291,11 +282,6 @@ final class SiteSettings
         }
 
         return $required ? $this->nonEmptyString($fallback, $this->defaults()['name']) : $fallback;
-    }
-
-    private function legacyOrLocalizedDefault(?string $legacy, string $localizedDefault): string
-    {
-        return $legacy !== null ? $legacy : $localizedDefault;
     }
 
     private function editableLocalizedValue(

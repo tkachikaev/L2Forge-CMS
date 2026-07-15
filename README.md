@@ -1,4 +1,4 @@
-# L2Forge CMS 0.13.5
+# L2Forge CMS 0.13.6
 
 **L2Forge CMS** — бесплатная open-source CMS для серверов Lineage II.
 
@@ -232,7 +232,7 @@ php artisan l2forge:logs-clean
 
 Технический Laravel-log по умолчанию использует ежедневную ротацию и хранит 14 файлов. Настройки: `LOG_STACK=daily` и `LOG_DAILY_DAYS=14`.
 
-На production очистка базы также зарегистрирована в Laravel Scheduler и выполняется ежедневно при настроенном системном запуске `php artisan schedule:run`.
+На production очистка базы зарегистрирована в Laravel Scheduler. Операционная система должна вызывать `php artisan schedule:run` каждую минуту; однократный ручной запуск постоянное расписание не создаёт.
 
 Документация: `docs/AUDIT_LOG.md` и `docs/development/AUDIT_LOGGING.md`.
 
@@ -246,7 +246,7 @@ http://127.0.0.1:8000/admin/settings/system
 
 Она показывает версию L2Forge CMS из корневого файла `VERSION`, версии PHP, Laravel и Composer, сведения об окружении, базе данных, расширениях PHP и доступности служебных каталогов. Кнопка копирования создаёт безопасный отчёт без ключей, паролей, токенов и абсолютных путей.
 
-Документация: `docs/SYSTEM.md`.
+Документация: `docs/SYSTEM.md` и `docs/PRODUCTION.md`.
 
 ## Новости
 

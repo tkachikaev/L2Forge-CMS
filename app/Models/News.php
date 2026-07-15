@@ -179,16 +179,11 @@ class News extends Model
     /** @return array<int, string> */
     private function translationCandidates(string $locale, bool $withFallback): array
     {
-        $candidates = [$locale];
-
-        if ($withFallback) {
-            $languages = app(LanguageManager::class);
-            $candidates[] = $languages->fallback();
-            $candidates[] = $languages->default();
-            $candidates[] = 'ru';
+        if (! $withFallback) {
+            return [$locale];
         }
 
-        return array_values(array_unique(array_filter($candidates)));
+        return app(LanguageManager::class)->fallbackCandidates($locale);
     }
 
     private function translationsTableExists(): bool

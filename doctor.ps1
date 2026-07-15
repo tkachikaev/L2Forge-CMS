@@ -37,6 +37,64 @@ function Test-ItemStatus {
     }
 }
 
+function Write-WarningStatus {
+    param(
+        [string]$Label,
+        [string]$Details
+    )
+
+    Write-Host "[WARN] $Label - $Details" -ForegroundColor Yellow
+}
+
+function Get-EnvValue {
+    param(
+        [string]$Path,
+        [string]$Name,
+        [string]$Default = ''
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $Default
+    }
+
+    $escapedName = [regex]::Escape($Name)
+    $line = Get-Content -LiteralPath $Path |
+        Where-Object { $_ -match "^\s*$escapedName\s*=" } |
+        Select-Object -First 1
+
+    if ($null -eq $line) {
+        return $Default
+    }
+
+    $value = (($line -split '=', 2)[1]).Trim()
+    if ($value.Length -ge 2) {
+        $first = $value[0]
+        $last = $value[$value.Length - 1]
+        if (($first -eq [char]34 -and $last -eq [char]34) -or ($first -eq [char]39 -and $last -eq [char]39)) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+    }
+
+    return $value
+}
+
+function ConvertTo-EnvBoolean {
+    param([string]$Value)
+
+    return @('1', 'true', 'yes', 'on') -contains $Value.Trim().ToLowerInvariant()
+}
+
+function Test-LocalAppUrl {
+    param([string]$Url)
+
+    try {
+        $uri = [Uri]$Url
+        return @('localhost', '127.0.0.1', '::1') -contains $uri.Host.ToLowerInvariant()
+    } catch {
+        return $false
+    }
+}
+
 function Remove-WriteTestFile {
     param([string]$Path)
 
@@ -101,6 +159,16 @@ Write-Host ''
 
 Test-ItemStatus 'VERSION file' $versionFormatOk $(if (-not $versionFilePresent) { 'missing' } elseif (-not $versionFormatOk) { "invalid value: $cmsVersion" } else { $cmsVersion })
 
+$envPath = Get-ProjectPath -RelativePath '.env'
+$dbConnection = (Get-EnvValue -Path $envPath -Name 'DB_CONNECTION' -Default 'sqlite').ToLowerInvariant()
+$gameAdapter = (Get-EnvValue -Path $envPath -Name 'GAME_ADAPTER' -Default 'mock').ToLowerInvariant()
+$appEnvironment = (Get-EnvValue -Path $envPath -Name 'APP_ENV' -Default 'production').ToLowerInvariant()
+$appDebug = ConvertTo-EnvBoolean (Get-EnvValue -Path $envPath -Name 'APP_DEBUG' -Default 'false')
+$appUrl = Get-EnvValue -Path $envPath -Name 'APP_URL' -Default 'http://127.0.0.1:8000'
+$appForceHttps = ConvertTo-EnvBoolean (Get-EnvValue -Path $envPath -Name 'APP_FORCE_HTTPS' -Default 'false')
+$sessionSecureCookie = ConvertTo-EnvBoolean (Get-EnvValue -Path $envPath -Name 'SESSION_SECURE_COOKIE' -Default 'false')
+$logLevel = (Get-EnvValue -Path $envPath -Name 'LOG_LEVEL' -Default 'debug').ToLowerInvariant()
+
 $phpCommand = Get-Command php -ErrorAction SilentlyContinue
 Test-ItemStatus 'PHP command' ($null -ne $phpCommand) $(if ($phpCommand) { $phpCommand.Source } else { 'not found in PATH' })
 
@@ -110,7 +178,21 @@ if ($phpCommand) {
     try { $versionOk = ([Version]$phpVersionText -ge [Version]'8.3.0') } catch {}
     Test-ItemStatus 'PHP version' $versionOk $phpVersionText
 
-    $requiredExtensions = @('ctype', 'dom', 'fileinfo', 'mbstring', 'openssl', 'pdo', 'pdo_sqlite', 'pdo_mysql', 'tokenizer', 'xml')
+    $requiredExtensions = @('ctype', 'dom', 'fileinfo', 'mbstring', 'openssl', 'pdo', 'tokenizer', 'xml')
+
+    if ($dbConnection -eq 'sqlite') {
+        $requiredExtensions += 'pdo_sqlite'
+    } elseif ($dbConnection -eq 'mysql') {
+        $requiredExtensions += 'pdo_mysql'
+    } else {
+        Write-WarningStatus 'CMS database driver' "DB_CONNECTION=$dbConnection is not covered by the built-in SQLite/MySQL checks"
+    }
+
+    if ($gameAdapter -eq 'mobius') {
+        $requiredExtensions += 'pdo_mysql'
+    }
+
+    $requiredExtensions = @($requiredExtensions | Select-Object -Unique)
     $loadedExtensions = & php -r "echo implode(PHP_EOL, get_loaded_extensions());"
     foreach ($extension in $requiredExtensions) {
         Test-ItemStatus "PHP extension $extension" ($loadedExtensions -contains $extension) $(if ($loadedExtensions -contains $extension) { 'loaded' } else { 'missing' })
@@ -120,9 +202,7 @@ if ($phpCommand) {
 $composerCommand = Get-Command composer -ErrorAction SilentlyContinue
 Test-ItemStatus 'Composer command' ($null -ne $composerCommand) $(if ($composerCommand) { $composerCommand.Source } else { 'not found in PATH' })
 
-$envPath = Get-ProjectPath -RelativePath '.env'
 $autoloadPath = Get-ProjectPath -RelativePath 'vendor\autoload.php'
-$databasePath = Get-ProjectPath -RelativePath 'database\database.sqlite'
 $bootstrapCachePath = Get-ProjectPath -RelativePath 'bootstrap\cache'
 $storageViewsPath = Get-ProjectPath -RelativePath 'storage\framework\views'
 $reservedAdminPath = Get-ProjectPath -RelativePath 'public\admin'
@@ -138,8 +218,47 @@ if (Test-Path -LiteralPath $envPath -PathType Leaf) {
     }
 }
 Test-ItemStatus 'APP_KEY' $appKeyConfigured $(if ($appKeyConfigured) { 'configured; keep a secure backup because encrypted 2FA secrets depend on it' } else { 'missing; run php artisan key:generate before enabling 2FA' })
+
+if (Test-Path -LiteralPath $envPath -PathType Leaf) {
+    if ($appEnvironment -ne 'production') {
+        Write-WarningStatus 'APP_ENV' "$appEnvironment; use production on a public website"
+    }
+
+    $isLocalUrl = Test-LocalAppUrl -Url $appUrl
+    $appUri = $null
+    try { $appUri = [Uri]$appUrl } catch { Write-WarningStatus 'APP_URL' "invalid URL: $appUrl" }
+
+    if ($null -ne $appUri -and $appUri.Scheme -eq 'http' -and -not $isLocalUrl) {
+        Write-WarningStatus 'APP_URL' 'public HTTP URL; configure HTTPS before production use'
+    }
+
+    if ($appDebug) {
+        Write-WarningStatus 'APP_DEBUG' 'true; disable it before production use'
+    }
+
+    if ($appEnvironment -eq 'production') {
+        if (-not $appForceHttps) { Write-WarningStatus 'APP_FORCE_HTTPS' 'false in production; HTTPS is not forced by the CMS' }
+        if ($logLevel -eq 'debug') { Write-WarningStatus 'LOG_LEVEL' 'debug in production may create excessive diagnostic output' }
+    }
+
+    if ($null -ne $appUri -and $appUri.Scheme -eq 'https' -and -not $sessionSecureCookie) {
+        Write-WarningStatus 'SESSION_SECURE_COOKIE' 'false while APP_URL uses HTTPS'
+    }
+}
+
 Test-ItemStatus 'Composer dependencies' (Test-Path -LiteralPath $autoloadPath -PathType Leaf) $(if (Test-Path -LiteralPath $autoloadPath -PathType Leaf) { 'installed' } else { 'run .\setup.ps1' })
-Test-ItemStatus 'SQLite database' (Test-Path -LiteralPath $databasePath -PathType Leaf) $(if (Test-Path -LiteralPath $databasePath -PathType Leaf) { 'present' } else { 'missing' })
+if ($dbConnection -eq 'sqlite') {
+    $configuredDatabasePath = Get-EnvValue -Path $envPath -Name 'DB_DATABASE' -Default 'database/database.sqlite'
+    $databasePath = if ([System.IO.Path]::IsPathRooted($configuredDatabasePath)) {
+        [System.IO.Path]::GetFullPath($configuredDatabasePath)
+    } else {
+        Get-ProjectPath -RelativePath $configuredDatabasePath
+    }
+
+    Test-ItemStatus 'SQLite database' (Test-Path -LiteralPath $databasePath -PathType Leaf) $(if (Test-Path -LiteralPath $databasePath -PathType Leaf) { 'present' } else { "missing: $configuredDatabasePath" })
+} else {
+    Write-Host "[SKIP] SQLite database - DB_CONNECTION=$dbConnection" -ForegroundColor DarkGray
+}
 Test-ItemStatus 'Bootstrap cache directory' (Test-Path -LiteralPath $bootstrapCachePath -PathType Container) $(if (Test-Path -LiteralPath $bootstrapCachePath -PathType Container) { 'present' } else { 'missing' })
 Test-ItemStatus 'Storage views directory' (Test-Path -LiteralPath $storageViewsPath -PathType Container) $(if (Test-Path -LiteralPath $storageViewsPath -PathType Container) { 'present' } else { 'missing' })
 Test-ItemStatus 'Reserved public/admin path' (-not (Test-Path -LiteralPath $reservedAdminPath)) $(if (Test-Path -LiteralPath $reservedAdminPath) { 'conflicts with the /admin Laravel route; move assets to public\assets\admin' } else { 'not present' })

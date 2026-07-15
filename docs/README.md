@@ -16,6 +16,7 @@
 - [Темы](THEMES.md)
 - [Журнал действий](AUDIT_LOG.md)
 - [Системная информация](SYSTEM.md)
+- [Production-развёртывание](PRODUCTION.md)
 - [Безопасность](SECURITY.md)
 
 ## Для разработчиков

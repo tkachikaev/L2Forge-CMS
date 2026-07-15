@@ -120,12 +120,7 @@ final class LocalizedContentResolver
     /** @return array<int, string> */
     private function lookupLocales(string $locale): array
     {
-        return array_values(array_unique(array_filter([
-            $locale,
-            $this->languages->fallback(),
-            $this->languages->default(),
-            'ru',
-        ])));
+        return $this->languages->fallbackCandidates($locale);
     }
 
     /** @param array<string, string> $alternateUrls */

@@ -119,13 +119,9 @@ class GameServer extends Model
             return trim((string) $this->name);
         }
 
-        $candidates = [$locale];
-        if ($withFallback) {
-            $candidates[] = $languages->fallback();
-            $candidates[] = $languages->default();
-            $candidates[] = 'ru';
-        }
-        $candidates = array_values(array_unique($candidates));
+        $candidates = $withFallback
+            ? $languages->fallbackCandidates($locale)
+            : [$locale];
 
         $translations = $this->relationLoaded('translations')
             ? $this->getRelation('translations')

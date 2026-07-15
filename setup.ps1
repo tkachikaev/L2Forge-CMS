@@ -33,6 +33,38 @@ function Ensure-Directory {
     New-Item -Path $Path -ItemType Directory -Force | Out-Null
 }
 
+function Get-EnvValue {
+    param(
+        [string]$Path,
+        [string]$Name,
+        [string]$Default = ''
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $Default
+    }
+
+    $escapedName = [regex]::Escape($Name)
+    $line = Get-Content -LiteralPath $Path |
+        Where-Object { $_ -match "^\s*$escapedName\s*=" } |
+        Select-Object -First 1
+
+    if ($null -eq $line) {
+        return $Default
+    }
+
+    $value = (($line -split '=', 2)[1]).Trim()
+    if ($value.Length -ge 2) {
+        $first = $value[0]
+        $last = $value[$value.Length - 1]
+        if (($first -eq [char]34 -and $last -eq [char]34) -or ($first -eq [char]39 -and $last -eq [char]39)) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+    }
+
+    return $value
+}
+
 if (-not (Test-Path 'VERSION')) {
     throw 'VERSION is missing. Re-extract the complete L2Forge CMS release.'
 }
@@ -73,6 +105,10 @@ if ($phpVersion -lt [Version]'8.3.0') {
     throw "PHP 8.3 or newer is required. Installed: $phpVersionText"
 }
 
+$environmentSource = if (Test-Path '.env') { '.env' } else { '.env.example' }
+$dbConnection = (Get-EnvValue -Path $environmentSource -Name 'DB_CONNECTION' -Default 'sqlite').ToLowerInvariant()
+$gameAdapter = (Get-EnvValue -Path $environmentSource -Name 'GAME_ADAPTER' -Default 'mock').ToLowerInvariant()
+
 $requiredExtensions = @(
     'ctype',
     'dom',
@@ -80,12 +116,23 @@ $requiredExtensions = @(
     'mbstring',
     'openssl',
     'pdo',
-    'pdo_sqlite',
-    'pdo_mysql',
     'tokenizer',
     'xml'
 )
 
+if ($dbConnection -eq 'sqlite') {
+    $requiredExtensions += 'pdo_sqlite'
+} elseif ($dbConnection -eq 'mysql') {
+    $requiredExtensions += 'pdo_mysql'
+} else {
+    throw "Unsupported DB_CONNECTION for setup.ps1: $dbConnection. Use sqlite or mysql."
+}
+
+if ($gameAdapter -eq 'mobius') {
+    $requiredExtensions += 'pdo_mysql'
+}
+
+$requiredExtensions = @($requiredExtensions | Select-Object -Unique)
 $loadedExtensions = & php -r "echo implode(PHP_EOL, get_loaded_extensions());"
 if ($LASTEXITCODE -ne 0) {
     throw 'Unable to read loaded PHP extensions.'
@@ -143,10 +190,20 @@ if ($fixedEnvContent -ne $envContent) {
     Write-Host 'Updated legacy values in .env.'
 }
 
-$sqlitePath = 'database\database.sqlite'
-if (-not (Test-Path $sqlitePath)) {
-    New-Item -Path $sqlitePath -ItemType File -Force | Out-Null
-    Write-Host 'Created SQLite database file.'
+$dbConnection = (Get-EnvValue -Path '.env' -Name 'DB_CONNECTION' -Default 'sqlite').ToLowerInvariant()
+if ($dbConnection -eq 'sqlite') {
+    $configuredDatabasePath = Get-EnvValue -Path '.env' -Name 'DB_DATABASE' -Default 'database/database.sqlite'
+    $sqlitePath = if ([System.IO.Path]::IsPathRooted($configuredDatabasePath)) {
+        [System.IO.Path]::GetFullPath($configuredDatabasePath)
+    } else {
+        [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot $configuredDatabasePath))
+    }
+
+    Ensure-Directory ([System.IO.Path]::GetDirectoryName($sqlitePath))
+    if (-not (Test-Path -LiteralPath $sqlitePath -PathType Leaf)) {
+        New-Item -LiteralPath $sqlitePath -ItemType File -Force | Out-Null
+        Write-Host "Created SQLite database file: $configuredDatabasePath"
+    }
 }
 
 Invoke-Checked 'Composer validation' { composer validate --no-check-publish }

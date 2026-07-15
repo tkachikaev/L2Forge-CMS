@@ -332,13 +332,7 @@ final class MailTemplateSettings
     private function localizedDefaults(array $base, string $locale): array
     {
         $locales = is_array($base['locales'] ?? null) ? $base['locales'] : [];
-        $candidates = array_values(array_unique([
-            $locale,
-            $this->languages->fallback(),
-            $this->languages->default(),
-            'en',
-            'ru',
-        ]));
+        $candidates = $this->languages->fallbackCandidates($locale);
 
         foreach ($candidates as $candidate) {
             if (isset($locales[$candidate]) && is_array($locales[$candidate])) {

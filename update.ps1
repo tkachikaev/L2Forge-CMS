@@ -67,10 +67,15 @@ $updatedEnvContent = [regex]::Replace(
     '(?m)^APP_NAME="?L2CMS"?$',
     'APP_NAME="L2Forge CMS"'
 )
+$updatedEnvContent = [regex]::Replace(
+    $updatedEnvContent,
+    '(?m)^QUEUE_CONNECTION=database[ \t]*\r?$',
+    'QUEUE_CONNECTION=sync'
+)
 
 if ($updatedEnvContent -ne $envContent) {
     Write-Utf8NoBom -Path '.env' -Content $updatedEnvContent
-    Write-Host 'Updated APP_NAME to L2Forge CMS.'
+    Write-Host 'Updated legacy default values in .env.'
 }
 
 if (Test-Path 'vendor\autoload.php') {

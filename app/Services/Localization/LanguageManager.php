@@ -149,6 +149,22 @@ final class LanguageManager
         return $default;
     }
 
+    /** @return array<int, string> */
+    public function fallbackCandidates(?string $locale = null): array
+    {
+        $candidates = [];
+        $locale = $this->normalizeCode((string) ($locale ?? app()->getLocale()));
+
+        if ($locale !== null && $this->isEnabled($locale)) {
+            $candidates[] = $locale;
+        }
+
+        $candidates[] = $this->fallback();
+        $candidates[] = $this->default();
+
+        return array_values(array_unique($candidates));
+    }
+
     public function isInstalled(string $locale): bool
     {
         $locale = $this->normalizeCode($locale);
