@@ -269,9 +269,6 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
             ->name('settings.security');
         Route::put('/settings/security', [AdminSecuritySettingsController::class, 'update'])
             ->name('settings.security.update');
-        Route::post('/settings/security/logs/preview', [AdminSecuritySettingsController::class, 'preview'])
-            ->middleware('throttle:10,1')
-            ->name('settings.security.logs.preview');
         Route::post('/settings/security/logs/cleanup', [AdminSecuritySettingsController::class, 'cleanup'])
             ->middleware('throttle:3,1')
             ->name('settings.security.logs.cleanup');

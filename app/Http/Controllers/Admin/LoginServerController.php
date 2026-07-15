@@ -36,7 +36,8 @@ class LoginServerController extends Controller
             $report = $tester->testLoginValues($validated);
             $this->auditConnectionTest($report, (string) $validated['name']);
 
-            return back()
+            return redirect()
+                ->to(route('admin.settings.login-server').'#login-server-create')
                 ->withInput($request->except('database_password'))
                 ->with('database_connection_report', $report + ['context' => 'login-create']);
         }
@@ -70,7 +71,8 @@ class LoginServerController extends Controller
             $report = $tester->testLoginValues($validated);
             $this->auditConnectionTest($report, $loginServer->name, $loginServer);
 
-            return back()
+            return redirect()
+                ->to(route('admin.settings.login-server').'#login-server-'.$loginServer->id)
                 ->withInput($request->except('database_password'))
                 ->with('database_connection_report', $report + ['context' => 'login-'.$loginServer->id]);
         }

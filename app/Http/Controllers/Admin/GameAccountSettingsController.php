@@ -28,8 +28,6 @@ class GameAccountSettingsController extends Controller
             'max_accounts' => $request->integer('max_accounts'),
             'login_min' => $request->integer('login_min'),
             'login_max' => $request->integer('login_max'),
-            'login_lower' => $request->boolean('login_lower'),
-            'login_upper' => $request->boolean('login_upper'),
             'login_digit' => $request->boolean('login_digit'),
             'password_min' => $request->integer('password_min'),
             'password_max' => $request->integer('password_max'),

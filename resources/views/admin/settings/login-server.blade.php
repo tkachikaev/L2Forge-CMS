@@ -1,11 +1,9 @@
 @extends('admin.layouts.panel')
 
-@section('title', __('Settings'))
+@section('title', __('LoginServers'))
 @section('description', __('LoginServer database connections used by game worlds and game accounts.'))
 
 @section('content')
-@include('admin.settings._tabs')
-
 @php
     $createContext = old('form_context') === 'login-create';
 @endphp
@@ -16,7 +14,7 @@
         <strong>{{ $servers->count() }}</strong>
     </div>
 
-    <details class="settings-add-server" @if($createContext) open @endif>
+    <details id="login-server-create" class="settings-add-server server-test-target" @if($createContext || ($report['context'] ?? null) === 'login-create') open @endif>
         <summary class="button button-primary">+ {{ __('Add LoginServer') }}</summary>
         <form method="POST" action="{{ route('admin.settings.login-server.store') }}">
             @csrf
@@ -80,7 +78,7 @@
                 $hasOldInput = old('form_context') === $context;
                 $selectedDriver = $hasOldInput ? old('driver', $server->driver) : $server->driver;
             @endphp
-            <article class="form-card settings-server-card">
+            <article id="login-server-{{ $server->id }}" class="form-card settings-server-card server-test-target">
                 <div class="settings-server-card-header">
                     <div>
                         <span class="settings-server-number">{{ __('LoginServer :number', ['number' => $loop->iteration]) }}</span>

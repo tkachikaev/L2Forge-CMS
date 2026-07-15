@@ -1,11 +1,9 @@
 @extends('admin.layouts.panel')
 
-@section('title', __('Settings'))
+@section('title', __('Main settings'))
 @section('description', __('General settings for the public website.'))
 
 @section('content')
-@include('admin.settings._tabs')
-
 <form class="settings-form" method="POST" action="{{ route('admin.settings.general.update') }}" enctype="multipart/form-data">
     @csrf
     @method('PUT')
@@ -29,8 +27,8 @@
                             data-locale-tab="{{ $code }}"
                             aria-selected="{{ $code === $defaultLocale ? 'true' : 'false' }}"
                         >
-                            {{ $language['native_name'] }}
-                            @if ($code === $defaultLocale)<small>{{ __('Default locale marker') }}</small>@endif
+                            <span class="translation-tab-label">{{ $language['native_name'] }}</span>
+                            @if ($code === $defaultLocale)<span class="translation-tab-default">{{ __('Default locale marker') }}</span>@endif
                         </button>
                     @endforeach
                 </div>

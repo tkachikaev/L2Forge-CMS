@@ -1,8 +1,7 @@
 @extends('admin.layouts.panel')
-@section('title', __('Settings'))
+@section('title', __('Mail'))
 @section('description', __('SMTP for email verification and password recovery.'))
 @section('content')
-@include('admin.settings._tabs')
 @include('admin.settings._mail_tabs')
 
 <div class="mail-settings-status">

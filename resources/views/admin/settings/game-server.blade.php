@@ -1,11 +1,9 @@
 @extends('admin.layouts.panel')
 
-@section('title', __('Settings'))
+@section('title', __('Game servers'))
 @section('description', __('Game worlds displayed on the public website.'))
 
 @section('content')
-@include('admin.settings._tabs')
-
 @php
     $createHasOldInput = old('form_context') === 'create';
     $createValues = [

@@ -32,7 +32,7 @@
                 @include('admin.partials.language-switcher')
                 <details class="admin-account-menu">
                     <summary>
-                        <span class="admin-account-avatar">{{ mb_strtoupper(mb_substr(auth('admin')->user()->name, 0, 1)) }}</span>
+                        <span class="admin-account-avatar" aria-hidden="true"><span>{{ mb_strtoupper(mb_substr(auth('admin')->user()->name, 0, 1)) }}</span></span>
                         <span class="admin-account-copy">
                             <strong>{{ auth('admin')->user()->name }}</strong>
                             <small>{{ auth('admin')->user()->email }}</small>

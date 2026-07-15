@@ -8,7 +8,7 @@
         : ($server['connection_configured'] ? $server['use_login_server_connection'] : true);
 @endphp
 
-<details class="settings-connection-placeholder server-connection-section" @if($hasConnectionOldInput || ($report['context'] ?? null) === $context) open @endif>
+<details id="game-server-{{ $server['id'] }}-connection" class="settings-connection-placeholder server-connection-section server-test-target" @if($hasConnectionOldInput || ($report['context'] ?? null) === $context) open @endif>
     <summary>
         <span>
             <strong>{{ __('GameServer database connection') }}</strong>

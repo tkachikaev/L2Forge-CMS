@@ -26,14 +26,6 @@ final class GameAccountCredentialPolicy
             $errors[] = __('The game login may contain only Latin letters and digits.');
         }
 
-        if ($values['login_lower'] && ! preg_match('/[a-z]/', $login)) {
-            $errors[] = __('The game login must contain a lowercase letter.');
-        }
-
-        if ($values['login_upper'] && ! preg_match('/[A-Z]/', $login)) {
-            $errors[] = __('The game login must contain an uppercase letter.');
-        }
-
         if ($values['login_digit'] && ! preg_match('/[0-9]/', $login)) {
             $errors[] = __('The game login must contain a digit.');
         }

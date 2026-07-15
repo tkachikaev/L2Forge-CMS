@@ -1,8 +1,7 @@
 @extends('admin.layouts.panel')
-@section('title', __('Settings'))
+@section('title', __('System information'))
 @section('description', __('Versions, environment and L2Forge CMS component status.'))
 @section('content')
-@include('admin.settings._tabs')
 <section class="system-overview"><div><span class="system-eyebrow">L2Forge CMS</span><strong>{{ __('Version :version', ['version'=>$system['cms']['version']]) }}</strong><p>{!! __('The version is read from the <code>VERSION</code> file in the project root.') !!}</p></div><div class="system-overview-actions"><a class="button button-secondary" href="{{ route('admin.settings.system') }}">{{ __('Refresh information') }}</a><button class="button button-primary" type="button" data-copy-system-report data-copy-success="{{ __('Report copied.') }}" data-copy-error="{{ __('Could not copy the report.') }}">{{ __('Copy report') }}</button></div></section>
 <div class="system-information-grid">
     <section class="form-card system-card"><h2>{{ __('Software') }}</h2><dl class="system-definition-list"><div><dt>PHP</dt><dd>{{ $system['software']['php'] }}</dd></div><div><dt>Laravel</dt><dd>{{ $system['software']['laravel'] }}</dd></div><div><dt>Composer</dt><dd>{{ $system['software']['composer'] }}</dd></div><div><dt>{{ __('Operating system') }}</dt><dd>{{ $system['software']['os'] }}</dd></div><div><dt>{{ __('PHP architecture') }}</dt><dd>{{ $system['software']['architecture'] }}</dd></div><div><dt>PHP SAPI</dt><dd><code>{{ $system['software']['sapi'] }}</code></dd></div></dl></section>

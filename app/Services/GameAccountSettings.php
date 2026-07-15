@@ -12,10 +12,6 @@ final class GameAccountSettings
 
     public const KEY_LOGIN_MAX = 'game_accounts.login_max_length';
 
-    public const KEY_LOGIN_LOWER = 'game_accounts.login_require_lowercase';
-
-    public const KEY_LOGIN_UPPER = 'game_accounts.login_require_uppercase';
-
     public const KEY_LOGIN_DIGIT = 'game_accounts.login_require_digit';
 
     public const KEY_PASSWORD_MIN = 'game_accounts.password_min_length';
@@ -36,8 +32,6 @@ final class GameAccountSettings
      *     max_accounts: int,
      *     login_min: int,
      *     login_max: int,
-     *     login_lower: bool,
-     *     login_upper: bool,
      *     login_digit: bool,
      *     password_min: int,
      *     password_max: int,
@@ -50,32 +44,28 @@ final class GameAccountSettings
     {
         $values = $this->settings->getMany([
             self::KEY_ENABLED => '1',
-            self::KEY_LIMIT => '10',
+            self::KEY_LIMIT => '1',
             self::KEY_LOGIN_MIN => '4',
             self::KEY_LOGIN_MAX => '16',
-            self::KEY_LOGIN_LOWER => '0',
-            self::KEY_LOGIN_UPPER => '0',
             self::KEY_LOGIN_DIGIT => '0',
-            self::KEY_PASSWORD_MIN => '8',
+            self::KEY_PASSWORD_MIN => '6',
             self::KEY_PASSWORD_MAX => '32',
-            self::KEY_PASSWORD_LOWER => '1',
-            self::KEY_PASSWORD_UPPER => '1',
-            self::KEY_PASSWORD_DIGIT => '1',
+            self::KEY_PASSWORD_LOWER => '0',
+            self::KEY_PASSWORD_UPPER => '0',
+            self::KEY_PASSWORD_DIGIT => '0',
         ]);
 
         return [
             'enabled' => $this->toBool($values[self::KEY_ENABLED] ?? '1'),
-            'max_accounts' => $this->between($values[self::KEY_LIMIT] ?? '10', 1, 50, 10),
+            'max_accounts' => $this->between($values[self::KEY_LIMIT] ?? '1', 1, 50, 1),
             'login_min' => $this->between($values[self::KEY_LOGIN_MIN] ?? '4', 1, 45, 4),
             'login_max' => $this->between($values[self::KEY_LOGIN_MAX] ?? '16', 1, 45, 16),
-            'login_lower' => $this->toBool($values[self::KEY_LOGIN_LOWER] ?? '0'),
-            'login_upper' => $this->toBool($values[self::KEY_LOGIN_UPPER] ?? '0'),
             'login_digit' => $this->toBool($values[self::KEY_LOGIN_DIGIT] ?? '0'),
-            'password_min' => $this->between($values[self::KEY_PASSWORD_MIN] ?? '8', 1, 45, 8),
+            'password_min' => $this->between($values[self::KEY_PASSWORD_MIN] ?? '6', 1, 45, 6),
             'password_max' => $this->between($values[self::KEY_PASSWORD_MAX] ?? '32', 1, 45, 32),
-            'password_lower' => $this->toBool($values[self::KEY_PASSWORD_LOWER] ?? '1'),
-            'password_upper' => $this->toBool($values[self::KEY_PASSWORD_UPPER] ?? '1'),
-            'password_digit' => $this->toBool($values[self::KEY_PASSWORD_DIGIT] ?? '1'),
+            'password_lower' => $this->toBool($values[self::KEY_PASSWORD_LOWER] ?? '0'),
+            'password_upper' => $this->toBool($values[self::KEY_PASSWORD_UPPER] ?? '0'),
+            'password_digit' => $this->toBool($values[self::KEY_PASSWORD_DIGIT] ?? '0'),
         ];
     }
 
@@ -87,8 +77,6 @@ final class GameAccountSettings
             self::KEY_LIMIT => (string) $values['max_accounts'],
             self::KEY_LOGIN_MIN => (string) $values['login_min'],
             self::KEY_LOGIN_MAX => (string) $values['login_max'],
-            self::KEY_LOGIN_LOWER => ! empty($values['login_lower']) ? '1' : '0',
-            self::KEY_LOGIN_UPPER => ! empty($values['login_upper']) ? '1' : '0',
             self::KEY_LOGIN_DIGIT => ! empty($values['login_digit']) ? '1' : '0',
             self::KEY_PASSWORD_MIN => (string) $values['password_min'],
             self::KEY_PASSWORD_MAX => (string) $values['password_max'],

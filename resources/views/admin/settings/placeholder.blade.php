@@ -2,7 +2,6 @@
 @section('title', __('Settings'))
 @section('description', $description)
 @section('content')
-@include('admin.settings._tabs')
 <div class="placeholder-box">
     <span>{{ __('Section prepared') }}</span>
     <h2>{{ $title }}</h2>

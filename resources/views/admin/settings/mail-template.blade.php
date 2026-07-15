@@ -4,7 +4,6 @@
 @section('description', __('Ready-to-use system email templates with safe text editing.'))
 
 @section('content')
-@include('admin.settings._tabs')
 @include('admin.settings._mail_tabs')
 
 <nav class="translation-tabs standalone" aria-label="{{ __('Template language') }}">

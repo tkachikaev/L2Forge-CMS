@@ -12,8 +12,6 @@ class SaveGameAccountSettingsRequest extends AdminFormRequest
             'max_accounts' => ['required', 'integer', 'between:1,50'],
             'login_min' => ['required', 'integer', 'between:1,45'],
             'login_max' => ['required', 'integer', 'between:1,45', 'gte:login_min'],
-            'login_lower' => ['nullable', 'boolean'],
-            'login_upper' => ['nullable', 'boolean'],
             'login_digit' => ['nullable', 'boolean'],
             'password_min' => ['required', 'integer', 'between:1,45'],
             'password_max' => ['required', 'integer', 'between:1,45', 'gte:password_min'],

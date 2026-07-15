@@ -7,7 +7,7 @@ The administrative interface is part of L2Forge Core and is never rendered throu
 - `/admin` — the main administration page and the single panel entry point.
 - `/admin/news` — news management inside the same administration shell.
 - `/admin/themes` — theme management inside the same administration shell.
-- `/admin/settings` — site, game-server, registration, SMTP, language, security and system settings.
+- `/admin/settings` — main public website settings; related sections remain on compatible `/admin/settings/*` routes.
 - `/admin/users` — CMS user management and account details.
 - `/admin/administrators` — administrator account management.
 - `/admin/logs` — human-readable audit log with categories and event details.
@@ -26,16 +26,17 @@ Public theme files cannot replace these resources.
 
 The left menu always shows both implemented and planned sections. Planned entries are disabled and have no writable route until their functionality is implemented.
 
-Current sections:
+Current navigation groups:
 
-- Main page — implemented.
-- News — implemented.
-- Themes — implemented.
-- Settings — general, game-server, registration, SMTP, language, security and system settings implemented; login-server tab prepared.
-- Users — implemented with search, filters, account details and safe access management.
-- Modules — planned.
-- Administrators — implemented without roles; all accounts have equal access.
-- Activity log — implemented.
+- **Content** — news and pages.
+- **Site** — main public website settings, languages and themes.
+- **Servers** — GameServer worlds, LoginServer connections and game-account policy.
+- **Users** — CMS users and registration settings.
+- **System** — mail, security, system information, administrators, activity log and the planned modules entry.
+
+The former global settings tab bar was removed. Existing `/admin/settings/*` URLs and route names are preserved for compatibility, while each page is now reached directly from the sidebar. Mail templates retain their own local tab bar because they belong to one mail module.
+
+Navigation groups are collapsed by default. The group containing the current page opens automatically, while manually opened or closed inactive groups are remembered in browser storage. On narrow screens the links remain available in the horizontal navigation without extra expansion.
 
 The panel language switcher is independent of the public theme. Russian and English are built in; the selected locale is stored in the administrator account.
 

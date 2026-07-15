@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CleanupSecurityLogsRequest;
 use App\Http\Requests\Admin\SaveSecuritySettingsRequest;
 use App\Models\Admin;
+use App\Models\AdminLoginLog;
 use App\Services\AuditLogger;
 use App\Services\SecurityLogMaintenance;
 use App\Services\SecuritySettings;
@@ -23,6 +24,11 @@ class SecuritySettingsController extends Controller
         return view('admin.settings.security', [
             'settings' => $settings->values(),
             'statistics' => $logs->statistics(),
+            'loginAttempts' => AdminLoginLog::query()
+                ->with('admin:id,name,email')
+                ->latest()
+                ->paginate(25, ['*'], 'login_page')
+                ->withQueryString(),
         ]);
     }
 
@@ -55,13 +61,6 @@ class SecuritySettingsController extends Controller
         return redirect()
             ->route('admin.settings.security')
             ->with('status', __('Security settings saved.'));
-    }
-
-    public function preview(): RedirectResponse
-    {
-        return redirect()
-            ->route('admin.settings.security')
-            ->with('status', __('No records were deleted. The cleanup estimate was refreshed.'));
     }
 
     public function cleanup(

@@ -231,7 +231,7 @@ class GameServerConnectionSettingsTest extends TestCase
                 'driver' => 'l2j_mobius_ct0_interlude',
                 'use_login_server_connection' => '1',
             ])
-            ->assertRedirect()
+            ->assertRedirect(route('admin.settings.game-server').'#game-server-'.$gameServer->id.'-connection')
             ->assertSessionHas('database_connection_report', fn (array $report): bool => $report['context'] === 'game-'.$gameServer->id
                 && $report['connected'] === true
                 && $report['driver'] === 'l2j_mobius_ct0_interlude'

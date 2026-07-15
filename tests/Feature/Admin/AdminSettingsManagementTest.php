@@ -49,6 +49,8 @@ class AdminSettingsManagementTest extends TestCase
             ->assertSee('Игровые серверы')
             ->assertSee('Логин-серверы')
             ->assertSee('© 2026 L2Forge-CMS')
+            ->assertSee('translation-tab-label', false)
+            ->assertSee('translation-tab-default', false)
             ->assertSee('Сохранить настройки');
     }
 

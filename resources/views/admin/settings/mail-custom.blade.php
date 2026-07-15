@@ -4,7 +4,6 @@
 @section('description', __('Send one custom HTML email without changing the system templates.'))
 
 @section('content')
-@include('admin.settings._tabs')
 @include('admin.settings._mail_tabs')
 
 <div class="custom-mail-layout" data-custom-mail-editor>

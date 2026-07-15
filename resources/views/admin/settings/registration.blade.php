@@ -1,8 +1,7 @@
 @extends('admin.layouts.panel')
-@section('title', __('Settings'))
+@section('title', __('Registration'))
 @section('description', __('Registration for public website users.'))
 @section('content')
-@include('admin.settings._tabs')
 <form class="settings-form" method="POST" action="{{ route('admin.settings.registration.update') }}">
     @csrf
                     @method('PUT')

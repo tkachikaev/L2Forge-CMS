@@ -85,7 +85,7 @@ class LoginServerSettingsTest extends TestCase
 
         $this->actingAs($this->createAdmin(), 'admin')
             ->post(route('admin.settings.login-server.store'), $payload)
-            ->assertRedirect()
+            ->assertRedirect(route('admin.settings.login-server').'#login-server-create')
             ->assertSessionHas('database_connection_report', fn (array $report): bool => $report['context'] === 'login-create'
                 && $report['connected'] === true
                 && $report['driver'] === 'l2j_mobius'
@@ -114,7 +114,7 @@ class LoginServerSettingsTest extends TestCase
 
         $this->actingAs($this->createAdmin(), 'admin')
             ->post(route('admin.settings.login-server.store'), $payload)
-            ->assertRedirect()
+            ->assertRedirect(route('admin.settings.login-server').'#login-server-create')
             ->assertSessionHas('database_connection_report', fn (array $report): bool => $report['connected'] === false
                 && $report['compatible'] === false
                 && $report['error'] === 'connection_failed'
@@ -125,6 +125,21 @@ class LoginServerSettingsTest extends TestCase
             'action' => 'login_server.connection_tested',
             'result' => 'failed',
         ]);
+    }
+
+    public function test_existing_login_server_connection_test_returns_to_its_card(): void
+    {
+        $fake = new FakeExternalDatabaseConnectionTester;
+        $this->app->instance(ExternalDatabaseConnectionTester::class, $fake);
+        $server = LoginServer::query()->create($this->modelValues());
+        $payload = $this->payload();
+        $payload['connection_action'] = 'test';
+        $payload['database_password'] = '';
+
+        $this->actingAs($this->createAdmin(), 'admin')
+            ->post(route('admin.settings.login-server.update', $server), $payload)
+            ->assertRedirect(route('admin.settings.login-server').'#login-server-'.$server->id)
+            ->assertSessionHas('database_connection_report', fn (array $report): bool => $report['context'] === 'login-'.$server->id);
     }
 
     public function test_saved_database_password_is_never_rendered_in_settings_page(): void
@@ -162,6 +177,7 @@ class LoginServerSettingsTest extends TestCase
 
         $this->actingAs($this->createAdmin(), 'admin')
             ->post(route('admin.settings.login-server.store'), $payload)
+            ->assertRedirect(route('admin.settings.login-server').'#login-server-create')
             ->assertSessionHas('database_connection_report', fn (array $report): bool => $report['driver'] === 'rusacis'
                 && $report['driver_ready'] === false
                 && $report['compatible'] === null

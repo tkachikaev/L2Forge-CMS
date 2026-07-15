@@ -2,7 +2,6 @@
 @section('title', __('Game accounts'))
 @section('description', __('Creation limits and credential policies for the player account.'))
 @section('content')
-@include('admin.settings._tabs')
 <form class="settings-form" method="POST" action="{{ route('admin.settings.game-accounts.update') }}">
     @csrf
     @method('PUT')
@@ -15,9 +14,7 @@
     <section class="form-card settings-narrow-card">
         <div class="settings-card-heading"><div><h2>{{ __('Game login policy') }}</h2><p>{{ __('Game logins always allow only Latin letters and digits.') }}</p></div></div>
         <div class="settings-grid two-columns"><label class="settings-field"><span>{{ __('Minimum length') }}</span><input type="number" name="login_min" min="1" max="45" value="{{ old('login_min',$settings['login_min']) }}" required></label><label class="settings-field"><span>{{ __('Maximum length') }}</span><input type="number" name="login_max" min="1" max="45" value="{{ old('login_max',$settings['login_max']) }}" required></label></div>
-        @foreach(['login_lower' => __('Require a lowercase letter'), 'login_upper' => __('Require an uppercase letter'), 'login_digit' => __('Require a digit')] as $field => $label)
-            <label class="settings-toggle-row" for="{{ $field }}"><span><strong>{{ $label }}</strong></span><span class="switch-control"><input name="{{ $field }}" type="hidden" value="0"><input id="{{ $field }}" name="{{ $field }}" type="checkbox" value="1" @checked(old($field,$settings[$field]))><span aria-hidden="true"></span></span></label>
-        @endforeach
+        <label class="settings-toggle-row" for="login_digit"><span><strong>{{ __('Require a digit') }}</strong></span><span class="switch-control"><input name="login_digit" type="hidden" value="0"><input id="login_digit" name="login_digit" type="checkbox" value="1" @checked(old('login_digit',$settings['login_digit']))><span aria-hidden="true"></span></span></label>
     </section>
 
     <section class="form-card settings-narrow-card">

@@ -1,11 +1,9 @@
 @extends('admin.layouts.panel')
 
-@section('title', __('Settings'))
+@section('title', __('Security'))
 @section('description', __('Administrator sign-in protection and security log retention.'))
 
 @section('content')
-@include('admin.settings._tabs')
-
 <div class="notice notice-warning security-settings-notice">
     <p><strong>{{ __('Protection cannot be disabled from the control panel.') }}</strong> {{ __('Only safe values within the allowed ranges can be saved.') }}</p>
 </div>
@@ -124,10 +122,6 @@
             </div>
 
             <div class="security-cleanup-actions">
-                <form method="POST" action="{{ route('admin.settings.security.logs.preview') }}">
-                    @csrf
-                    <button class="button button-secondary" type="submit">{{ __('Check without deleting') }}</button>
-                </form>
                 <button class="button button-danger" type="button" data-security-cleanup-open @disabled(($statistics['audit_expired'] + $statistics['admin_login_expired']) === 0)>
                     {{ __('Delete expired records') }}
                 </button>
@@ -135,6 +129,64 @@
         </section>
     </aside>
 </div>
+
+<section id="administrator-sign-ins" class="form-card security-login-history">
+    <div class="settings-card-heading">
+        <div>
+            <h2>{{ __('Recent administrator sign-ins') }}</h2>
+            <p>{{ __('The log stores the entered email address, result, IP address and browser. Passwords and authentication codes are never recorded.') }}</p>
+        </div>
+    </div>
+
+    @if($loginAttempts->isEmpty())
+        <div class="empty-state security-login-empty">
+            <div class="empty-state-mark" aria-hidden="true">L</div>
+            <h3>{{ __('No sign-in attempts yet') }}</h3>
+        </div>
+    @else
+        <div class="audit-table-wrap security-login-table-wrap">
+            <table class="audit-table security-login-table">
+                <thead>
+                    <tr>
+                        <th>{{ __('Date and time') }}</th>
+                        <th>{{ __('Entered email') }}</th>
+                        <th>{{ __('Administrator') }}</th>
+                        <th>{{ __('Result') }}</th>
+                        <th>{{ __('Reason') }}</th>
+                        <th>{{ __('IP address') }}</th>
+                        <th>{{ __('Browser') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($loginAttempts as $attempt)
+                        <tr>
+                            <td class="audit-date"><strong>{{ $attempt->created_at?->format('d.m.Y') }}</strong><span>{{ $attempt->created_at?->format('H:i:s') }}</span></td>
+                            <td class="audit-monospace">{{ $attempt->email }}</td>
+                            <td>
+                                <strong>{{ $attempt->admin?->name ?? '—' }}</strong>
+                                @if($attempt->admin)<span class="audit-muted">{{ $attempt->admin->email }}</span>@endif
+                            </td>
+                            <td><span @class(['status-badge', 'status-badge-success' => $attempt->successful, 'status-badge-danger' => ! $attempt->successful])>{{ $attempt->resultLabel() }}</span></td>
+                            <td>{{ $attempt->failureReasonLabel() }}</td>
+                            <td class="audit-monospace">{{ $attempt->ip_address ?: '—' }}</td>
+                            <td class="security-login-browser" title="{{ $attempt->user_agent }}">{{ \Illuminate\Support\Str::limit($attempt->user_agent ?: '—', 80) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        @if($loginAttempts->hasPages())
+            @php($firstPage = max(1, $loginAttempts->currentPage() - 2))
+            @php($lastPage = min($loginAttempts->lastPage(), $loginAttempts->currentPage() + 2))
+            <nav class="simple-pagination" aria-label="{{ __('Administrator sign-in page navigation') }}">
+                @if($loginAttempts->onFirstPage())<span class="button button-secondary disabled">← {{ __('Back') }}</span>@else<a class="button button-secondary" href="{{ $loginAttempts->previousPageUrl() }}#administrator-sign-ins" rel="prev">← {{ __('Back') }}</a>@endif
+                <div class="pagination-pages" aria-label="{{ __('Pages') }}">@foreach($loginAttempts->getUrlRange($firstPage, $lastPage) as $page => $url) @if($page === $loginAttempts->currentPage())<span class="pagination-page active" aria-current="page">{{ $page }}</span>@else<a class="pagination-page" href="{{ $url }}#administrator-sign-ins">{{ $page }}</a>@endif @endforeach</div>
+                @if($loginAttempts->hasMorePages())<a class="button button-secondary" href="{{ $loginAttempts->nextPageUrl() }}#administrator-sign-ins" rel="next">{{ __('Next') }} →</a>@else<span class="button button-secondary disabled">{{ __('Next') }} →</span>@endif
+            </nav>
+        @endif
+    @endif
+</section>
 
 <dialog class="confirm-dialog security-cleanup-dialog" data-security-cleanup-dialog data-open-on-error="{{ $errors->has('current_password') ? '1' : '0' }}" aria-labelledby="security-cleanup-title">
     <div class="confirm-dialog-card">

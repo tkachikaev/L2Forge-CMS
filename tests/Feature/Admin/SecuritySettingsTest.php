@@ -153,18 +153,34 @@ class SecuritySettingsTest extends TestCase
         $this->assertSame(5, AdminLoginLog::query()->count());
     }
 
-    public function test_cleanup_preview_does_not_delete_records(): void
+    public function test_security_page_shows_recent_administrator_sign_in_history(): void
     {
         $admin = $this->createAdmin();
-        $this->createOldLogs();
+        AdminLoginLog::query()->create([
+            'admin_id' => $admin->id,
+            'email' => 'admin@example.com',
+            'ip_address' => '203.0.113.10',
+            'user_agent' => 'Test Browser 1.0',
+            'successful' => true,
+        ]);
+        AdminLoginLog::query()->create([
+            'email' => 'unknown@example.com',
+            'ip_address' => '203.0.113.11',
+            'user_agent' => 'Bad Browser 2.0',
+            'successful' => false,
+            'failure_reason' => 'invalid_credentials',
+        ]);
 
         $this->actingAs($admin, 'admin')
-            ->post('/admin/settings/security/logs/preview')
-            ->assertRedirect(route('admin.settings.security'))
-            ->assertSessionHas('status');
-
-        $this->assertDatabaseHas('audit_logs', ['action' => 'security.old']);
-        $this->assertDatabaseHas('admin_login_logs', ['email' => 'old-login@example.com']);
+            ->get('/admin/settings/security')
+            ->assertOk()
+            ->assertSee('Последние попытки входа администратора')
+            ->assertSee('admin@example.com')
+            ->assertSee('unknown@example.com')
+            ->assertSee('Test Browser 1.0')
+            ->assertSee('Неверный email или пароль')
+            ->assertSee('Успешно')
+            ->assertDontSee('Проверить без удаления');
     }
 
     public function test_cleanup_requires_current_administrator_password(): void

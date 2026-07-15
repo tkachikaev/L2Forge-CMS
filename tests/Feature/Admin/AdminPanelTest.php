@@ -28,7 +28,49 @@ class AdminPanelTest extends TestCase
             ->assertSee('Новости')
             ->assertSee('Страницы')
             ->assertSee('Журнал действий')
+            ->assertSee('class="admin-account-avatar" aria-hidden="true"><span>M</span>', false)
             ->assertSee('assets/admin/css/app.css');
+    }
+
+    public function test_settings_are_grouped_in_the_sidebar_without_global_tabs(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'English Admin',
+            'email' => 'english-admin@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+            'locale' => 'en',
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings')
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Content',
+                'Site',
+                'Main settings',
+                'Languages',
+                'Themes',
+                'Servers',
+                'Game servers',
+                'LoginServers',
+                'Game accounts',
+                'Users',
+                'Registration',
+                'System',
+                'Mail',
+                'Security',
+                'System information',
+                'Administrators',
+                'Audit log',
+                'Modules',
+            ])
+            ->assertSee('data-admin-menu-group="site"', false)
+            ->assertSee('class="admin-menu-group active"', false)
+            ->assertSee('admin-menu-group-summary', false)
+            ->assertSee('assets/admin/js/navigation.js', false)
+            ->assertDontSee('Settings sections')
+            ->assertDontSee('settings-tabs', false);
     }
 
     public function test_old_dashboard_address_redirects_to_admin_root(): void

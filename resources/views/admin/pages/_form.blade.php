@@ -19,8 +19,8 @@
                 @foreach ($languages as $code => $language)
                     @php($hasContent = trim((string) ($translations[$code]['title'] ?? '')) !== '')
                     <button type="button" role="tab" @class(['translation-tab', 'active' => $code === $defaultLocale, 'complete' => $hasContent]) data-locale-tab="{{ $code }}" aria-selected="{{ $code === $defaultLocale ? 'true' : 'false' }}">
-                        {{ $language['native_name'] }}
-                        @if ($code === $defaultLocale)<small>{{ __('Default locale marker') }}</small>@endif
+                        <span class="translation-tab-label">{{ $language['native_name'] }}</span>
+                        @if ($code === $defaultLocale)<span class="translation-tab-default">{{ __('Default locale marker') }}</span>@endif
                     </button>
                 @endforeach
             </div>

@@ -4,8 +4,6 @@
 @section('description', __('Enable installed language packs and select the default and fallback languages.'))
 
 @section('content')
-@include('admin.settings._tabs')
-
 <form class="form-card language-settings" method="POST" action="{{ route('admin.settings.languages.update') }}">
     @csrf
     @method('PUT')

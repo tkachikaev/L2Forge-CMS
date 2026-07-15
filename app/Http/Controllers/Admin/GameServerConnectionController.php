@@ -31,7 +31,8 @@ class GameServerConnectionController extends Controller
             $report = $tester->testGameValues($validated, $loginServer);
             $this->auditConnectionTest($report, $gameServer, $loginServer);
 
-            return back()
+            return redirect()
+                ->to(route('admin.settings.game-server').'#game-server-'.$gameServer->id.'-connection')
                 ->withInput($request->except('database_password'))
                 ->with('database_connection_report', $report + ['context' => 'game-'.$gameServer->id]);
         }
