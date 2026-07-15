@@ -42,13 +42,23 @@
     @else
         <div class="game-account-grid">
             @foreach ($accounts as $account)
+                @php($gameServers = $account->loginServer->gameServers)
                 <article class="game-account-card">
                     <div class="game-account-card-head">
                         <span class="game-account-icon">{{ mb_strtoupper(mb_substr($account->game_login, 0, 1)) }}</span>
-                        <div><h3>{{ $account->game_login }}</h3><p>{{ $account->registrationGameServer?->nameFor() ?? $account->loginServer->name }}</p></div>
+                        <div><h3>{{ $account->game_login }}</h3><p>{{ __('Game account') }}</p></div>
                     </div>
                     <dl>
-                        <div><dt>{{ __('LoginServer') }}</dt><dd>{{ $account->loginServer->name }}</dd></div>
+                        <div>
+                            <dt>{{ $gameServers->count() > 1 ? __('Servers') : __('Server') }}</dt>
+                            <dd>
+                                @forelse ($gameServers as $gameServer)
+                                    <span>{{ $gameServer->nameFor() }}</span>@if (! $loop->last)<br>@endif
+                                @empty
+                                    —
+                                @endforelse
+                            </dd>
+                        </div>
                         <div><dt>{{ __('Created') }}</dt><dd>{{ $account->created_at?->format('d.m.Y') }}</dd></div>
                     </dl>
                     <a class="account-card-link" href="{{ public_route('game-accounts.show', ['gameAccount' => $account]) }}">{{ __('View details') }} →</a>

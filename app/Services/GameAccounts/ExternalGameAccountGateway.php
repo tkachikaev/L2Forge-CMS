@@ -6,7 +6,10 @@ use App\Contracts\GameAccountGateway;
 use App\Models\GameServer;
 use App\Models\LoginServer;
 use App\Services\Servers\MySqlSessionQueryTimeout;
+use App\Services\Servers\ServerDriverRegistry;
+use Carbon\CarbonImmutable;
 use Closure;
+use DateTimeInterface;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -19,6 +22,7 @@ final class ExternalGameAccountGateway implements GameAccountGateway
     public function __construct(
         private readonly MobiusPasswordEncoder $passwordEncoder,
         private readonly MySqlSessionQueryTimeout $queryTimeout,
+        private readonly ServerDriverRegistry $drivers,
     ) {}
 
     public function supportsLoginServer(LoginServer $loginServer): bool
@@ -89,20 +93,28 @@ final class ExternalGameAccountGateway implements GameAccountGateway
     public function characters(GameServer $gameServer, string $login): array
     {
         $limit = $this->characterLimit();
+        $createdAtColumn = $this->characterCreatedAtColumn($gameServer);
 
         return $this->withGameConnection(
             $gameServer,
-            static function (Connection $database) use ($login, $limit): array {
+            function (Connection $database) use ($login, $limit, $createdAtColumn): array {
+                $schema = $database->getSchemaBuilder();
                 $query = $database->table('characters')
                     ->where('characters.account_name', $login)
                     ->orderByDesc('characters.level')
                     ->orderBy('characters.char_name');
 
-                if ($database->getSchemaBuilder()->hasTable('clan_data')) {
+                if ($schema->hasTable('clan_data')) {
                     $query->leftJoin('clan_data', 'clan_data.clan_id', '=', 'characters.clanid')
                         ->addSelect('clan_data.clan_name as clan_name');
                 } else {
                     $query->selectRaw('NULL as clan_name');
+                }
+
+                if ($createdAtColumn !== null && $schema->hasColumn('characters', $createdAtColumn)) {
+                    $query->addSelect('characters.'.$createdAtColumn.' as character_created_at');
+                } else {
+                    $query->selectRaw('NULL as character_created_at');
                 }
 
                 $rows = $query->addSelect([
@@ -114,7 +126,7 @@ final class ExternalGameAccountGateway implements GameAccountGateway
                     'characters.lastAccess',
                 ])->limit($limit)->get();
 
-                return $rows->map(static fn (object $character): array => [
+                return $rows->map(fn (object $character): array => [
                     'id' => (int) $character->charId,
                     'name' => (string) $character->char_name,
                     'level' => (int) $character->level,
@@ -124,6 +136,7 @@ final class ExternalGameAccountGateway implements GameAccountGateway
                         ? (string) $character->clan_name
                         : null,
                     'last_access' => is_numeric($character->lastAccess) ? (int) $character->lastAccess : 0,
+                    'created_at' => $this->parseCharacterCreatedAt($character->character_created_at ?? null),
                 ])->all();
             },
         );
@@ -231,6 +244,40 @@ final class ExternalGameAccountGateway implements GameAccountGateway
             } catch (Throwable) {
                 // A cleanup failure must not replace the database operation result.
             }
+        }
+    }
+
+    private function characterCreatedAtColumn(GameServer $gameServer): ?string
+    {
+        $driver = $this->drivers->gameDriver((string) $gameServer->driver);
+        $column = $driver['character_created_at_column'] ?? null;
+
+        if (! is_string($column) || preg_match('/\A[A-Za-z_][A-Za-z0-9_]*\z/', $column) !== 1) {
+            return null;
+        }
+
+        return $column;
+    }
+
+    private function parseCharacterCreatedAt(mixed $value): ?CarbonImmutable
+    {
+        if ($value instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($value)->startOfDay();
+        }
+
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $date = trim((string) $value);
+        if ($date === '' || str_starts_with($date, '0000-00-00')) {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($date)->startOfDay();
+        } catch (Throwable) {
+            return null;
         }
     }
 

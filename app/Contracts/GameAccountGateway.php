@@ -4,6 +4,7 @@ namespace App\Contracts;
 
 use App\Models\GameServer;
 use App\Models\LoginServer;
+use Carbon\CarbonImmutable;
 
 interface GameAccountGateway
 {
@@ -20,6 +21,6 @@ interface GameAccountGateway
     /** @return array{login:string,created_at:string|null,last_active:int,status:string}|null */
     public function accountSummary(LoginServer $loginServer, string $login): ?array;
 
-    /** @return list<array{id:int,name:string,level:int,class_id:int,online:bool,clan:string|null,last_access:int}> */
+    /** @return list<array{id:int,name:string,level:int,class_id:int,online:bool,clan:string|null,last_access:int,created_at:CarbonImmutable|null}> */
     public function characters(GameServer $gameServer, string $login): array;
 }

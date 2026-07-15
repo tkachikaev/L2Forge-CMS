@@ -29,7 +29,7 @@ class GameAccountPasswordController extends Controller
 
         $account = $user->gameAccounts()->with('loginServer')->findOrFail($gameAccount);
         if (! Hash::check((string) $request->validated('current_password'), $user->password)) {
-            return back()->withErrors(['current_password' => __('The current CMS password is incorrect.')]);
+            return back()->withErrors(['current_password' => __('The current personal account password is incorrect.')]);
         }
 
         if (mb_strtolower((string) $request->validated('game_password')) === mb_strtolower($account->game_login)) {

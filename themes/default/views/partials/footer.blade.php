@@ -12,14 +12,13 @@
                 <p>{{ site_description() }}</p>
             @endif
         </div>
-        <div><h3>{{ __('Navigation') }}</h3><a href="{{ public_route('news.index') }}">{{ __('News') }}</a><a href="{{ public_route('downloads') }}">{{ __('Download client') }}</a><a href="{{ public_route('about') }}">{{ __('Server description') }}</a></div>
         <div>
-            <h3>{{ __('Documents') }}</h3>
-            @forelse ($footerPages ?? [] as $menuPage)
+            <h3>{{ __('Sections') }}</h3>
+            <a href="{{ public_route('news.index') }}">{{ __('News') }}</a>
+            <a href="{{ public_route('about') }}">{{ __('Server description') }}</a>
+            @foreach ($footerPages ?? [] as $menuPage)
                 <a href="{{ page_url($menuPage) }}">{{ $menuPage->titleFor() }}</a>
-            @empty
-                <span class="footer-empty">{{ __('No published pages') }}</span>
-            @endforelse
+            @endforeach
         </div>
         <div><h3>{{ __('Community') }}</h3><div class="socials"><a href="#">VK</a><a href="#">Discord</a><a href="#">Telegram</a></div></div>
     </div>

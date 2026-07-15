@@ -24,7 +24,7 @@ class AccountController extends Controller
         }
 
         $accounts = $user->gameAccounts()
-            ->with(['loginServer', 'registrationGameServer.translations'])
+            ->with(['loginServer.gameServers.translations', 'registrationGameServer.translations'])
             ->latest('id')
             ->get();
         $availableServers = GameServer::query()

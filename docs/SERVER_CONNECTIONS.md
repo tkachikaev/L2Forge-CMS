@@ -72,7 +72,9 @@ Use LoginServer database connection
 
 Для Mobius LoginServer обязательна таблица `accounts`. `account_data` и `accounts_ipauth` отмечаются как дополнительные возможности.
 
-Для Mobius CT0 Interlude GameServer обязательна таблица `characters`. `account_gsdata` и `account_premium` считаются дополнительными.
+Для Mobius CT0 Interlude GameServer обязательна таблица `characters`, включая колонку даты создания персонажа `createDate`. `account_gsdata` и `account_premium` считаются дополнительными.
+
+Имя колонки даты не зашито в шаблон кабинета. Реестр драйверов сопоставляет колонку конкретной сборки с единым полем `created_at`: Mobius использует `createDate`, а будущий драйвер сможет указать, например, `DateCreate` или другое фактическое имя.
 
 
 ## Ограничение внешних запросов

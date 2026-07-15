@@ -1,6 +1,7 @@
 @extends('account.layouts.app')
 @section('title', $account->game_login)
 @section('content')
+@php($gameServers = $account->loginServer->gameServers)
 <div class="account-page-heading compact">
     <a href="{{ public_route('account') }}">← {{ __('My accounts') }}</a>
     <span class="account-eyebrow">{{ __('Game account') }}</span>
@@ -12,18 +13,29 @@
             </span>
         @endif
     </div>
-    <p>{{ $account->registrationGameServer?->nameFor() ?? $account->loginServer->name }}</p>
+    @if ($gameServers->isNotEmpty())
+        <p>{{ $gameServers->map(static fn ($gameServer): string => $gameServer->nameFor())->implode(' · ') }}</p>
+    @endif
 </div>
 
 <section class="account-summary-card">
     <dl>
-        <div><dt>{{ __('LoginServer') }}</dt><dd>{{ $account->loginServer->name }}</dd></div>
+        <div>
+            <dt>{{ $gameServers->count() > 1 ? __('Servers') : __('Server') }}</dt>
+            <dd>
+                @forelse ($gameServers as $gameServer)
+                    <span>{{ $gameServer->nameFor() }}</span>@if (! $loop->last)<br>@endif
+                @empty
+                    —
+                @endforelse
+            </dd>
+        </div>
         <div><dt>{{ __('Linked to CMS') }}</dt><dd>{{ $account->created_at?->format('d.m.Y H:i') }}</dd></div>
         <div><dt>{{ __('Created on server') }}</dt><dd>{{ is_array($summary) && $summary['created_at'] ? $summary['created_at'] : '—' }}</dd></div>
         <div><dt>{{ __('Available worlds') }}</dt><dd>{{ count($worlds) }}</dd></div>
     </dl>
     @if($summaryUnavailable)
-        <div class="account-inline-warning">{{ __('LoginServer data is temporarily unavailable. The account link remains safe in CMS.') }}</div>
+        <div class="account-inline-warning">{{ __('Game account data is temporarily unavailable. The account link remains safe in the personal account.') }}</div>
     @endif
 </section>
 
@@ -41,7 +53,13 @@
                     @foreach($world['characters'] as $character)
                         <div class="character-row">
                             <span class="character-avatar">{{ mb_strtoupper(mb_substr($character['name'], 0, 1)) }}</span>
-                            <div class="character-main"><strong>{{ $character['name'] }}</strong><small>{{ $character['class_name'] }} @if($character['clan'])· {{ $character['clan'] }}@endif</small></div>
+                            <div class="character-main">
+                                <strong>{{ $character['name'] }}</strong>
+                                <small>{{ $character['class_name'] }} @if($character['clan'])· {{ $character['clan'] }}@endif</small>
+                                @if($character['created_at'])
+                                    <small>{{ __('Created: :date', ['date' => $character['created_at']->format('d.m.Y')]) }}</small>
+                                @endif
+                            </div>
                             <div class="character-level"><span>{{ __('Level') }}</span><strong>{{ $character['level'] }}</strong></div>
                             <span class="online-state {{ $character['online'] ? 'online' : '' }}">{{ $character['online'] ? __('Online') : __('Offline') }}</span>
                         </div>
@@ -59,7 +77,7 @@
     <form class="account-form-card compact" method="POST" action="{{ public_route('game-accounts.password', ['gameAccount' => $account]) }}">
         @csrf
         @method('PUT')
-        <label><span>{{ __('Current CMS password') }}</span><input type="password" name="current_password" autocomplete="current-password" required></label>
+        <label><span>{{ __('Current personal account password') }}</span><input type="password" name="current_password" autocomplete="current-password" required></label>
         <div class="account-form-grid">
             <label><span>{{ __('New game password') }}</span><input type="password" name="game_password" autocomplete="new-password" required></label>
             <label><span>{{ __('Repeat game password') }}</span><input type="password" name="game_password_confirmation" autocomplete="new-password" required></label>

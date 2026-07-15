@@ -51,6 +51,7 @@ final class ServerDriverRegistry
      *     label:string,
      *     description:string,
      *     ready:bool,
+     *     character_created_at_column?:string|null,
      *     requirements:list<array{table:string,columns:list<string>,required:bool}>
      * }>
      */
@@ -61,6 +62,7 @@ final class ServerDriverRegistry
                 'label' => 'L2J Mobius — CT0 Interlude',
                 'description' => __('L2J Mobius CT0 Interlude character and account game data tables.'),
                 'ready' => true,
+                'character_created_at_column' => 'createDate',
                 'requirements' => [
                     [
                         'table' => 'characters',
@@ -76,6 +78,7 @@ final class ServerDriverRegistry
                             'pkkills',
                             'clanid',
                             'lastAccess',
+                            'createDate',
                         ],
                         'required' => true,
                     ],
@@ -118,7 +121,7 @@ final class ServerDriverRegistry
         return $this->loginDrivers()[$key] ?? null;
     }
 
-    /** @return array{label:string,description:string,ready:bool,requirements:list<array{table:string,columns:list<string>,required:bool}>}|null */
+    /** @return array{label:string,description:string,ready:bool,character_created_at_column?:string|null,requirements:list<array{table:string,columns:list<string>,required:bool}>}|null */
     public function gameDriver(string $key): ?array
     {
         return $this->gameDrivers()[$key] ?? null;

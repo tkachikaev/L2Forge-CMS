@@ -38,6 +38,7 @@ class ServerDriverRegistryTest extends TestCase
 
         $this->assertNotNull($driver);
         $this->assertTrue($driver['ready']);
+        $this->assertSame('createDate', $driver['character_created_at_column']);
         $this->assertSame([
             [
                 'table' => 'characters',
@@ -53,6 +54,7 @@ class ServerDriverRegistryTest extends TestCase
                     'pkkills',
                     'clanid',
                     'lastAccess',
+                    'createDate',
                 ],
                 'required' => true,
             ],

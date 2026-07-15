@@ -9,6 +9,7 @@ use App\Models\LoginServer;
 use App\Models\User;
 use App\Models\UserGameAccount;
 use App\Services\GameAccountSettings;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Fakes\FakeGameAccountGateway;
@@ -52,6 +53,45 @@ class GameAccountCabinetTest extends TestCase
             ->assertSee('PlayerOne')
             ->assertSee('Interlude x10')
             ->assertDontSee('Панель управления');
+    }
+
+    public function test_player_sees_game_servers_instead_of_the_login_server_name(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        $secondGameServer = GameServer::query()->create([
+            'name' => 'Interlude x50',
+            'rates' => 'x50',
+            'chronicle' => 'Interlude',
+            'mode' => 'PvP',
+            'sort_order' => 2,
+            'login_server_id' => $loginServer->id,
+            'driver' => 'l2j_mobius_ct0_interlude',
+            'use_login_server_connection' => true,
+        ]);
+        $account = UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'MultiWorld01',
+            'normalized_login' => 'multiworld01',
+        ]);
+
+        $this->actingAs($user)
+            ->get('/account')
+            ->assertOk()
+            ->assertSee('Серверы')
+            ->assertSee($gameServer->name)
+            ->assertSee($secondGameServer->name)
+            ->assertDontSee($loginServer->name);
+
+        $this->actingAs($user)
+            ->get('/account/game-accounts/'.$account->id)
+            ->assertOk()
+            ->assertSee('Серверы')
+            ->assertSee($gameServer->name)
+            ->assertSee($secondGameServer->name)
+            ->assertDontSee($loginServer->name);
     }
 
     public function test_player_can_create_a_mobius_account_from_a_selected_game_server(): void
@@ -282,6 +322,7 @@ class GameAccountCabinetTest extends TestCase
             'online' => true,
             'clan' => 'L2Forge',
             'last_access' => 0,
+            'created_at' => CarbonImmutable::parse('2024-04-05'),
         ]];
 
         $this->actingAs($user)
@@ -291,7 +332,38 @@ class GameAccountCabinetTest extends TestCase
             ->assertSee('Bubi')
             ->assertSee('Дуэлист')
             ->assertSee('L2Forge')
+            ->assertSee('Создан: 05.04.2024')
+            ->assertSee('Текущий пароль от личного кабинета')
             ->assertSee('В игре');
+    }
+
+    public function test_character_creation_date_is_hidden_when_the_driver_does_not_return_it(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        $account = UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'NoDate01',
+            'normalized_login' => 'nodate01',
+        ]);
+        $this->gateway->charactersByServer[$gameServer->id] = [[
+            'id' => 101,
+            'name' => 'WithoutDate',
+            'level' => 1,
+            'class_id' => 0,
+            'online' => false,
+            'clan' => null,
+            'last_access' => 0,
+            'created_at' => null,
+        ]];
+
+        $this->actingAs($user)
+            ->get('/account/game-accounts/'.$account->id)
+            ->assertOk()
+            ->assertSee('WithoutDate')
+            ->assertDontSee('Создан:');
     }
 
     public function test_character_query_failure_does_not_break_the_account_page(): void
@@ -358,7 +430,7 @@ class GameAccountCabinetTest extends TestCase
         $this->assertSame([], $this->gateway->passwordChanges);
     }
 
-    public function test_player_can_change_game_password_only_after_confirming_cms_password(): void
+    public function test_player_can_change_game_password_only_after_confirming_personal_account_password(): void
     {
         $user = $this->user();
         [$loginServer, $gameServer] = $this->servers();
@@ -374,7 +446,9 @@ class GameAccountCabinetTest extends TestCase
             'current_password' => 'WrongPassword',
             'game_password' => 'NewStrong1',
             'game_password_confirmation' => 'NewStrong1',
-        ])->assertSessionHasErrors('current_password');
+        ])->assertSessionHasErrors([
+            'current_password' => 'Текущий пароль от личного кабинета указан неверно.',
+        ]);
         $this->assertSame([], $this->gateway->passwordChanges);
 
         $this->actingAs($user)->put('/account/game-accounts/'.$account->id.'/password', [

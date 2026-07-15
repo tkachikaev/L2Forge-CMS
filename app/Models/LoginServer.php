@@ -45,7 +45,9 @@ class LoginServer extends Model
     /** @return HasMany<GameServer, $this> */
     public function gameServers(): HasMany
     {
-        return $this->hasMany(GameServer::class);
+        return $this->hasMany(GameServer::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     /** @return HasMany<UserGameAccount, $this> */
