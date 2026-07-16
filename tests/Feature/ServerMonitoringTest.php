@@ -328,6 +328,9 @@ class ServerMonitoringTest extends TestCase
     /** @return array{LoginServer,GameServer} */
     private function servers(): array
     {
+        GameServer::query()->delete();
+        LoginServer::query()->delete();
+
         $loginServer = LoginServer::query()->create([
             'name' => 'Основной LoginServer',
             'driver' => 'l2j_mobius',

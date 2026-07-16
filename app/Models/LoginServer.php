@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -20,8 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $service_port
  * @property string $monitor_status
  * @property int $monitor_failures
- * @property \Illuminate\Support\Carbon|null $monitor_checked_at
- * @property \Illuminate\Support\Carbon|null $monitor_last_online_at
+ * @property Carbon|null $monitor_checked_at
+ * @property Carbon|null $monitor_last_online_at
  */
 class LoginServer extends Model
 {

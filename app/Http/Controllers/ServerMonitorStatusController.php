@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\Servers\ServerMonitorCoordinator;
 use App\Services\Servers\ServerStatusOverview;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 
 final class ServerMonitorStatusController extends Controller
@@ -30,9 +31,9 @@ final class ServerMonitorStatusController extends Controller
      * @param  array{
      *     total_online:int,
      *     partial:bool,
-     *     checked_at:\Carbon\CarbonInterface|null,
-     *     game_servers:list<array{id:int,name:string,state:string,availability_state:string,players:int|null,checked_at:\Carbon\CarbonInterface|null}>,
-     *     login_servers:list<array{id:int,name:string,state:string,checked_at:\Carbon\CarbonInterface|null}>
+     *     checked_at:CarbonInterface|null,
+     *     game_servers:list<array{id:int,name:string,state:string,availability_state:string,players:int|null,checked_at:CarbonInterface|null}>,
+     *     login_servers:list<array{id:int,name:string,state:string,checked_at:CarbonInterface|null}>
      * }  $monitor
      * @return array<string,mixed>
      */

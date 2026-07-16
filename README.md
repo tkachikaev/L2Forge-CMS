@@ -1,4 +1,4 @@
-# L2Forge CMS 0.13.26
+# L2Forge CMS 0.13.27
 
 **L2Forge CMS** — бесплатная open-source CMS для серверов Lineage II.
 

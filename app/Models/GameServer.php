@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
 
@@ -31,10 +32,10 @@ use Throwable;
  * @property int|null $service_port
  * @property string $monitor_status
  * @property int $monitor_failures
- * @property \Illuminate\Support\Carbon|null $monitor_checked_at
- * @property \Illuminate\Support\Carbon|null $monitor_last_online_at
+ * @property Carbon|null $monitor_checked_at
+ * @property Carbon|null $monitor_last_online_at
  * @property int|null $online_players
- * @property \Illuminate\Support\Carbon|null $online_checked_at
+ * @property Carbon|null $online_checked_at
  * @property-read LoginServer|null $loginServer
  * @property-read Collection<int, GameServerTranslation> $translations
  */
