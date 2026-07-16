@@ -41,7 +41,7 @@ class GameAccountController extends Controller
             return redirect()->to(public_route('account'))->with('warning', __('Creating game accounts is disabled.'));
         }
 
-        if ($user->gameAccounts()->count() >= $values['max_accounts']) {
+        if ($user->availableGameAccounts()->count() >= $values['max_accounts']) {
             return redirect()->to(public_route('account'))->with('warning', __('You have reached the game account limit.'));
         }
 
@@ -74,7 +74,7 @@ class GameAccountController extends Controller
         $login = trim((string) $request->validated('game_login'));
         $normalized = Str::lower($login);
 
-        if ($user->gameAccounts()->count() >= $values['max_accounts']) {
+        if ($user->availableGameAccounts()->count() >= $values['max_accounts']) {
             return back()->withErrors(['game_login' => __('You have reached the game account limit.')]);
         }
 
@@ -94,7 +94,7 @@ class GameAccountController extends Controller
 
             $link = DB::transaction(function () use ($user, $loginServer, $gameServer, $login, $normalized, $values): UserGameAccount {
                 $lockedUser = User::query()->lockForUpdate()->findOrFail($user->id);
-                if ($lockedUser->gameAccounts()->count() >= $values['max_accounts']) {
+                if ($lockedUser->availableGameAccounts()->count() >= $values['max_accounts']) {
                     throw new RuntimeException('game_account_limit_reached');
                 }
 
@@ -163,10 +163,10 @@ class GameAccountController extends Controller
             abort(401);
         }
 
-        $account = $user->gameAccounts()
+        $account = $user->availableGameAccounts()
             ->with(['loginServer.gameServers.translations', 'registrationGameServer.translations'])
             ->findOrFail($gameAccount);
-        $accountCount = $user->gameAccounts()->count();
+        $accountCount = $user->availableGameAccounts()->count();
         $settingsValues = $settings->values();
         $canCreateAccount = $settingsValues['enabled']
             && $accountCount < $settingsValues['max_accounts']

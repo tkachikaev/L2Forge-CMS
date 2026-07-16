@@ -24,7 +24,7 @@ class AccountController extends Controller
             abort(401);
         }
 
-        $accounts = $user->gameAccounts()
+        $accounts = $user->availableGameAccounts()
             ->with(['loginServer.gameServers.translations', 'registrationGameServer.translations'])
             ->latest('id')
             ->get();

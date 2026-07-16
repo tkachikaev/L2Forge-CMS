@@ -14,34 +14,36 @@ if (-not (Test-Path '.env')) {
 }
 
 if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete 0.13.21 patch with file replacement enabled.'
+    throw 'VERSION is missing. Re-extract the complete 0.13.22 patch with file replacement enabled.'
 }
 
 $cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
-if ($cmsVersion -ne '0.13.21') {
+if ($cmsVersion -ne '0.13.22') {
     throw "Unexpected patch version: $cmsVersion"
 }
 
 $requiredFiles = @(
-    'app\Livewire\Admin\LoginServerManager.php',
+    'app\Models\User.php',
+    'app\Services\GameServerSettings.php',
     'app\Livewire\Admin\GameServerManager.php',
-    'resources\views\livewire\admin\login-server-manager.blade.php',
-    'resources\views\livewire\admin\game-server-manager.blade.php',
+    'app\Http\Controllers\Auth\AccountController.php',
+    'app\Http\Controllers\Account\GameAccountController.php',
+    'app\Http\Controllers\Account\GameAccountPasswordController.php',
     'update.ps1'
 )
 
 foreach ($requiredFile in $requiredFiles) {
     if (-not (Test-Path $requiredFile -PathType Leaf)) {
-        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.13.21 patch with file replacement enabled."
+        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.13.22 patch with file replacement enabled."
     }
 }
 
 Write-Host "L2Forge CMS $cmsVersion update"
-Write-Host 'Fixing LoginServer and GameServer deletion confirmations.'
+Write-Host 'Hiding stale player account cards after GameServer removal.'
 Write-Host ''
 
 Get-ChildItem -Path $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -ne 'apply-0.13.21.ps1' } |
+    Where-Object { $_.Name -ne 'apply-0.13.22.ps1' } |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
 & "$PSScriptRoot\update.ps1" -SkipTests:$SkipTests

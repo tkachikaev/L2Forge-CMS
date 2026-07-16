@@ -39,6 +39,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(UserGameAccount::class);
     }
 
+    /** @return HasMany<UserGameAccount, $this> */
+    public function availableGameAccounts(): HasMany
+    {
+        return $this->gameAccounts()
+            ->whereNotNull('registration_game_server_id')
+            ->whereHas('registrationGameServer');
+    }
+
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new VerifyEmailNotification);

@@ -9,6 +9,7 @@ use App\Models\LoginServer;
 use App\Models\User;
 use App\Models\UserGameAccount;
 use App\Services\GameAccountSettings;
+use App\Services\GameServerSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -586,6 +587,101 @@ class GameAccountCabinetTest extends TestCase
             'game_password_confirmation' => 'NewStrong1',
         ])->assertSessionHas('status');
         $this->assertSame('NewStrong1', $this->gateway->passwordChanges[0]['password']);
+    }
+
+    public function test_deleting_the_last_game_server_hides_its_player_account_card_without_deleting_the_link(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        $account = UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'RemovedWorld01',
+            'normalized_login' => 'removedworld01',
+        ]);
+
+        app(GameServerSettings::class)->delete($gameServer);
+
+        $this->assertDatabaseHas('user_game_accounts', ['id' => $account->id]);
+        $this->assertNull($account->fresh()->registration_game_server_id);
+
+        $this->actingAs($user)
+            ->get('/account')
+            ->assertOk()
+            ->assertSee('Игровых аккаунтов пока нет')
+            ->assertDontSee('RemovedWorld01')
+            ->assertDontSee('Сервер</dt>', false);
+
+        $this->actingAs($user)
+            ->get('/account/game-accounts/'.$account->id)
+            ->assertNotFound();
+    }
+
+    public function test_deleting_one_of_multiple_game_servers_reassigns_the_account_card_to_the_remaining_world(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        $replacement = GameServer::query()->create([
+            'name' => 'Interlude x50',
+            'rates' => 'x50',
+            'chronicle' => 'Interlude',
+            'mode' => 'PvP',
+            'sort_order' => 2,
+            'login_server_id' => $loginServer->id,
+            'driver' => 'l2j_mobius_ct0_interlude',
+            'use_login_server_connection' => true,
+        ]);
+        $account = UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'RemainingWorld01',
+            'normalized_login' => 'remainingworld01',
+        ]);
+
+        app(GameServerSettings::class)->delete($gameServer);
+
+        $this->assertSame($replacement->id, $account->fresh()->registration_game_server_id);
+
+        $this->actingAs($user)
+            ->get('/account')
+            ->assertRedirect(route('game-accounts.show', ['gameAccount' => $account]));
+
+        $this->actingAs($user)
+            ->get('/account/game-accounts/'.$account->id)
+            ->assertOk()
+            ->assertSee('Interlude x50')
+            ->assertDontSee('Interlude x10');
+    }
+
+    public function test_configuring_a_replacement_game_server_restores_hidden_account_cards(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        $account = UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'RestoredWorld01',
+            'normalized_login' => 'restoredworld01',
+        ]);
+        $settings = app(GameServerSettings::class);
+        $settings->delete($gameServer);
+        $replacement = GameServer::query()->create([
+            'name' => 'Interlude Reborn',
+            'rates' => 'x7',
+            'chronicle' => 'Interlude',
+            'mode' => 'PvE',
+            'sort_order' => 1,
+            'login_server_id' => $loginServer->id,
+            'driver' => 'l2j_mobius_ct0_interlude',
+            'use_login_server_connection' => true,
+        ]);
+
+        $settings->restoreOrphanedAccountLinks($replacement);
+
+        $this->assertSame($replacement->id, $account->fresh()->registration_game_server_id);
     }
 
     /** @param array<string,mixed> $overrides */

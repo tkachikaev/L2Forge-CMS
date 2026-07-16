@@ -27,7 +27,7 @@ class GameAccountPasswordController extends Controller
             abort(401);
         }
 
-        $account = $user->gameAccounts()->with('loginServer')->findOrFail($gameAccount);
+        $account = $user->availableGameAccounts()->with('loginServer')->findOrFail($gameAccount);
         if (! Hash::check((string) $request->validated('current_password'), $user->password)) {
             return back()->withErrors(['current_password' => __('The current personal account password is incorrect.')]);
         }

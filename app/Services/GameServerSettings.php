@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\GameServer;
 use App\Models\GameServerTranslation;
+use App\Models\UserGameAccount;
 use App\Services\Localization\LanguageManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -104,7 +105,44 @@ final class GameServerSettings
 
     public function delete(GameServer $server): void
     {
-        $server->delete();
+        DB::transaction(function () use ($server): void {
+            $this->reassignLinkedAccountsBeforeDisconnect($server);
+            $server->delete();
+        });
+    }
+
+    public function reassignLinkedAccountsBeforeDisconnect(GameServer $server, ?int $nextLoginServerId = null): int
+    {
+        if ($server->login_server_id === null || $server->login_server_id === $nextLoginServerId) {
+            return 0;
+        }
+
+        $replacementId = GameServer::query()
+            ->where('login_server_id', $server->login_server_id)
+            ->whereKeyNot($server->id)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->value('id');
+
+        return UserGameAccount::query()
+            ->where('login_server_id', $server->login_server_id)
+            ->where(function ($query) use ($server): void {
+                $query->where('registration_game_server_id', $server->id)
+                    ->orWhereNull('registration_game_server_id');
+            })
+            ->update(['registration_game_server_id' => $replacementId]);
+    }
+
+    public function restoreOrphanedAccountLinks(GameServer $server): int
+    {
+        if ($server->login_server_id === null) {
+            return 0;
+        }
+
+        return UserGameAccount::query()
+            ->where('login_server_id', $server->login_server_id)
+            ->whereNull('registration_game_server_id')
+            ->update(['registration_game_server_id' => $server->id]);
     }
 
     private function normalize(GameServer $server, ?string $locale): array

@@ -192,8 +192,9 @@ class GameServerManager extends Component
             }
 
             if ($this->connectionEnabled) {
-                $this->saveConnection($server, $connection);
+                $this->saveConnection($server, $connection, $settings);
             } else {
+                $settings->reassignLinkedAccountsBeforeDisconnect($server);
                 $server->update([
                     'login_server_id' => null,
                     'driver' => null,
@@ -408,11 +409,12 @@ class GameServerManager extends Component
     }
 
     /** @param array<string,mixed> $validated */
-    private function saveConnection(GameServer $server, array $validated): void
+    private function saveConnection(GameServer $server, array $validated, GameServerSettings $settings): void
     {
         $loginServer = LoginServer::query()->findOrFail((int) $validated['loginServerId']);
         $useLoginConnection = (bool) $validated['useLoginServerConnection'];
         $password = (string) ($validated['databasePassword'] ?? '');
+        $settings->reassignLinkedAccountsBeforeDisconnect($server, $loginServer->id);
         $values = [
             'login_server_id' => $loginServer->id,
             'driver' => trim((string) $validated['driver']),
@@ -431,6 +433,7 @@ class GameServerManager extends Component
         }
 
         $server->update($values);
+        $settings->restoreOrphanedAccountLinks($server);
     }
 
     /** @return array<string,mixed> */
