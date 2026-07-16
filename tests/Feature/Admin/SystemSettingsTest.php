@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Admin;
+use App\Services\Servers\ServerMonitorSettings;
 use App\Support\L2Forge;
 use App\Support\PasswordHashing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -64,6 +65,66 @@ class SystemSettingsTest extends TestCase
         } else {
             $response->assertSee('Argon2id не поддерживается системой.');
         }
+    }
+
+    public function test_server_monitor_refresh_interval_can_be_saved_from_system_page(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'Monitor Settings Admin',
+            'email' => 'monitor-settings@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings/system')
+            ->assertOk()
+            ->assertSee('Мониторинг серверов')
+            ->assertSee('Интервал обновления статуса')
+            ->assertSee('Как часто CMS может повторно проверять доступность LoginServer и GameServer')
+            ->assertSee('30 секунд')
+            ->assertSee('1 минута')
+            ->assertSee('2 минуты')
+            ->assertSee('5 минут');
+
+        $this->actingAs($admin, 'admin')
+            ->put('/admin/settings/system/monitoring', [
+                'refresh_interval_seconds' => 120,
+            ])
+            ->assertRedirect(route('admin.settings.system'))
+            ->assertSessionHas('status', 'Настройки мониторинга серверов сохранены.');
+
+        $this->assertDatabaseHas('cms_settings', [
+            'key' => ServerMonitorSettings::KEY_REFRESH_INTERVAL_SECONDS,
+            'value' => '120',
+        ]);
+        $this->assertSame(120, app(ServerMonitorSettings::class)->refreshIntervalSeconds());
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'settings.server_monitor_updated',
+            'result' => 'success',
+        ]);
+    }
+
+    public function test_server_monitor_refresh_interval_accepts_only_safe_options(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'Monitor Validation Admin',
+            'email' => 'monitor-validation@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->from('/admin/settings/system')
+            ->put('/admin/settings/system/monitoring', [
+                'refresh_interval_seconds' => 15,
+            ])
+            ->assertRedirect('/admin/settings/system')
+            ->assertSessionHasErrors('refresh_interval_seconds');
+
+        $this->assertDatabaseMissing('cms_settings', [
+            'key' => ServerMonitorSettings::KEY_REFRESH_INTERVAL_SECONDS,
+        ]);
     }
 
     public function test_version_is_read_from_the_root_version_file(): void

@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\SaveLanguageSettingsRequest;
 use App\Http\Requests\Admin\SaveMailSettingsRequest;
 use App\Http\Requests\Admin\SaveMailTemplateRequest;
 use App\Http\Requests\Admin\SaveRegistrationSettingsRequest;
+use App\Http\Requests\Admin\SaveServerMonitorSettingsRequest;
 use App\Http\Requests\Admin\SendCustomMailRequest;
 use App\Http\Requests\Admin\SendMailTemplateTestRequest;
 use App\Http\Requests\Admin\SendTestMailRequest;
@@ -22,6 +23,7 @@ use App\Services\Mail\CustomMailHtmlSanitizer;
 use App\Services\MailSettings;
 use App\Services\MailTemplateSettings;
 use App\Services\RegistrationSettings;
+use App\Services\Servers\ServerMonitorSettings;
 use App\Services\Settings\SettingsImageStorage;
 use App\Services\SiteSettings;
 use App\Services\SystemInformation;
@@ -198,11 +200,36 @@ class SettingsController extends Controller
             ->with('status', __('Game server :name deleted.', ['name' => $name]));
     }
 
-    public function system(SystemInformation $systemInformation): View
-    {
+    public function system(
+        SystemInformation $systemInformation,
+        ServerMonitorSettings $monitorSettings,
+    ): View {
         return view('admin.settings.system', [
             'system' => $systemInformation->collect(),
+            'monitorSettings' => $monitorSettings->values(),
+            'monitorRefreshOptions' => ServerMonitorSettings::REFRESH_INTERVAL_OPTIONS,
         ]);
+    }
+
+    public function updateSystemMonitoring(
+        SaveServerMonitorSettingsRequest $request,
+        ServerMonitorSettings $monitorSettings,
+    ): RedirectResponse {
+        $before = $monitorSettings->values();
+        $validated = $request->validated();
+        $monitorSettings->update((int) $validated['refresh_interval_seconds']);
+        $after = $monitorSettings->values();
+
+        $this->auditLogger->success(
+            category: 'admin',
+            action: 'settings.server_monitor_updated',
+            target: __('Server monitoring'),
+            details: ['changes' => $this->auditChanges($before, $after)],
+        );
+
+        return redirect()
+            ->route('admin.settings.system')
+            ->with('status', __('Server monitoring settings saved.'));
     }
 
     public function languages(LanguageManager $languages): View

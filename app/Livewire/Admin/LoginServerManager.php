@@ -39,6 +39,10 @@ class LoginServerManager extends Component
 
     public string $databaseCharset = 'utf8mb4';
 
+    public string $serviceHost = '';
+
+    public string $servicePort = '2106';
+
     /** @var array<string,mixed>|null */
     public ?array $connectionReport = null;
 
@@ -77,6 +81,8 @@ class LoginServerManager extends Component
         $this->databaseUsername = $server->database_username;
         $this->databasePassword = '';
         $this->databaseCharset = $server->database_charset;
+        $this->serviceHost = trim((string) $server->service_host);
+        $this->servicePort = (string) ($server->service_port ?? 2106);
         $this->connectionReport = null;
         $this->status = null;
         $this->showChecks = false;
@@ -272,6 +278,8 @@ class LoginServerManager extends Component
             'databaseUsername' => ['required', 'string', 'max:128'],
             'databasePassword' => ['nullable', 'string', 'max:1024'],
             'databaseCharset' => ['required', Rule::in(['utf8mb4', 'utf8', 'latin1', 'cp1251'])],
+            'serviceHost' => ['nullable', 'string', 'max:255'],
+            'servicePort' => ['required', 'integer', 'between:1,65535'],
         ];
     }
 
@@ -287,6 +295,8 @@ class LoginServerManager extends Component
             'databaseUsername' => __('Database username'),
             'databasePassword' => __('Database password'),
             'databaseCharset' => __('Database charset'),
+            'serviceHost' => __('Service host'),
+            'servicePort' => __('Service port'),
         ];
     }
 
@@ -302,6 +312,12 @@ class LoginServerManager extends Component
             'database_username' => trim((string) $validated['databaseUsername']),
             'database_password' => (string) ($validated['databasePassword'] ?? ''),
             'database_charset' => trim((string) $validated['databaseCharset']),
+            'service_host' => $this->nullableString($validated['serviceHost'] ?? null),
+            'service_port' => (int) $validated['servicePort'],
+            'monitor_status' => 'unknown',
+            'monitor_failures' => 0,
+            'monitor_checked_at' => null,
+            'monitor_last_online_at' => null,
         ];
     }
 
@@ -316,6 +332,8 @@ class LoginServerManager extends Component
             'database_name' => $server->database_name,
             'database_username' => $server->database_username,
             'database_charset' => $server->database_charset,
+            'service_host' => $server->service_host,
+            'service_port' => $server->service_port,
             'database_password_saved' => $server->hasDatabasePassword(),
         ];
     }
@@ -378,9 +396,18 @@ class LoginServerManager extends Component
         $this->databaseUsername = '';
         $this->databasePassword = '';
         $this->databaseCharset = 'utf8mb4';
+        $this->serviceHost = '';
+        $this->servicePort = '2106';
         $this->connectionReport = null;
         $this->status = null;
         $this->showChecks = false;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
     }
 
     private function ensureAuthorized(): void

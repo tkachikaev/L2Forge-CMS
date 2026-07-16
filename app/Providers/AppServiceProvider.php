@@ -19,6 +19,7 @@ use App\Services\Pages\PageNavigation;
 use App\Services\RegistrationSettings;
 use App\Services\SecurityLogMaintenance;
 use App\Services\SecuritySettings;
+use App\Services\Servers\ServerMonitorSettings;
 use App\Services\Settings\SettingsImageStorage;
 use App\Services\SiteSettings;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -48,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(RegistrationSettings::class);
         $this->app->singleton(SecurityLogMaintenance::class);
         $this->app->singleton(SecuritySettings::class);
+        $this->app->singleton(ServerMonitorSettings::class);
         $this->app->singleton(SettingsImageStorage::class);
         $this->app->singleton(SiteSettings::class);
     }

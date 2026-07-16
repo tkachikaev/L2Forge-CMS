@@ -9,6 +9,7 @@ final class ServerDriverRegistry
      *     label:string,
      *     description:string,
      *     ready:bool,
+     *     service_port:int,
      *     requirements:list<array{table:string,columns:list<string>,required:bool}>
      * }>
      */
@@ -19,6 +20,7 @@ final class ServerDriverRegistry
                 'label' => __('L2J Mobius — Interlude and newer'),
                 'description' => __('L2J Mobius LoginServer for Interlude and newer builds.'),
                 'ready' => true,
+                'service_port' => 2106,
                 'requirements' => [
                     [
                         'table' => 'accounts',
@@ -41,6 +43,7 @@ final class ServerDriverRegistry
                 'label' => __('L2J Mobius Legacy — C1/C4'),
                 'description' => __('L2J Mobius legacy LoginServer for C1 and C4 builds.'),
                 'ready' => true,
+                'service_port' => 2106,
                 'requirements' => [
                     [
                         'table' => 'accounts',
@@ -53,6 +56,7 @@ final class ServerDriverRegistry
                 'label' => 'RUSaCis',
                 'description' => __('RUSaCis driver placeholder. Schema support will be added later.'),
                 'ready' => false,
+                'service_port' => 2106,
                 'requirements' => [],
             ],
         ];
@@ -63,7 +67,9 @@ final class ServerDriverRegistry
      *     label:string,
      *     description:string,
      *     ready:bool,
+     *     service_port:int,
      *     character_created_at_column?:string|null,
+     *     online_count?:array{table:string,column:string,value:int|string},
      *     requirements:list<array{table:string,columns:list<string>,required:bool}>
      * }>
      */
@@ -74,7 +80,13 @@ final class ServerDriverRegistry
                 'label' => 'L2J Mobius — CT0 Interlude',
                 'description' => __('L2J Mobius CT0 Interlude character and account game data tables.'),
                 'ready' => true,
+                'service_port' => 7777,
                 'character_created_at_column' => 'createDate',
+                'online_count' => [
+                    'table' => 'characters',
+                    'column' => 'online',
+                    'value' => 1,
+                ],
                 'requirements' => [
                     [
                         'table' => 'characters',
@@ -110,6 +122,7 @@ final class ServerDriverRegistry
                 'label' => 'RUSaCis',
                 'description' => __('RUSaCis driver placeholder. Schema support will be added later.'),
                 'ready' => false,
+                'service_port' => 7777,
                 'requirements' => [],
             ],
         ];
@@ -127,13 +140,13 @@ final class ServerDriverRegistry
         return array_keys($this->gameDrivers());
     }
 
-    /** @return array{label:string,description:string,ready:bool,requirements:list<array{table:string,columns:list<string>,required:bool}>}|null */
+    /** @return array{label:string,description:string,ready:bool,service_port:int,requirements:list<array{table:string,columns:list<string>,required:bool}>}|null */
     public function loginDriver(string $key): ?array
     {
         return $this->loginDrivers()[$key] ?? null;
     }
 
-    /** @return array{label:string,description:string,ready:bool,character_created_at_column?:string|null,requirements:list<array{table:string,columns:list<string>,required:bool}>}|null */
+    /** @return array{label:string,description:string,ready:bool,service_port:int,character_created_at_column?:string|null,online_count?:array{table:string,column:string,value:int|string},requirements:list<array{table:string,columns:list<string>,required:bool}>}|null */
     public function gameDriver(string $key): ?array
     {
         return $this->gameDrivers()[$key] ?? null;

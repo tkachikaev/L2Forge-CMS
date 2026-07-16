@@ -27,6 +27,14 @@ use Throwable;
  * @property string|null $database_username
  * @property string|null $database_password
  * @property string|null $database_charset
+ * @property string|null $service_host
+ * @property int|null $service_port
+ * @property string $monitor_status
+ * @property int $monitor_failures
+ * @property \Illuminate\Support\Carbon|null $monitor_checked_at
+ * @property \Illuminate\Support\Carbon|null $monitor_last_online_at
+ * @property int|null $online_players
+ * @property \Illuminate\Support\Carbon|null $online_checked_at
  * @property-read LoginServer|null $loginServer
  * @property-read Collection<int, GameServerTranslation> $translations
  */
@@ -47,6 +55,14 @@ class GameServer extends Model
         'database_username',
         'database_password',
         'database_charset',
+        'service_host',
+        'service_port',
+        'monitor_status',
+        'monitor_failures',
+        'monitor_checked_at',
+        'monitor_last_online_at',
+        'online_players',
+        'online_checked_at',
     ];
 
     protected $hidden = [
@@ -61,6 +77,12 @@ class GameServer extends Model
             'use_login_server_connection' => 'boolean',
             'database_port' => 'integer',
             'database_password' => 'encrypted',
+            'service_port' => 'integer',
+            'monitor_failures' => 'integer',
+            'monitor_checked_at' => 'datetime',
+            'monitor_last_online_at' => 'datetime',
+            'online_players' => 'integer',
+            'online_checked_at' => 'datetime',
         ];
     }
 

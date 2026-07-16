@@ -55,6 +55,10 @@ class GameServerManager extends Component
 
     public string $databaseCharset = 'utf8mb4';
 
+    public string $serviceHost = '';
+
+    public string $servicePort = '7777';
+
     /** @var array<string,mixed>|null */
     public ?array $connectionReport = null;
 
@@ -112,6 +116,8 @@ class GameServerManager extends Component
         $this->databaseUsername = trim((string) $server->database_username);
         $this->databasePassword = '';
         $this->databaseCharset = trim((string) $server->database_charset) !== '' ? trim((string) $server->database_charset) : 'utf8mb4';
+        $this->serviceHost = trim((string) $server->service_host);
+        $this->servicePort = (string) ($server->service_port ?? 7777);
         $this->connectionReport = null;
         $this->status = null;
         $this->showChecks = false;
@@ -205,6 +211,14 @@ class GameServerManager extends Component
                     'database_username' => null,
                     'database_password' => null,
                     'database_charset' => null,
+                    'service_host' => null,
+                    'service_port' => null,
+                    'monitor_status' => 'unknown',
+                    'monitor_failures' => 0,
+                    'monitor_checked_at' => null,
+                    'monitor_last_online_at' => null,
+                    'online_players' => null,
+                    'online_checked_at' => null,
                 ]);
             }
 
@@ -323,6 +337,8 @@ class GameServerManager extends Component
             'driver' => ['required', Rule::in(app(ServerDriverRegistry::class)->gameDriverKeys())],
             'useLoginServerConnection' => ['required', 'boolean'],
             'databasePassword' => ['nullable', 'string', 'max:1024'],
+            'serviceHost' => ['nullable', 'string', 'max:255'],
+            'servicePort' => ['required', 'integer', 'between:1,65535'],
         ];
 
         if (! $this->useLoginServerConnection) {
@@ -367,6 +383,8 @@ class GameServerManager extends Component
             'databaseUsername' => __('Database username'),
             'databasePassword' => __('Database password'),
             'databaseCharset' => __('Database charset'),
+            'serviceHost' => __('Service host'),
+            'servicePort' => __('Service port'),
         ];
     }
 
@@ -405,6 +423,8 @@ class GameServerManager extends Component
             'database_username' => trim((string) ($validated['databaseUsername'] ?? '')),
             'database_password' => $password,
             'database_charset' => trim((string) ($validated['databaseCharset'] ?? 'utf8mb4')),
+            'service_host' => $this->nullableString($validated['serviceHost'] ?? null),
+            'service_port' => (int) ($validated['servicePort'] ?? 7777),
         ];
     }
 
@@ -424,6 +444,14 @@ class GameServerManager extends Component
             'database_name' => $useLoginConnection ? null : trim((string) $validated['databaseName']),
             'database_username' => $useLoginConnection ? null : trim((string) $validated['databaseUsername']),
             'database_charset' => $useLoginConnection ? null : trim((string) $validated['databaseCharset']),
+            'service_host' => $this->nullableString($validated['serviceHost'] ?? null),
+            'service_port' => (int) $validated['servicePort'],
+            'monitor_status' => 'unknown',
+            'monitor_failures' => 0,
+            'monitor_checked_at' => null,
+            'monitor_last_online_at' => null,
+            'online_players' => null,
+            'online_checked_at' => null,
         ];
 
         if ($useLoginConnection) {
@@ -453,6 +481,8 @@ class GameServerManager extends Component
             'database_username' => $server->database_username,
             'database_charset' => $server->database_charset,
             'database_password_saved' => $server->hasDatabasePassword(),
+            'service_host' => $server->service_host,
+            'service_port' => $server->service_port,
         ];
     }
 
@@ -530,9 +560,18 @@ class GameServerManager extends Component
         $this->databaseUsername = '';
         $this->databasePassword = '';
         $this->databaseCharset = 'utf8mb4';
+        $this->serviceHost = '';
+        $this->servicePort = '7777';
         $this->connectionReport = null;
         $this->status = null;
         $this->showChecks = false;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
     }
 
     private function ensureAuthorized(): void

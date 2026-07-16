@@ -1,40 +1,89 @@
 @extends('admin.layouts.panel')
 
-@section('title', __('Control panel'))
-@section('description', __('One place to access every CMS section.'))
+@section('title', __('Dashboard'))
+@section('description', __('Compact overview of players and server availability.'))
 
 @section('content')
-<div class="admin-home-grid">
-    <a class="admin-section-card available" href="{{ route('admin.news.index') }}">
-        <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('News') }}</h2><p>{{ __('Create, illustrate and publish website news.') }}</p></div>
-        <span class="section-arrow" aria-hidden="true">→</span>
-    </a>
-    <a class="admin-section-card available" href="{{ route('admin.pages.index') }}">
-        <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('Pages') }}</h2><p>{{ __('Create multilingual pages, navigation links and SEO descriptions.') }}</p></div>
-        <span class="section-arrow" aria-hidden="true">→</span>
-    </a>
-    <a class="admin-section-card available" href="{{ route('admin.themes.index') }}">
-        <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('Themes') }}</h2><p>{{ __('Review installed themes and select the public website design.') }}</p></div>
-        <span class="section-arrow" aria-hidden="true">→</span>
-    </a>
-    <a class="admin-section-card available" href="{{ route('admin.settings.general') }}">
-        <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('Settings') }}</h2><p>{{ __('Website text, logo, favicon, time zone, mail and languages.') }}</p></div>
-        <span class="section-arrow" aria-hidden="true">→</span>
-    </a>
-    <a class="admin-section-card available" href="{{ route('admin.users.index') }}">
-        <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('Users') }}</h2><p>{{ __('Search, review activity and manage website accounts.') }}</p></div>
-        <span class="section-arrow" aria-hidden="true">→</span>
-    </a>
-    <article class="admin-section-card planned">
-        <div><span class="section-status">{{ __('In development') }}</span><h2>{{ __('Modules') }}</h2><p>{{ __('Manage functional CMS modules.') }}</p></div>
-    </article>
-    <a class="admin-section-card available" href="{{ route('admin.administrators.index') }}">
-        <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('Administrators') }}</h2><p>{{ __('Create, edit and disable control panel accounts.') }}</p></div>
-        <span class="section-arrow" aria-hidden="true">→</span>
-    </a>
-    <a class="admin-section-card available" href="{{ route('admin.logs.index') }}">
-        <div><span class="section-status">{{ __('Available') }}</span><h2>{{ __('Audit log') }}</h2><p>{{ __('Sign-ins, content changes, settings, users, mail and system events.') }}</p></div>
-        <span class="section-arrow" aria-hidden="true">→</span>
-    </a>
+@php
+    $stateLabels = [
+        'online' => __('Running'),
+        'offline' => __('Unavailable'),
+        'unknown' => __('Status pending'),
+    ];
+@endphp
+
+<div
+    class="admin-dashboard-stack"
+    data-server-monitor-dashboard
+    data-refresh-url="{{ public_route('server-monitor.refresh') }}"
+    data-auto-refresh="{{ $monitorRefreshDue ? '1' : '0' }}"
+>
+    <section class="dashboard-monitor-summary">
+        <div>
+            <span>{{ __('Total online') }}</span>
+            <strong data-monitor-total-online>{{ number_format($monitor['total_online'], 0, '.', ' ') }}</strong>
+            <small data-monitor-partial @if(! $monitor['partial']) hidden @endif>{{ __('Partial data') }}</small>
+        </div>
+        <div class="dashboard-monitor-summary-meta">
+            <span data-monitor-updated>
+                {{ $monitor['checked_at']
+                    ? __('Updated :time', ['time' => $monitor['checked_at']->diffForHumans()])
+                    : __('Not checked yet') }}
+            </span>
+            <form method="POST" action="{{ route('admin.server-monitor.refresh') }}">
+                @csrf
+                <button class="button button-secondary button-compact" type="submit">{{ __('Check now') }}</button>
+            </form>
+        </div>
+    </section>
+
+    <div class="dashboard-monitor-grid">
+        <section class="dashboard-monitor-card">
+            <header>
+                <h2>{{ __('Game servers') }}</h2>
+                <a href="{{ route('admin.settings.game-server') }}">{{ __('Settings') }}</a>
+            </header>
+
+            <div class="dashboard-monitor-list">
+                @forelse($monitor['game_servers'] as $server)
+                    <a class="dashboard-monitor-row" data-monitor-admin-game="{{ $server['id'] }}" href="{{ route('admin.settings.game-server') }}">
+                        <span class="dashboard-monitor-dot {{ $server['state'] }}" data-monitor-dot aria-hidden="true"></span>
+                        <span class="dashboard-monitor-name">{{ $server['name'] }}</span>
+                        <span class="dashboard-monitor-state" data-monitor-state>{{ $stateLabels[$server['state']] }}</span>
+                        <strong class="dashboard-monitor-online" data-monitor-online>
+                            {{ $server['players'] !== null
+                                ? __(':count online', ['count' => number_format($server['players'], 0, '.', ' ')])
+                                : '—' }}
+                        </strong>
+                    </a>
+                @empty
+                    <p class="dashboard-monitor-empty">{{ __('No game servers configured.') }}</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="dashboard-monitor-card">
+            <header>
+                <h2>{{ __('Login servers') }}</h2>
+                <a href="{{ route('admin.settings.login-server') }}">{{ __('Settings') }}</a>
+            </header>
+
+            <div class="dashboard-monitor-list">
+                @forelse($monitor['login_servers'] as $server)
+                    <a class="dashboard-monitor-row dashboard-monitor-row-login" data-monitor-admin-login="{{ $server['id'] }}" href="{{ route('admin.settings.login-server') }}">
+                        <span class="dashboard-monitor-dot {{ $server['state'] }}" data-monitor-dot aria-hidden="true"></span>
+                        <span class="dashboard-monitor-name">{{ $server['name'] }}</span>
+                        <span class="dashboard-monitor-state" data-monitor-state>{{ $stateLabels[$server['state']] }}</span>
+                    </a>
+                @empty
+                    <p class="dashboard-monitor-empty">{{ __('No login servers configured.') }}</p>
+                @endforelse
+            </div>
+        </section>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('assets/admin/js/server-monitor.js') }}?v={{ cms_version() }}" defer></script>
+@endpush

@@ -12,6 +12,10 @@ Artisan::command('cms:about', function () {
     $this->info('L2Forge CMS — open-source CMS for Lineage II servers.');
 })->purpose('Deprecated alias for l2forge:about');
 
+Schedule::command('l2forge:servers-monitor')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 Schedule::command('l2forge:logs-clean')
     ->dailyAt('03:30')
     ->withoutOverlapping();

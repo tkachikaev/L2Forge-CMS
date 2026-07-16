@@ -208,6 +208,9 @@ if ($LASTEXITCODE -ne 0) { throw "artisan optimize:clear failed with exit code $
 php artisan migrate --force
 if ($LASTEXITCODE -ne 0) { throw "artisan migrate failed with exit code $LASTEXITCODE." }
 
+php artisan l2forge:servers-monitor --force
+if ($LASTEXITCODE -ne 0) { throw "server monitoring refresh failed with exit code $LASTEXITCODE." }
+
 if (-not $SkipTests) {
     php artisan test
     if ($LASTEXITCODE -ne 0) { throw "artisan test failed with exit code $LASTEXITCODE." }

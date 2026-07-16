@@ -32,12 +32,16 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Localization\LocaleController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ServerMonitorStatusController;
 use Illuminate\Support\Facades\Route;
 
 $registerPublicRoutes = static function (bool $localized = false): void {
     $namePrefix = $localized ? 'localized.' : '';
 
     Route::get('/', HomeController::class)->name($namePrefix.'home');
+    Route::post('/server-status/refresh', ServerMonitorStatusController::class)
+        ->middleware('throttle:120,1')
+        ->name($namePrefix.'server-monitor.refresh');
     Route::get('/news', [NewsController::class, 'index'])->name($namePrefix.'news.index');
 
     if ($localized) {
@@ -145,6 +149,9 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
 
     Route::middleware('admin.auth')->group(function (): void {
         Route::get('', AdminDashboardController::class)->name('dashboard');
+        Route::post('/server-monitor/refresh', [AdminDashboardController::class, 'refresh'])
+            ->middleware('throttle:6,1')
+            ->name('server-monitor.refresh');
         Route::redirect('/dashboard', '/admin');
 
         Route::get('/account/security', [AdminAccountSecurityController::class, 'show'])->name('account.security');
@@ -273,6 +280,8 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
             ->middleware('throttle:3,1')
             ->name('settings.security.logs.cleanup');
         Route::get('/settings/system', [AdminSettingsController::class, 'system'])->name('settings.system');
+        Route::put('/settings/system/monitoring', [AdminSettingsController::class, 'updateSystemMonitoring'])
+            ->name('settings.system.monitoring.update');
         Route::get('/settings/languages', [AdminSettingsController::class, 'languages'])->name('settings.languages');
         Route::put('/settings/languages', [AdminSettingsController::class, 'updateLanguages'])->name('settings.languages.update');
 

@@ -69,6 +69,7 @@ class AuditLog extends Model
             'settings.mail_updated' => __('Mail settings changed'),
             'settings.languages_updated' => __('Language settings changed'),
             'settings.security_updated' => __('Security settings changed'),
+            'settings.server_monitor_updated' => __('Server monitoring settings changed'),
             'mail.template_updated' => __('Mail template changed'),
             'mail.template_reset' => __('Mail template restored'),
             'mail.template_test_sent' => __('Mail template test sent'),

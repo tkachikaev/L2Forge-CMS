@@ -27,6 +27,10 @@ class HashingConfigurationTest extends TestCase
 
     public function test_argon_driver_can_verify_and_mark_a_legacy_bcrypt_hash_for_rehashing(): void
     {
+        if (! defined('PASSWORD_ARGON2ID') || ! in_array('argon2id', password_algos(), true)) {
+            $this->markTestSkipped('Argon2id is not available in this PHP executable.');
+        }
+
         $hasher = new Argon2IdHasher([
             'memory' => 1024,
             'threads' => 1,

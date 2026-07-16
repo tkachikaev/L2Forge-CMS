@@ -205,3 +205,10 @@
 /* CMS content pages */
 .cms-page { max-width: 980px; }
 .cms-page-prose { padding: clamp(24px, 4vw, 48px); }
+
+/* Real per-server status 0.13.23 */
+.server-row{grid-template-columns:minmax(210px,.65fr) minmax(320px,1.35fr)}
+.server-row .status.unknown{color:var(--muted)}
+.server-row .status.unknown:before{background:#7d8589;box-shadow:none}
+.server-row .status.offline:before{box-shadow:0 0 10px rgba(213,107,100,.35)}
+@media(max-width:780px){.server-row{grid-template-columns:1fr}}

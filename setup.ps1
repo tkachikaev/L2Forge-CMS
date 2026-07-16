@@ -306,6 +306,7 @@ if (-not $appKeyMatch.Success -or [string]::IsNullOrWhiteSpace($appKeyMatch.Grou
 
 Invoke-Checked 'Clearing Laravel caches' { php artisan optimize:clear }
 Invoke-Checked 'Running database migrations and seeders' { php artisan migrate --seed --force }
+Invoke-Checked 'Refreshing server monitoring snapshot' { php artisan l2forge:servers-monitor --force }
 Invoke-Checked 'Application smoke check' { php artisan about }
 
 if (-not $SkipTests) {

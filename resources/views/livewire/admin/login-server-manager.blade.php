@@ -157,6 +157,23 @@
                     </div>
                 </section>
 
+                <details class="server-advanced-settings">
+                    <summary>{{ __('Additional network settings') }}</summary>
+                    <p>{{ __('Used to check whether the LoginServer process is actually listening. Leave the host empty to use the database host.') }}</p>
+                    <div class="server-form-grid">
+                        <div class="form-group">
+                            <label for="live_login_service_host">{{ __('Service host') }}</label>
+                            <input id="live_login_service_host" type="text" maxlength="255" wire:model="serviceHost" placeholder="{{ $databaseHost }}">
+                            @error('serviceHost')<small class="field-error">{{ $message }}</small>@enderror
+                        </div>
+                        <div class="form-group server-form-port">
+                            <label for="live_login_service_port">{{ __('Service port') }}</label>
+                            <input id="live_login_service_port" type="number" min="1" max="65535" wire:model="servicePort">
+                            @error('servicePort')<small class="field-error">{{ $message }}</small>@enderror
+                        </div>
+                    </div>
+                </details>
+
                 @include('livewire.admin._database-report', ['report' => $connectionReport])
             </div>
 

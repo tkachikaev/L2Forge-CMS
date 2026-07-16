@@ -47,24 +47,34 @@
 
 <section class="container dashboard">
     @if ($servers !== [])
-        <article class="panel server-panel">
+        <article
+            class="panel server-panel"
+            data-server-monitor
+            data-refresh-url="{{ public_route('server-monitor.refresh') }}"
+            data-auto-refresh="{{ $monitorRefreshDue ? '1' : '0' }}"
+        >
             <div class="panel-title">
                 <h2>{{ count($servers) > 1 ? __('Game servers') : __('Server status') }}</h2>
             </div>
 
             <div class="server-list">
                 @foreach ($servers as $currentServer)
-                    <div class="server-row">
+                    @php
+                        $statusLabel = match ($currentServer['state']) {
+                            'online' => __('In game'),
+                            'offline' => __('Unavailable'),
+                            default => __('Status pending'),
+                        };
+                    @endphp
+                    <div class="server-row" data-monitor-game-server="{{ $currentServer['id'] }}">
                         <div class="server-summary">
                             <strong>{{ $currentServer['name'] }}</strong>
-                            <span class="status {{ $currentServer['online'] ? 'online' : 'offline' }}">
-                                {{ $currentServer['online'] ? __('Online') : __('Offline') }}
-                            </span>
-                            <small>{{ number_format($currentServer['players'], 0, '.', ' ') }} / {{ number_format($currentServer['max_players'], 0, '.', ' ') }} {{ __('players') }}</small>
-                        </div>
-
-                        <div class="progress" aria-label="{{ __('Server population') }}">
-                            <span style="width: {{ min(100, ($currentServer['players'] / max(1, $currentServer['max_players'])) * 100) }}%"></span>
+                            <span class="status {{ $currentServer['state'] }}" data-monitor-public-state>{{ $statusLabel }}</span>
+                            <small data-monitor-public-online aria-live="polite">
+                                {{ $currentServer['players'] !== null
+                                    ? __('Online: :count', ['count' => number_format($currentServer['players'], 0, '.', ' ')])
+                                    : __('Online temporarily unavailable') }}
+                            </small>
                         </div>
 
                         @if ($currentServer['show_chronicle'] || $currentServer['show_rates'] || $currentServer['show_mode'])

@@ -69,4 +69,13 @@ return [
         'mode' => env('GAME_MODE', 'PvP'),
         'max_online' => (int) env('GAME_MAX_ONLINE', 5000),
     ],
+
+    'server_monitor' => [
+        'refresh_interval_seconds' => (int) env('SERVER_MONITOR_REFRESH_INTERVAL_SECONDS', 60),
+        'lock_seconds' => (int) env('SERVER_MONITOR_LOCK_SECONDS', 300),
+        'port_timeout_seconds' => (float) env('SERVER_MONITOR_PORT_TIMEOUT_SECONDS', 1.0),
+        'failure_threshold' => (int) env('SERVER_MONITOR_FAILURE_THRESHOLD', 3),
+        'status_stale_seconds' => (int) env('SERVER_MONITOR_STATUS_STALE_SECONDS', 180),
+        'online_stale_seconds' => (int) env('SERVER_MONITOR_ONLINE_STALE_SECONDS', 300),
+    ],
 ];

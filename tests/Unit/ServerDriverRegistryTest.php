@@ -14,6 +14,7 @@ class ServerDriverRegistryTest extends TestCase
         $this->assertNotNull($driver);
         $this->assertSame(__('L2J Mobius — Interlude and newer'), $driver['label']);
         $this->assertTrue($driver['ready']);
+        $this->assertSame(2106, $driver['service_port']);
         $this->assertSame([
             [
                 'table' => 'accounts',
@@ -40,6 +41,7 @@ class ServerDriverRegistryTest extends TestCase
         $this->assertNotNull($driver);
         $this->assertSame(__('L2J Mobius Legacy — C1/C4'), $driver['label']);
         $this->assertTrue($driver['ready']);
+        $this->assertSame(2106, $driver['service_port']);
         $this->assertSame([
             [
                 'table' => 'accounts',
@@ -63,7 +65,13 @@ class ServerDriverRegistryTest extends TestCase
 
         $this->assertNotNull($driver);
         $this->assertTrue($driver['ready']);
+        $this->assertSame(7777, $driver['service_port']);
         $this->assertSame('createDate', $driver['character_created_at_column']);
+        $this->assertSame([
+            'table' => 'characters',
+            'column' => 'online',
+            'value' => 1,
+        ], $driver['online_count']);
         $this->assertSame([
             [
                 'table' => 'characters',

@@ -15,6 +15,7 @@ use App\Http\Requests\Admin\SaveNewsRequest;
 use App\Http\Requests\Admin\SavePageRequest;
 use App\Http\Requests\Admin\SaveRegistrationSettingsRequest;
 use App\Http\Requests\Admin\SaveSecuritySettingsRequest;
+use App\Http\Requests\Admin\SaveServerMonitorSettingsRequest;
 use App\Http\Requests\Admin\SendCustomMailRequest;
 use App\Http\Requests\Admin\SendMailTemplateTestRequest;
 use App\Http\Requests\Admin\SendTestMailRequest;
@@ -65,6 +66,7 @@ class AdminFormRequestAuthorizationTest extends TestCase
             'page' => [SavePageRequest::class],
             'registration settings' => [SaveRegistrationSettingsRequest::class],
             'security settings' => [SaveSecuritySettingsRequest::class],
+            'server monitor settings' => [SaveServerMonitorSettingsRequest::class],
             'custom mail' => [SendCustomMailRequest::class],
             'mail template test' => [SendMailTemplateTestRequest::class],
             'mail test' => [SendTestMailRequest::class],

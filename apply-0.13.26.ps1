@@ -14,40 +14,41 @@ if (-not (Test-Path '.env')) {
 }
 
 if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete 0.13.22 patch with file replacement enabled.'
+    throw 'VERSION is missing. Re-extract the complete 0.13.26 patch with file replacement enabled.'
 }
 
 $cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
-if ($cmsVersion -ne '0.13.22') {
+if ($cmsVersion -ne '0.13.26') {
     throw "Unexpected patch version: $cmsVersion"
 }
 
 $requiredFiles = @(
-    'app\Models\User.php',
-    'app\Services\GameServerSettings.php',
-    'app\Livewire\Admin\GameServerManager.php',
-    'app\Http\Controllers\Auth\AccountController.php',
-    'app\Http\Controllers\Account\GameAccountController.php',
-    'app\Http\Controllers\Account\GameAccountPasswordController.php',
+    'app\Services\Servers\ServerMonitorSettings.php',
+    'app\Services\Servers\ServerMonitorCoordinator.php',
+    'app\Services\Servers\ServerStatusOverview.php',
+    'tests\Feature\ServerMonitoringTest.php',
+    'tests\Unit\HashingConfigurationTest.php',
     'update.ps1'
 )
 
 foreach ($requiredFile in $requiredFiles) {
     if (-not (Test-Path $requiredFile -PathType Leaf)) {
-        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.13.22 patch with file replacement enabled."
+        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.13.26 patch with file replacement enabled."
     }
 }
 
 Write-Host "L2Forge CMS $cmsVersion update"
-Write-Host 'Hiding stale player account cards after GameServer removal.'
+Write-Host 'Fixing monitoring freshness checks and PHP builds without Argon2id.'
 Write-Host ''
 
 Get-ChildItem -Path $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -ne 'apply-0.13.22.ps1' } |
+    Where-Object { $_.Name -ne 'apply-0.13.26.ps1' } |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
 & "$PSScriptRoot\update.ps1" -SkipTests:$SkipTests
 
 Write-Host ''
 Write-Host "L2Forge CMS $cmsVersion is ready." -ForegroundColor Green
+Write-Host 'Server monitoring freshness checks now use timezone-safe timestamps.'
+Write-Host 'PHP builds without Argon2id now skip the Argon-specific regression test.'
 Write-Host 'Developer quality gate: .\quality.ps1'
