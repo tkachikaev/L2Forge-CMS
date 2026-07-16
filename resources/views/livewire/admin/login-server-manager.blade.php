@@ -180,7 +180,7 @@
                 <p>{{ __('The connection can only be deleted when no game servers or player accounts use it.') }}</p>
                 <div>
                     <button class="button button-secondary" type="button" wire:click="cancelDelete">{{ __('Cancel') }}</button>
-                    <button class="button button-danger" type="button" wire:click="delete">{{ __('Delete') }}</button>
+                    <button class="button button-danger" type="button" wire:click="deleteServer" wire:loading.attr="disabled" wire:target="deleteServer">{{ __('Delete') }}</button>
                 </div>
             </div>
         </div>

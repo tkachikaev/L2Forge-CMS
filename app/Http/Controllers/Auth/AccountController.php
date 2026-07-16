@@ -8,6 +8,7 @@ use App\Models\GameServer;
 use App\Models\LoginServer;
 use App\Models\User;
 use App\Services\GameAccountSettings;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -17,7 +18,7 @@ class AccountController extends Controller
         Request $request,
         GameAccountSettings $settings,
         GameAccountGateway $gateway,
-    ): View {
+    ): View|RedirectResponse {
         $user = $request->user();
         if (! $user instanceof User) {
             abort(401);
@@ -27,6 +28,13 @@ class AccountController extends Controller
             ->with(['loginServer.gameServers.translations', 'registrationGameServer.translations'])
             ->latest('id')
             ->get();
+
+        if ($accounts->count() === 1) {
+            return redirect()->to(public_route('game-accounts.show', [
+                'gameAccount' => $accounts->firstOrFail(),
+            ]));
+        }
+
         $availableServers = GameServer::query()
             ->with('loginServer')
             ->whereNotNull('login_server_id')

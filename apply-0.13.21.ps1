@@ -14,34 +14,34 @@ if (-not (Test-Path '.env')) {
 }
 
 if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete 0.13.18 patch with file replacement enabled.'
+    throw 'VERSION is missing. Re-extract the complete 0.13.21 patch with file replacement enabled.'
 }
 
 $cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
-if ($cmsVersion -ne '0.13.18') {
+if ($cmsVersion -ne '0.13.21') {
     throw "Unexpected patch version: $cmsVersion"
 }
 
 $requiredFiles = @(
-    'app\Services\Servers\ServerDriverRegistry.php',
-    'app\Services\GameAccounts\ExternalGameAccountGateway.php',
-    'lang\ru.json',
-    'lang\en.json',
+    'app\Livewire\Admin\LoginServerManager.php',
+    'app\Livewire\Admin\GameServerManager.php',
+    'resources\views\livewire\admin\login-server-manager.blade.php',
+    'resources\views\livewire\admin\game-server-manager.blade.php',
     'update.ps1'
 )
 
 foreach ($requiredFile in $requiredFiles) {
     if (-not (Test-Path $requiredFile -PathType Leaf)) {
-        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.13.18 patch with file replacement enabled."
+        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.13.21 patch with file replacement enabled."
     }
 }
 
 Write-Host "L2Forge CMS $cmsVersion update"
-Write-Host 'Adding separate L2J Mobius LoginServer drivers for Legacy C1/C4 and Interlude or newer.'
+Write-Host 'Fixing LoginServer and GameServer deletion confirmations.'
 Write-Host ''
 
 Get-ChildItem -Path $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -ne 'apply-0.13.18.ps1' } |
+    Where-Object { $_.Name -ne 'apply-0.13.21.ps1' } |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
 & "$PSScriptRoot\update.ps1" -SkipTests:$SkipTests

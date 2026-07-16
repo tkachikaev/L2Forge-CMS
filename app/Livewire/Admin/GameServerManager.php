@@ -249,7 +249,7 @@ class GameServerManager extends Component
         $this->confirmingDeleteId = null;
     }
 
-    public function delete(): void
+    public function deleteServer(): void
     {
         $this->ensureAuthorized();
 

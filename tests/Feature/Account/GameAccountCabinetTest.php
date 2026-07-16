@@ -35,24 +35,93 @@ class GameAccountCabinetTest extends TestCase
         $this->get('/account/game-accounts/create')->assertRedirect(route('login'));
     }
 
-    public function test_player_sees_a_separate_minimal_account_dashboard(): void
+    public function test_single_game_account_opens_immediately_from_the_player_account(): void
     {
         $user = $this->user();
         [$loginServer, $gameServer] = $this->servers();
-        UserGameAccount::query()->create([
+        $account = UserGameAccount::query()->create([
             'user_id' => $user->id,
             'login_server_id' => $loginServer->id,
             'registration_game_server_id' => $gameServer->id,
             'game_login' => 'PlayerOne',
             'normalized_login' => 'playerone',
         ]);
+        $this->gateway->charactersByServer[$gameServer->id] = [[
+            'id' => 100,
+            'name' => 'Bubi',
+            'level' => 78,
+            'class_id' => 88,
+            'online' => true,
+            'clan' => 'L2Forge',
+            'last_access' => 0,
+            'created_at' => CarbonImmutable::parse('2024-04-05'),
+        ]];
 
-        $this->actingAs($user)->get('/account')
+        $this->actingAs($user)
+            ->get('/account')
+            ->assertRedirect(route('game-accounts.show', ['gameAccount' => $account]));
+
+        $this->actingAs($user)
+            ->get('/account/game-accounts/'.$account->id)
             ->assertOk()
             ->assertSee('Личный кабинет игрока')
             ->assertSee('PlayerOne')
+            ->assertSee('Bubi')
             ->assertSee('Interlude x10')
+            ->assertDontSee('Подробнее')
             ->assertDontSee('Панель управления');
+    }
+
+    public function test_localized_player_account_redirects_to_the_single_localized_game_account(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        $account = UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'LocalizedOne',
+            'normalized_login' => 'localizedone',
+        ]);
+
+        $this->actingAs($user)
+            ->get('/ru/account')
+            ->assertRedirect(route('localized.game-accounts.show', [
+                'locale' => 'ru',
+                'gameAccount' => $account,
+            ]));
+    }
+
+    public function test_player_account_keeps_the_dashboard_when_no_game_accounts_exist(): void
+    {
+        $user = $this->user();
+        $this->servers();
+
+        $this->actingAs($user)
+            ->get('/account')
+            ->assertOk()
+            ->assertSee('Игровых аккаунтов пока нет')
+            ->assertSee('Создать игровой аккаунт');
+    }
+
+    public function test_single_account_details_keep_the_create_action_when_another_account_is_allowed(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        $this->settings(['max_accounts' => 2]);
+        $account = UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'Expandable01',
+            'normalized_login' => 'expandable01',
+        ]);
+
+        $this->actingAs($user)
+            ->get('/account/game-accounts/'.$account->id)
+            ->assertOk()
+            ->assertSee('Создать игровой аккаунт')
+            ->assertDontSee('← Мои аккаунты');
     }
 
     public function test_player_sees_game_servers_instead_of_the_login_server_name(): void
@@ -75,6 +144,13 @@ class GameAccountCabinetTest extends TestCase
             'registration_game_server_id' => $gameServer->id,
             'game_login' => 'MultiWorld01',
             'normalized_login' => 'multiworld01',
+        ]);
+        UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'SecondWorld02',
+            'normalized_login' => 'secondworld02',
         ]);
 
         $this->actingAs($user)

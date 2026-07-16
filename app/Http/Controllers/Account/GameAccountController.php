@@ -152,8 +152,11 @@ class GameAccountController extends Controller
         }
     }
 
-    public function show(Request $request, InterludeClassNames $classNames): View
-    {
+    public function show(
+        Request $request,
+        InterludeClassNames $classNames,
+        GameAccountSettings $settings,
+    ): View {
         $gameAccount = $this->gameAccountId($request);
         $user = $request->user();
         if (! $user instanceof User) {
@@ -163,6 +166,11 @@ class GameAccountController extends Controller
         $account = $user->gameAccounts()
             ->with(['loginServer.gameServers.translations', 'registrationGameServer.translations'])
             ->findOrFail($gameAccount);
+        $accountCount = $user->gameAccounts()->count();
+        $settingsValues = $settings->values();
+        $canCreateAccount = $settingsValues['enabled']
+            && $accountCount < $settingsValues['max_accounts']
+            && $this->availableGameServers()->isNotEmpty();
         $summary = null;
         $summaryUnavailable = false;
 
@@ -202,6 +210,8 @@ class GameAccountController extends Controller
             'summary' => $summary,
             'summaryUnavailable' => $summaryUnavailable,
             'worlds' => $worlds,
+            'accountCount' => $accountCount,
+            'canCreateAccount' => $canCreateAccount,
         ]);
     }
 

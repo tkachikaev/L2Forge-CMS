@@ -4,7 +4,9 @@
 @section('content')
 @php($gameServers = $account->loginServer->gameServers)
 <div class="account-page-heading compact">
-    <a href="{{ public_route('account') }}">← {{ __('My accounts') }}</a>
+    @if ($accountCount > 1)
+        <a href="{{ public_route('account') }}">← {{ __('My accounts') }}</a>
+    @endif
     <span class="account-eyebrow">{{ __('Game account') }}</span>
     <div class="account-title-row">
         <h1>{{ $account->game_login }}</h1>
@@ -16,6 +18,11 @@
     </div>
     @if ($gameServers->isNotEmpty())
         <p>{{ $gameServers->map(static fn ($gameServer): string => $gameServer->nameFor())->implode(' · ') }}</p>
+    @endif
+    @if ($canCreateAccount)
+        <div class="account-page-actions">
+            <a class="account-button secondary" href="{{ public_route('game-accounts.create') }}">{{ __('Create game account') }}</a>
+        </div>
     @endif
 </div>
 

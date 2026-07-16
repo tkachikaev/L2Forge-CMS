@@ -179,6 +179,53 @@ class ReactiveServerManagementTest extends TestCase
         $this->assertTrue($gameServer->use_login_server_connection);
     }
 
+    public function test_unused_login_server_can_be_deleted_from_the_livewire_confirmation(): void
+    {
+        $server = LoginServer::query()->create($this->loginServerValues());
+        $this->actingAs($this->createAdmin(), 'admin');
+
+        Livewire::test(LoginServerManager::class)
+            ->call('confirmDelete', $server->id)
+            ->assertSet('confirmingDeleteId', $server->id)
+            ->call('deleteServer')
+            ->assertSet('confirmingDeleteId', null)
+            ->assertSee('LoginServer «Primary Login» удалён.');
+
+        $this->assertDatabaseMissing('login_servers', ['id' => $server->id]);
+    }
+
+    public function test_game_server_can_be_deleted_from_the_livewire_confirmation(): void
+    {
+        $server = GameServer::query()->firstOrFail();
+        $this->actingAs($this->createAdmin(), 'admin');
+
+        Livewire::test(GameServerManager::class)
+            ->call('confirmDelete', $server->id)
+            ->assertSet('confirmingDeleteId', $server->id)
+            ->call('deleteServer')
+            ->assertSet('confirmingDeleteId', null)
+            ->assertSee('Игровой сервер «'.$server->name.'» удалён.');
+
+        $this->assertDatabaseMissing('game_servers', ['id' => $server->id]);
+    }
+
+    public function test_delete_confirmation_buttons_use_a_non_reserved_livewire_action(): void
+    {
+        $loginServer = LoginServer::query()->create($this->loginServerValues());
+        $gameServer = GameServer::query()->firstOrFail();
+        $this->actingAs($this->createAdmin(), 'admin');
+
+        Livewire::test(LoginServerManager::class)
+            ->call('confirmDelete', $loginServer->id)
+            ->assertSee('wire:click="deleteServer"', false)
+            ->assertDontSee('wire:click="delete"', false);
+
+        Livewire::test(GameServerManager::class)
+            ->call('confirmDelete', $gameServer->id)
+            ->assertSee('wire:click="deleteServer"', false)
+            ->assertDontSee('wire:click="delete"', false);
+    }
+
     public function test_server_drawers_close_on_backdrop_pointer_press_instead_of_click_release(): void
     {
         $this->actingAs($this->createAdmin(), 'admin');
