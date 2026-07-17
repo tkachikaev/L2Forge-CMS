@@ -1373,7 +1373,6 @@
     "The game accounts and characters will not be deleted. Their access in the personal account will be restored automatically after a replacement GameServer is connected to this LoginServer.": "The game accounts and characters will not be deleted. Their access in the personal account will be restored automatically after a replacement GameServer is connected to this LoginServer.",
     "Delete and hide accounts (:count)": "Delete and hide accounts (:count)",
     "The deletion impact changed. Review the updated account count and confirm again.": "The deletion impact changed. Review the updated account count and confirm again.",
-    "This GameServer cannot be deleted through the legacy endpoint because :count game accounts would become unavailable. Use the current server card confirmation.": "This GameServer cannot be deleted through the legacy endpoint because :count game accounts would become unavailable. Use the current server card confirmation.",
     "Temporarily unavailable game accounts also count toward the limit.": "Temporarily unavailable game accounts also count toward the limit.",
     "Database status": "Database status",
     "Service status": "Service status",

@@ -1,66 +1,76 @@
 (() => {
     'use strict';
 
-    const cleanupCallbacks = [];
+    const initialize = () => {
+        return (() => {
+            'use strict';
 
-    const initializeImageUpload = (container) => {
-        const input = container.querySelector('[data-settings-file]');
-        const selectButton = container.querySelector('[data-settings-file-select]');
-        const preview = container.querySelector('[data-settings-preview]');
-        const remove = container.querySelector('[data-settings-remove]');
+            const cleanupCallbacks = [];
 
-        if (!(input instanceof HTMLInputElement) || !(preview instanceof HTMLElement)) {
-            return;
-        }
+            const initializeImageUpload = (container) => {
+                const input = container.querySelector('[data-settings-file]');
+                const selectButton = container.querySelector('[data-settings-file-select]');
+                const preview = container.querySelector('[data-settings-preview]');
+                const remove = container.querySelector('[data-settings-remove]');
 
-        let objectUrl = null;
+                if (!(input instanceof HTMLInputElement) || !(preview instanceof HTMLElement)) {
+                    return;
+                }
 
-        const clearObjectUrl = () => {
-            if (objectUrl) {
-                URL.revokeObjectURL(objectUrl);
-                objectUrl = null;
-            }
-        };
+                let objectUrl = null;
 
-        const showSelectedFile = () => {
-            const file = input.files?.[0];
-            if (!file) {
-                return;
-            }
+                const clearObjectUrl = () => {
+                    if (objectUrl) {
+                        URL.revokeObjectURL(objectUrl);
+                        objectUrl = null;
+                    }
+                };
 
-            clearObjectUrl();
-            objectUrl = URL.createObjectURL(file);
+                const showSelectedFile = () => {
+                    const file = input.files?.[0];
+                    if (!file) {
+                        return;
+                    }
 
-            let image = preview.querySelector('[data-settings-preview-image]');
-            if (!(image instanceof HTMLImageElement)) {
-                image = document.createElement('img');
-                image.dataset.settingsPreviewImage = '';
-                preview.replaceChildren(image);
-            }
+                    clearObjectUrl();
+                    objectUrl = URL.createObjectURL(file);
 
-            image.src = objectUrl;
-            image.alt = container.dataset.previewAlt || 'Selected image preview';
-            preview.classList.add('has-image');
-            preview.classList.remove('marked-for-removal');
+                    let image = preview.querySelector('[data-settings-preview-image]');
+                    if (!(image instanceof HTMLImageElement)) {
+                        image = document.createElement('img');
+                        image.dataset.settingsPreviewImage = '';
+                        preview.replaceChildren(image);
+                    }
 
-            if (remove instanceof HTMLInputElement) {
-                remove.checked = false;
-            }
-        };
+                    image.src = objectUrl;
+                    image.alt = container.dataset.previewAlt || 'Selected image preview';
+                    preview.classList.add('has-image');
+                    preview.classList.remove('marked-for-removal');
 
-        selectButton?.addEventListener('click', () => input.click());
-        input.addEventListener('change', showSelectedFile);
+                    if (remove instanceof HTMLInputElement) {
+                        remove.checked = false;
+                    }
+                };
 
-        remove?.addEventListener('change', () => {
-            preview.classList.toggle('marked-for-removal', remove.checked);
-        });
+                selectButton?.addEventListener('click', () => input.click());
+                input.addEventListener('change', showSelectedFile);
 
-        cleanupCallbacks.push(clearObjectUrl);
+                remove?.addEventListener('change', () => {
+                    preview.classList.toggle('marked-for-removal', remove.checked);
+                });
+
+                cleanupCallbacks.push(clearObjectUrl);
+            };
+
+            document.querySelectorAll('[data-settings-image]').forEach(initializeImageUpload);
+
+            return () => cleanupCallbacks.forEach((callback) => callback());
+        })();
     };
 
-    document.querySelectorAll('[data-settings-image]').forEach(initializeImageUpload);
-
-    const cleanup = () => cleanupCallbacks.forEach((callback) => callback());
-    window.addEventListener('beforeunload', cleanup, { once: true });
-    document.addEventListener('livewire:navigating', cleanup, { once: true });
+    if (window.L2ForgeAdmin?.registerPage) {
+        window.L2ForgeAdmin.registerPage('settings', initialize);
+    } else {
+        initialize();
+    }
 })();

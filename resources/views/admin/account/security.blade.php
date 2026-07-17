@@ -123,5 +123,5 @@
 
 @push('scripts')
 <script src="{{ asset('assets/admin/js/qrcode.bundle.js') }}?v={{ cms_version() }}" data-navigate-once defer></script>
-<script src="{{ asset('assets/admin/js/two-factor.js') }}?v={{ cms_version() }}" defer></script>
+<script src="{{ asset('assets/admin/js/two-factor.js') }}?v={{ cms_version() }}" defer data-navigate-once></script>
 @endpush

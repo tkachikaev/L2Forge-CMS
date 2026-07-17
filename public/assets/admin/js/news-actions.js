@@ -1,50 +1,62 @@
 (() => {
     'use strict';
 
-    const initializeDeleteDialog = () => {
-        const dialog = document.querySelector('[data-news-delete-dialog]');
-        const form = dialog?.querySelector('[data-news-delete-form]');
-        const title = dialog?.querySelector('[data-news-delete-title]');
-        const cancelButton = dialog?.querySelector('[data-news-delete-cancel]');
-        const openButtons = document.querySelectorAll('[data-news-delete-open]');
+    const initialize = () => {
+        (() => {
+            'use strict';
 
-        if (!(dialog instanceof HTMLDialogElement) || !(form instanceof HTMLFormElement) || openButtons.length === 0) {
-            return;
-        }
+            const initializeDeleteDialog = () => {
+                const dialog = document.querySelector('[data-news-delete-dialog]');
+                const form = dialog?.querySelector('[data-news-delete-form]');
+                const title = dialog?.querySelector('[data-news-delete-title]');
+                const cancelButton = dialog?.querySelector('[data-news-delete-cancel]');
+                const openButtons = document.querySelectorAll('[data-news-delete-open]');
 
-        openButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                const deleteUrl = button.dataset.newsDeleteUrl ?? '';
-                const newsTitle = button.dataset.newsDeleteTitle ?? '';
-
-                if (deleteUrl === '') {
+                if (!(dialog instanceof HTMLDialogElement) || !(form instanceof HTMLFormElement) || openButtons.length === 0) {
                     return;
                 }
 
-                form.action = deleteUrl;
-                if (title) {
-                    title.textContent = newsTitle;
-                }
+                openButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const deleteUrl = button.dataset.newsDeleteUrl ?? '';
+                        const newsTitle = button.dataset.newsDeleteTitle ?? '';
 
-                dialog.showModal();
-            });
-        });
+                        if (deleteUrl === '') {
+                            return;
+                        }
 
-        cancelButton?.addEventListener('click', () => dialog.close());
+                        form.action = deleteUrl;
+                        if (title) {
+                            title.textContent = newsTitle;
+                        }
 
-        dialog.addEventListener('click', (event) => {
-            if (event.target === dialog) {
-                dialog.close();
-            }
-        });
+                        dialog.showModal();
+                    });
+                });
 
-        dialog.addEventListener('close', () => {
-            form.removeAttribute('action');
-            if (title) {
-                title.textContent = '';
-            }
-        });
+                cancelButton?.addEventListener('click', () => dialog.close());
+
+                dialog.addEventListener('click', (event) => {
+                    if (event.target === dialog) {
+                        dialog.close();
+                    }
+                });
+
+                dialog.addEventListener('close', () => {
+                    form.removeAttribute('action');
+                    if (title) {
+                        title.textContent = '';
+                    }
+                });
+            };
+
+            initializeDeleteDialog();
+        })();
     };
 
-    initializeDeleteDialog();
+    if (window.L2ForgeAdmin?.registerPage) {
+        window.L2ForgeAdmin.registerPage('news-actions', initialize);
+    } else {
+        initialize();
+    }
 })();

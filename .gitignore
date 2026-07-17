@@ -1,5 +1,7 @@
 /.phpunit.cache
 /node_modules
+/test-results
+/playwright-report
 /public/build
 /public/hot
 /public/storage

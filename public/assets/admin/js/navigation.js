@@ -1,38 +1,26 @@
 (() => {
-    const groups = Array.from(document.querySelectorAll('[data-admin-menu-group]'));
-
-    if (groups.length === 0) {
-        return;
-    }
-
     const storageKey = 'l2forge.admin.menu.groups';
-    let savedState = {};
+    const initializedAttribute = 'data-admin-navigation-ready';
+    const synchronizingAttribute = 'data-admin-menu-synchronizing';
 
-    try {
-        const parsedState = JSON.parse(window.localStorage.getItem(storageKey) ?? '{}');
+    const loadSavedState = () => {
+        try {
+            const parsedState = JSON.parse(window.localStorage.getItem(storageKey) ?? '{}');
 
-        if (parsedState && typeof parsedState === 'object' && !Array.isArray(parsedState)) {
-            savedState = parsedState;
+            if (parsedState && typeof parsedState === 'object' && !Array.isArray(parsedState)) {
+                return parsedState;
+            }
+        } catch {
+            // The menu remains functional when browser storage is unavailable.
         }
-    } catch {
-        savedState = {};
-    }
 
-    groups.forEach((group) => {
-        const groupName = group.dataset.adminMenuGroup;
-        const containsActiveItem = group.querySelector('.admin-menu-item.active') !== null;
+        return {};
+    };
 
-        if (containsActiveItem) {
-            group.open = true;
-        } else if (typeof savedState[groupName] === 'boolean') {
-            group.open = savedState[groupName];
-        }
-    });
-
-    const saveState = () => {
+    const saveState = (sidebar) => {
         const state = {};
 
-        groups.forEach((group) => {
+        sidebar.querySelectorAll('[data-admin-menu-group]').forEach((group) => {
             state[group.dataset.adminMenuGroup] = group.open;
         });
 
@@ -43,7 +31,75 @@
         }
     };
 
-    groups.forEach((group) => {
-        group.addEventListener('toggle', saveState);
-    });
+    const currentMenuItem = (sidebar) => sidebar.querySelector('.admin-menu-item.active, .admin-menu-item[data-current]');
+
+    const synchronizeSidebar = () => {
+        const sidebar = document.querySelector('[data-admin-sidebar]');
+
+        if (!sidebar) {
+            return;
+        }
+
+        const savedState = loadSavedState();
+        const groups = Array.from(sidebar.querySelectorAll('[data-admin-menu-group]'));
+
+        sidebar.setAttribute(synchronizingAttribute, '');
+
+        groups.forEach((group) => {
+            const containsCurrentItem = group.querySelector('.admin-menu-item.active, .admin-menu-item[data-current]') !== null;
+
+            if (containsCurrentItem) {
+                group.open = true;
+            } else {
+                group.open = savedState[group.dataset.adminMenuGroup] ?? false;
+            }
+
+            if (!group.hasAttribute(initializedAttribute)) {
+                group.setAttribute(initializedAttribute, '');
+                group.addEventListener('toggle', () => {
+                    if (!sidebar.hasAttribute(synchronizingAttribute)) {
+                        saveState(sidebar);
+                    }
+                });
+            }
+        });
+
+        window.requestAnimationFrame(() => {
+            sidebar.removeAttribute(synchronizingAttribute);
+        });
+
+        const activeItem = currentMenuItem(sidebar);
+        const isDesktopSidebar = window.matchMedia('(min-width: 761px)').matches;
+
+        if (isDesktopSidebar && activeItem && typeof activeItem.scrollIntoView === 'function') {
+            const sidebarRect = sidebar.getBoundingClientRect();
+            const itemRect = activeItem.getBoundingClientRect();
+            const isVisible = itemRect.top >= sidebarRect.top && itemRect.bottom <= sidebarRect.bottom;
+
+            if (!isVisible) {
+                activeItem.scrollIntoView({ block: 'nearest' });
+            }
+        }
+    };
+
+    const beginNavigation = () => {
+        document.documentElement.classList.add('admin-is-navigating');
+    };
+
+    const finishNavigation = () => {
+        synchronizeSidebar();
+
+        window.requestAnimationFrame(() => {
+            document.documentElement.classList.remove('admin-is-navigating');
+        });
+    };
+
+    document.addEventListener('livewire:navigate', beginNavigation);
+    document.addEventListener('livewire:navigated', finishNavigation);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', finishNavigation, { once: true });
+    } else {
+        finishNavigation();
+    }
 })();

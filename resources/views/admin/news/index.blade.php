@@ -108,5 +108,5 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/admin/js/news-actions.js') }}?v={{ cms_version() }}" defer></script>
+<script src="{{ asset('assets/admin/js/news-actions.js') }}?v={{ cms_version() }}" defer data-navigate-once></script>
 @endpush

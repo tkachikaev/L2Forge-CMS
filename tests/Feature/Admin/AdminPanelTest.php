@@ -3,7 +3,10 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Admin;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -49,8 +52,9 @@ class AdminPanelTest extends TestCase
             'locale' => 'en',
         ]);
 
-        $this->actingAs($admin, 'admin')
-            ->get('/admin/settings')
+        $response = $this->actingAs($admin, 'admin')->get('/admin/settings');
+
+        $response
             ->assertOk()
             ->assertSeeInOrder([
                 'Content',
@@ -73,11 +77,22 @@ class AdminPanelTest extends TestCase
                 'Modules',
             ])
             ->assertSee('data-admin-menu-group="site"', false)
-            ->assertSee('class="admin-menu-group active"', false)
             ->assertSee('admin-menu-group-summary', false)
             ->assertSee('assets/admin/js/navigation.js', false)
             ->assertDontSee('Settings sections')
             ->assertDontSee('settings-tabs', false);
+
+        $document = new DOMDocument;
+        $this->assertTrue($document->loadHTML(
+            $response->getContent(),
+            LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING,
+        ));
+
+        $xpath = new DOMXPath($document);
+        $this->assertSame(
+            1.0,
+            $xpath->evaluate('count(//details[@data-admin-menu-group="site" and @open])'),
+        );
     }
 
     public function test_admin_navigation_uses_livewire_without_full_page_reload(): void
@@ -101,10 +116,58 @@ class AdminPanelTest extends TestCase
         $this->assertGreaterThanOrEqual(16, substr_count($response->getContent(), 'wire:navigate'));
     }
 
-    public function test_admin_scripts_are_safe_for_livewire_page_navigation(): void
+    public function test_admin_sidebar_is_persisted_across_livewire_navigation(): void
     {
+        $layout = file_get_contents(resource_path('views/admin/layouts/app.blade.php'));
+        $panel = file_get_contents(resource_path('views/admin/layouts/panel.blade.php'));
+        $navigation = file_get_contents(resource_path('views/admin/partials/navigation.blade.php'));
+
+        $this->assertIsString($layout);
+        $this->assertIsString($panel);
+        $this->assertIsString($navigation);
+        $this->assertStringContainsString('assets/admin/js/page-lifecycle.js', $layout);
+        $this->assertStringContainsString('assets/admin/js/navigation.js', $layout);
+        $this->assertStringContainsString('defer data-navigate-track data-navigate-once', $layout);
+        $this->assertStringContainsString("@persist('admin-sidebar')", $panel);
+        $this->assertStringContainsString('wire:navigate:scroll', $panel);
+        $this->assertStringContainsString('data-admin-sidebar', $panel);
+        $this->assertStringContainsString('wire:navigate.hover', $navigation);
+        $this->assertStringContainsString('wire:current.exact="active"', $navigation);
+        $this->assertStringNotContainsString("'active' => request()->routeIs", $navigation);
+    }
+
+    public function test_admin_navigation_stabilizes_the_shell_during_page_swaps(): void
+    {
+        $navigation = file_get_contents(public_path('assets/admin/js/navigation.js'));
+        $styles = file_get_contents(public_path('assets/admin/css/app.css'));
+
+        $this->assertIsString($navigation);
+        $this->assertIsString($styles);
+        $this->assertStringContainsString('livewire:navigate', $navigation);
+        $this->assertStringContainsString('livewire:navigated', $navigation);
+        $this->assertStringContainsString('admin-is-navigating', $navigation);
+        $this->assertStringContainsString('scrollbar-gutter: stable', $styles);
+        $this->assertStringContainsString('html.admin-is-navigating .admin-main', $styles);
+        $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $styles);
+    }
+
+    public function test_admin_scripts_use_one_livewire_page_lifecycle(): void
+    {
+        $lifecycle = file_get_contents(public_path('assets/admin/js/page-lifecycle.js'));
+        $layout = file_get_contents(resource_path('views/admin/layouts/app.blade.php'));
+
+        $this->assertIsString($lifecycle);
+        $this->assertIsString($layout);
+        $this->assertStringContainsString('registerPage(name, initialize)', $lifecycle);
+        $this->assertStringContainsString('livewire:navigating', $lifecycle);
+        $this->assertStringContainsString('livewire:navigated', $lifecycle);
+        $this->assertStringContainsString('cleanupAll()', $lifecycle);
+        $this->assertStringContainsString('page-lifecycle.js', $layout);
+
         $scripts = [
+            'custom-mail.js',
             'localization.js',
+            'mail-templates.js',
             'news-actions.js',
             'news-editor.js',
             'page-actions.js',
@@ -112,22 +175,28 @@ class AdminPanelTest extends TestCase
             'server-monitor.js',
             'settings.js',
             'system.js',
+            'two-factor.js',
+            'users.js',
         ];
 
         foreach ($scripts as $script) {
             $contents = file_get_contents(public_path('assets/admin/js/'.$script));
             $this->assertIsString($contents);
-            $this->assertStringNotContainsString('DOMContentLoaded', $contents, $script);
+            $this->assertStringContainsString('window.L2ForgeAdmin.registerPage', $contents, $script);
         }
 
-        $monitor = file_get_contents(public_path('assets/admin/js/server-monitor.js'));
-        $settings = file_get_contents(public_path('assets/admin/js/settings.js'));
+        foreach (File::allFiles(resource_path('views/admin')) as $view) {
+            $contents = $view->getContents();
+            if (! str_contains($contents, 'assets/admin/js/')) {
+                continue;
+            }
 
-        $this->assertIsString($monitor);
-        $this->assertIsString($settings);
-        $this->assertStringContainsString('livewire:navigating', $monitor);
-        $this->assertStringContainsString('AbortController', $monitor);
-        $this->assertStringContainsString('livewire:navigating', $settings);
+            foreach (preg_split('/\R/', $contents) ?: [] as $line) {
+                if (str_contains($line, 'assets/admin/js/') && str_contains($line, '<script src=')) {
+                    $this->assertStringContainsString('data-navigate-once', $line, $view->getPathname());
+                }
+            }
+        }
     }
 
     public function test_old_dashboard_address_redirects_to_admin_root(): void

@@ -70,6 +70,7 @@ final class LoginServerAdministration
         }
 
         $before = $this->auditValues->loginServer($server);
+        $beforeConnection = $this->auditValues->connectionFingerprints($server);
         if (trim((string) ($payload['database_password'] ?? '')) === '') {
             unset($payload['database_password']);
         }
@@ -86,6 +87,10 @@ final class LoginServerAdministration
             details: [
                 'before' => $before,
                 'after' => $this->auditValues->loginServer($server),
+                'connection_changes' => $this->auditValues->connectionChanges(
+                    $beforeConnection,
+                    $this->auditValues->connectionFingerprints($server),
+                ),
             ],
         );
 

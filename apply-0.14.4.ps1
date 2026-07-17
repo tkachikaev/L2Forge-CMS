@@ -14,34 +14,36 @@ if (-not (Test-Path '.env')) {
 }
 
 if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete 0.13.39 patch with file replacement enabled.'
+    throw 'VERSION is missing. Re-extract the complete 0.14.4 patch with file replacement enabled.'
 }
 
 $cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
-if ($cmsVersion -ne '0.13.39') {
+if ($cmsVersion -ne '0.14.4') {
     throw "Unexpected patch version: $cmsVersion"
 }
 
 $requiredFiles = @(
-    'tests\Feature\Admin\AdminPanelTest.php',
+    'config\browser_tests.php',
+    'database\seeders\BrowserTestSeeder.php',
+    'tests\Feature\BrowserTestSeederTest.php',
+    'docs\SYSTEM.md',
     'CHANGELOG.md',
     'README.md',
     'VERSION',
-    'docs\SYSTEM.md',
     'update.ps1'
 )
 foreach ($requiredFile in $requiredFiles) {
     if (-not (Test-Path $requiredFile -PathType Leaf)) {
-        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.13.39 patch with file replacement enabled."
+        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.14.4 patch with file replacement enabled."
     }
 }
 
 Write-Host "L2Forge CMS $cmsVersion update"
-Write-Host 'Updating the Livewire navigation regression test.'
+Write-Host 'Moving browser-test environment access into Laravel configuration.'
 Write-Host ''
 
 Get-ChildItem -Path $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -ne 'apply-0.13.39.ps1' } |
+    Where-Object { $_.Name -ne 'apply-0.14.4.ps1' } |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
 & "$PSScriptRoot\update.ps1" -SkipTests:$SkipTests
@@ -49,3 +51,4 @@ Get-ChildItem -Path $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction Silen
 Write-Host ''
 Write-Host "L2Forge CMS $cmsVersion is ready." -ForegroundColor Green
 Write-Host 'Developer quality gate: .\quality.ps1'
+Write-Host 'Browser smoke tests: .\browser-quality.ps1'

@@ -93,6 +93,9 @@ final class GameServerAdministration
 
         $created = ! $server instanceof GameServer;
         $before = $server instanceof GameServer ? $this->auditValues->gameServer($server) : null;
+        $beforeConnection = $server instanceof GameServer
+            ? $this->auditValues->connectionFingerprints($server)
+            : null;
 
         $server = DB::transaction(function () use ($server, $profileValues, $connectionMode, $connectionValues): GameServer {
             if ($server instanceof GameServer) {
@@ -131,6 +134,7 @@ final class GameServerAdministration
                 details: ['values' => $this->auditValues->gameServer($server)],
             );
         } else {
+            $afterConnection = $this->auditValues->connectionFingerprints($server);
             $this->audit->success(
                 category: 'admin',
                 action: 'game_server.updated',
@@ -138,6 +142,9 @@ final class GameServerAdministration
                 details: [
                     'before' => $before,
                     'after' => $this->auditValues->gameServer($server),
+                    'connection_changes' => is_array($beforeConnection)
+                        ? $this->auditValues->connectionChanges($beforeConnection, $afterConnection)
+                        : [],
                 ],
             );
         }
@@ -149,6 +156,7 @@ final class GameServerAdministration
     public function updateConnection(GameServer $server, array $connectionValues): GameServer
     {
         $before = $this->auditValues->gameServer($server);
+        $beforeConnection = $this->auditValues->connectionFingerprints($server);
 
         DB::transaction(function () use ($server, $connectionValues): void {
             $lockedServer = GameServer::query()
@@ -167,6 +175,10 @@ final class GameServerAdministration
             details: [
                 'before' => $before,
                 'after' => $this->auditValues->gameServer($server),
+                'connection_changes' => $this->auditValues->connectionChanges(
+                    $beforeConnection,
+                    $this->auditValues->connectionFingerprints($server),
+                ),
             ],
         );
 

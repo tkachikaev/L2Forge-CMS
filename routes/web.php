@@ -232,9 +232,6 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
         Route::get('/settings', [AdminSettingsController::class, 'general'])->name('settings.general');
         Route::put('/settings', [AdminSettingsController::class, 'updateGeneral'])->name('settings.general.update');
         Route::get('/settings/game-server', [AdminGameServerController::class, 'index'])->name('settings.game-server');
-        Route::post('/settings/game-server', [AdminGameServerController::class, 'store'])->name('settings.game-server.store');
-        Route::put('/settings/game-server/{gameServer}', [AdminGameServerController::class, 'update'])->name('settings.game-server.update');
-        Route::delete('/settings/game-server/{gameServer}', [AdminGameServerController::class, 'destroy'])->name('settings.game-server.destroy');
         Route::post('/settings/game-server/{gameServer}/connection', [AdminGameServerConnectionController::class, 'update'])
             ->middleware('throttle:10,1')
             ->name('settings.game-server.connection');

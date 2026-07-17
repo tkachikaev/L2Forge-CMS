@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Livewire\Admin\GameServerManager;
 use App\Models\Admin;
 use App\Models\GameServer;
 use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class LocalizedContentTest extends TestCase
@@ -60,17 +62,17 @@ class LocalizedContentTest extends TestCase
         $admin = $this->createAdmin();
         $server = GameServer::query()->firstOrFail();
 
-        $this->actingAs($admin, 'admin')
-            ->put(route('admin.settings.game-server.update', $server), [
-                'translations' => [
-                    'ru' => ['name' => 'Основной сервер'],
-                    'en' => ['name' => 'Main Server'],
-                ],
-                'server_rates' => 'x5',
-                'server_chronicle' => 'High Five',
-                'server_mode' => 'PvP',
-            ])
-            ->assertRedirect(route('admin.settings.game-server'));
+        $this->actingAs($admin, 'admin');
+
+        Livewire::test(GameServerManager::class)
+            ->call('edit', $server->id)
+            ->set('translations.ru', 'Основной сервер')
+            ->set('translations.en', 'Main Server')
+            ->set('serverRates', 'x5')
+            ->set('serverChronicle', 'High Five')
+            ->set('serverMode', 'PvP')
+            ->call('save')
+            ->assertHasNoErrors();
 
         $this->assertDatabaseHas('game_server_translations', [
             'game_server_id' => $server->id,

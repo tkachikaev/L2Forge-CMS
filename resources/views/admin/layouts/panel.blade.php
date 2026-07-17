@@ -2,22 +2,24 @@
 
 @section('body')
 <div class="admin-shell">
-    <aside class="admin-sidebar">
-        <a wire:navigate class="admin-brand" href="{{ route('admin.dashboard') }}">
-            <span class="admin-brand-mark">L2</span>
-            <span>
-                <strong>{{ config('app.name') }}</strong>
-                <small>{{ __('Control panel') }}</small>
-            </span>
-        </a>
+    @persist('admin-sidebar')
+        <aside class="admin-sidebar" data-admin-sidebar wire:navigate:scroll>
+            <a wire:navigate.hover class="admin-brand" href="{{ route('admin.dashboard') }}">
+                <span class="admin-brand-mark">L2</span>
+                <span>
+                    <strong>{{ config('app.name') }}</strong>
+                    <small>{{ __('Control panel') }}</small>
+                </span>
+            </a>
 
-        @include('admin.partials.navigation')
+            @include('admin.partials.navigation')
 
-        <div class="admin-sidebar-footer">
-            <a href="{{ public_route('home') }}" target="_blank" rel="noopener">{{ __('Open website') }} <span aria-hidden="true">↗</span></a>
-            <span>{{ __('Version :version', ['version' => cms_version()]) }}</span>
-        </div>
-    </aside>
+            <div class="admin-sidebar-footer">
+                <a href="{{ public_route('home') }}" target="_blank" rel="noopener">{{ __('Open website') }} <span aria-hidden="true">↗</span></a>
+                <span>{{ __('Version :version', ['version' => cms_version()]) }}</span>
+            </div>
+        </aside>
+    @endpersist
 
     <main class="admin-main">
         <header class="admin-header">

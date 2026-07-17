@@ -2,43 +2,27 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Livewire\Admin\GameServerManager;
 use App\Models\Admin;
-use App\Models\GameServer;
-use App\Models\LoginServer;
-use App\Models\User;
-use App\Models\UserGameAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminGameServerSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_cannot_manage_game_servers(): void
+    public function test_guest_cannot_open_game_server_settings(): void
     {
-        $server = GameServer::query()->firstOrFail();
-
         $this->get('/admin/settings/game-server')
-            ->assertRedirect(route('admin.login'));
-
-        $this->post('/admin/settings/game-server', [
-            'server_name' => 'Private server',
-        ])->assertRedirect(route('admin.login'));
-
-        $this->put('/admin/settings/game-server/'.$server->id, [
-            'server_name' => 'Private server',
-        ])->assertRedirect(route('admin.login'));
-
-        $this->delete('/admin/settings/game-server/'.$server->id)
             ->assertRedirect(route('admin.login'));
     }
 
     public function test_admin_can_open_game_server_settings(): void
     {
-        $admin = $this->createAdmin();
-
-        $this->actingAs($admin, 'admin')
+        $this->actingAs($this->createAdmin(), 'admin')
             ->get('/admin/settings/game-server')
             ->assertOk()
             ->assertSee('Игровых серверов')
@@ -51,176 +35,37 @@ class AdminGameServerSettingsTest extends TestCase
             ->assertSee('Настроить');
     }
 
-    public function test_admin_can_update_server_and_leave_rates_and_chronicle_empty(): void
+    public function test_legacy_game_server_mutation_routes_are_not_registered(): void
     {
-        $admin = $this->createAdmin();
-        $server = GameServer::query()->firstOrFail();
+        $this->assertFalse(Route::has('admin.settings.game-server.store'));
+        $this->assertFalse(Route::has('admin.settings.game-server.update'));
+        $this->assertFalse(Route::has('admin.settings.game-server.destroy'));
 
-        $this->actingAs($admin, 'admin')
-            ->put(route('admin.settings.game-server.update', $server), [
-                'form_context' => 'server-'.$server->id,
-                'server_name' => 'L2 Minimal',
-                'server_rates' => '',
-                'server_chronicle' => '',
-                'server_mode' => 'None',
-                'database_host' => 'should-not-be-stored',
-                'database_password' => 'should-not-be-stored',
-            ])
-            ->assertRedirect(route('admin.settings.game-server'))
-            ->assertSessionHas('status', 'Настройки игрового сервера сохранены.');
+        $this->actingAs($this->createAdmin(), 'admin');
 
-        $this->assertDatabaseHas('game_servers', [
-            'id' => $server->id,
-            'name' => 'L2 Minimal',
-            'rates' => null,
-            'chronicle' => null,
-            'mode' => 'None',
-        ]);
-        $this->assertDatabaseMissing('cms_settings', ['value' => 'should-not-be-stored']);
-
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('L2 Minimal')
-            ->assertDontSee('<dt>Версия</dt>', false)
-            ->assertDontSee('<dt>Хроники</dt>', false)
-            ->assertDontSee('<dt>Рейты</dt>', false)
-            ->assertDontSee('<dt>Режим</dt>', false);
+        $this->post('/admin/settings/game-server')->assertStatus(405);
+        $this->put('/admin/settings/game-server/1')->assertNotFound();
+        $this->delete('/admin/settings/game-server/1')->assertNotFound();
     }
 
-    public function test_admin_can_add_multiple_servers_and_theme_renders_each_one(): void
+    public function test_only_default_server_name_is_required_in_livewire_form(): void
     {
-        $admin = $this->createAdmin();
-        $first = GameServer::query()->firstOrFail();
+        $this->actingAs($this->createAdmin(), 'admin');
 
-        $this->actingAs($admin, 'admin')
-            ->put(route('admin.settings.game-server.update', $first), [
-                'server_name' => 'L2Forge x1',
-                'server_rates' => 'x1',
-                'server_chronicle' => 'High Five',
-                'server_mode' => 'Craft',
-            ])
-            ->assertRedirect(route('admin.settings.game-server'));
-
-        $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.game-server.store'), [
-                'form_context' => 'create',
-                'server_name' => 'L2Forge x100',
-                'server_rates' => 'x100',
-                'server_chronicle' => 'Interlude',
-                'server_mode' => 'PvP',
-            ])
-            ->assertRedirect(route('admin.settings.game-server'))
-            ->assertSessionHas('status', 'Игровой сервер добавлен.');
-
-        $this->assertDatabaseCount('game_servers', 2);
-        $this->assertDatabaseHas('game_servers', [
-            'name' => 'L2Forge x100',
-            'rates' => 'x100',
-            'chronicle' => 'Interlude',
-            'mode' => 'PvP',
-        ]);
-
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('Игровые серверы')
-            ->assertSee('L2Forge x1')
-            ->assertSee('L2Forge x100')
-            ->assertSee('<dt>Хроники</dt>', false)
-            ->assertDontSee('<dt>Версия</dt>', false);
-
-        $this->get('/about')
-            ->assertOk()
-            ->assertSee('L2Forge x1')
-            ->assertSee('L2Forge x100')
-            ->assertSee('High Five')
-            ->assertSee('Interlude');
-    }
-
-    public function test_admin_can_delete_a_server_including_the_last_one(): void
-    {
-        $admin = $this->createAdmin();
-        $server = GameServer::query()->firstOrFail();
-
-        $this->actingAs($admin, 'admin')
-            ->delete(route('admin.settings.game-server.destroy', $server))
-            ->assertRedirect(route('admin.settings.game-server'))
-            ->assertSessionHas('status', 'Игровой сервер «'.$server->name.'» удалён.');
-
-        $this->assertDatabaseCount('game_servers', 0);
-
-        $this->actingAs($admin, 'admin')
-            ->get('/admin/settings/game-server')
-            ->assertOk()
-            ->assertSee('Игровые серверы не добавлены');
-
-        $this->get('/')
-            ->assertOk()
-            ->assertDontSee('Статус сервера')
-            ->assertDontSee('Игровые серверы');
-    }
-
-    public function test_legacy_delete_endpoint_does_not_hide_player_accounts_without_impact_confirmation(): void
-    {
-        $admin = $this->createAdmin();
-        $server = GameServer::query()->firstOrFail();
-        $loginServer = LoginServer::query()->create([
-            'name' => 'Primary Login',
-            'driver' => 'l2j_mobius',
-            'database_host' => '127.0.0.1',
-            'database_port' => 3306,
-            'database_name' => 'l2j',
-            'database_username' => 'cms',
-            'database_password' => 'secret',
-            'database_charset' => 'utf8',
-        ]);
-        $server->update([
-            'login_server_id' => $loginServer->id,
-            'driver' => 'l2j_mobius_ct0_interlude',
-            'use_login_server_connection' => true,
-        ]);
-        $user = User::query()->create([
-            'name' => 'Player',
-            'email' => 'legacy-delete@example.com',
-            'password' => Hash::make('Password123'),
-        ]);
-        UserGameAccount::query()->create([
-            'user_id' => $user->id,
-            'login_server_id' => $loginServer->id,
-            'registration_game_server_id' => $server->id,
-            'game_login' => 'Legacy01',
-            'normalized_login' => 'legacy01',
-        ]);
-
-        $this->actingAs($admin, 'admin')
-            ->delete(route('admin.settings.game-server.destroy', $server))
-            ->assertRedirect(route('admin.settings.game-server'))
-            ->assertSessionHas('warning');
-
-        $this->assertDatabaseHas('game_servers', ['id' => $server->id]);
-        $this->assertDatabaseHas('user_game_accounts', [
-            'registration_game_server_id' => $server->id,
-        ]);
-    }
-
-    public function test_only_server_name_is_required(): void
-    {
-        $admin = $this->createAdmin();
-
-        $this->actingAs($admin, 'admin')
-            ->from('/admin/settings/game-server')
-            ->post('/admin/settings/game-server', [
-                'form_context' => 'create',
-                'server_name' => '   ',
-                'server_rates' => '',
-                'server_chronicle' => '',
-                'server_mode' => '',
-            ])
-            ->assertRedirect('/admin/settings/game-server')
-            ->assertSessionHasErrors(['server_name'])
-            ->assertSessionDoesntHaveErrors([
-                'server_rates',
-                'server_chronicle',
-                'server_mode',
+        Livewire::test(GameServerManager::class)
+            ->call('create')
+            ->set('translations.ru', '   ')
+            ->set('translations.en', '')
+            ->set('serverRates', '')
+            ->set('serverChronicle', '')
+            ->set('serverMode', '')
+            ->call('save')
+            ->assertHasErrors(['translations.ru' => 'required'])
+            ->assertHasNoErrors([
+                'translations.en',
+                'serverRates',
+                'serverChronicle',
+                'serverMode',
             ]);
     }
 

@@ -1373,7 +1373,6 @@
     "The game accounts and characters will not be deleted. Their access in the personal account will be restored automatically after a replacement GameServer is connected to this LoginServer.": "Игровые аккаунты и персонажи не будут удалены. Доступ к ним в личном кабинете восстановится автоматически после подключения нового GameServer к этому LoginServer.",
     "Delete and hide accounts (:count)": "Удалить и скрыть аккаунты (:count)",
     "The deletion impact changed. Review the updated account count and confirm again.": "Последствия удаления изменились. Проверьте обновлённое количество аккаунтов и подтвердите действие ещё раз.",
-    "This GameServer cannot be deleted through the legacy endpoint because :count game accounts would become unavailable. Use the current server card confirmation.": "Этот GameServer нельзя удалить через устаревший обработчик: :count игровых аккаунтов станут недоступны. Используйте подтверждение в текущей карточке сервера.",
     "Temporarily unavailable game accounts also count toward the limit.": "Временно недоступные игровые аккаунты также учитываются в лимите.",
     "Database status": "Статус базы данных",
     "Service status": "Статус службы",
