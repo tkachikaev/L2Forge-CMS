@@ -6,13 +6,10 @@ use App\Exceptions\GameServerDeletionConfirmationRequired;
 use App\Models\GameServer;
 use App\Models\GameServerTranslation;
 use App\Models\LoginServer;
-use App\Services\AuditLogger;
-use App\Services\GameServerDeletionImpact;
 use App\Services\GameServerSettings;
 use App\Services\Localization\LanguageManager;
-use App\Services\Servers\ServerConnectionTester;
+use App\Services\Servers\GameServerAdministration;
 use App\Services\Servers\ServerDriverRegistry;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Livewire\Attributes\Locked;
@@ -45,6 +42,13 @@ class GameServerManager extends Component
 
     /** @var array<string,string> */
     public array $translations = [];
+
+    /** @var array<string,string> */
+    public array $maintenanceMessages = [];
+
+    public bool $maintenanceEnabled = false;
+
+    public string $maintenanceUntil = '';
 
     public string $serverRates = '';
 
@@ -111,13 +115,19 @@ class GameServerManager extends Component
         $this->resetValidation();
         $this->editingId = $server->id;
         $this->translations = [];
+        $this->maintenanceMessages = [];
         foreach ($languages->enabledCodes() as $locale) {
             $translation = $server->translations->firstWhere('locale', $locale);
             $this->translations[$locale] = $translation instanceof GameServerTranslation
                 ? trim((string) $translation->name)
                 : ($locale === $languages->default() ? trim((string) $server->name) : '');
+            $this->maintenanceMessages[$locale] = $translation instanceof GameServerTranslation
+                ? trim((string) $translation->maintenance_message)
+                : '';
         }
 
+        $this->maintenanceEnabled = (bool) $server->maintenance_enabled;
+        $this->maintenanceUntil = $server->maintenance_until?->format('Y-m-d\TH:i') ?? '';
         $this->serverRates = trim((string) $server->rates);
         $this->serverChronicle = trim((string) $server->chronicle);
         $this->serverMode = trim((string) $server->mode);
@@ -155,9 +165,9 @@ class GameServerManager extends Component
     {
         $this->ensureAuthorized();
         $server = GameServer::query()->with('loginServer')->findOrFail($serverId);
-        $loginServer = $server->loginServer;
+        $report = app(GameServerAdministration::class)->testStored($server);
 
-        if (! $loginServer instanceof LoginServer) {
+        if (($report['error'] ?? null) === 'login_server_missing') {
             $this->cardTestResults[$server->id] = [
                 'state' => 'failed',
                 'message' => __('Select a LoginServer before testing the connection.'),
@@ -166,8 +176,6 @@ class GameServerManager extends Component
             return;
         }
 
-        $report = app(ServerConnectionTester::class)->testGameServer($server);
-        $this->auditConnectionTest($report, $server, $loginServer);
         $this->cardTestResults[$server->id] = $this->cardTestResult($report);
     }
 
@@ -180,12 +188,15 @@ class GameServerManager extends Component
         $server = $this->editingId !== null
             ? GameServer::query()->findOrFail($this->editingId)
             : null;
-        $values = $this->connectionValues($validated, $server);
+        $values = $this->connectionValues($validated);
+        $targetName = $this->translations[app(LanguageManager::class)->default()] ?? __('New game server');
 
-        $report = app(ServerConnectionTester::class)->testGameValues($values, $loginServer);
-        $this->auditConnectionTest($report, $server, $loginServer);
-
-        $this->connectionReport = $report;
+        $this->connectionReport = app(GameServerAdministration::class)->test(
+            $values,
+            $loginServer,
+            $server,
+            $targetName,
+        );
         $this->showChecks = false;
         $this->status = null;
         $this->drawerOpen = true;
@@ -197,70 +208,25 @@ class GameServerManager extends Component
         $general = $this->validate($this->generalRules(), [], $this->generalAttributes());
         $connection = $this->connectionEnabled
             ? $this->validate($this->connectionRules(), [], $this->connectionAttributes())
-            : [];
-        $settings = app(GameServerSettings::class);
-        $audit = app(AuditLogger::class);
-        $before = null;
+            : null;
+        $server = $this->editingId !== null
+            ? GameServer::query()->findOrFail($this->editingId)
+            : null;
+        $mode = $this->connectionEnabled
+            ? GameServerAdministration::CONNECTION_CONNECT
+            : GameServerAdministration::CONNECTION_DISCONNECT;
+        $result = app(GameServerAdministration::class)->save(
+            $server,
+            $this->generalValues($general),
+            $mode,
+            is_array($connection) ? $this->connectionValues($connection) : null,
+        );
+        $server = $result['server'];
 
-        $server = DB::transaction(function () use ($general, $connection, $settings, &$before): GameServer {
-            $values = $this->generalValues($general);
-
-            if ($this->editingId === null) {
-                $server = $settings->create($values);
-            } else {
-                $server = GameServer::query()->with('translations')->findOrFail($this->editingId);
-                $before = $this->auditValues($server);
-                $settings->update($server, $values);
-                $server->refresh();
-            }
-
-            if ($this->connectionEnabled) {
-                $this->saveConnection($server, $connection, $settings);
-            } else {
-                $settings->reassignLinkedAccountsBeforeDisconnect($server);
-                $server->update([
-                    'login_server_id' => null,
-                    'driver' => null,
-                    'use_login_server_connection' => true,
-                    'database_host' => null,
-                    'database_port' => null,
-                    'database_name' => null,
-                    'database_username' => null,
-                    'database_password' => null,
-                    'database_charset' => null,
-                    'service_host' => null,
-                    'service_port' => null,
-                    'monitor_status' => 'unknown',
-                    'monitor_failures' => 0,
-                    'monitor_checked_at' => null,
-                    'monitor_last_online_at' => null,
-                    'online_players' => null,
-                    'online_checked_at' => null,
-                ]);
-            }
-
-            return $server->fresh(['translations', 'loginServer']) ?? $server;
-        });
-
-        if ($this->editingId === null) {
-            $audit->success(
-                category: 'admin',
-                action: 'game_server.created',
-                target: $server,
-                details: ['values' => $this->auditValues($server)],
-            );
+        if ($result['created']) {
             $this->editingId = $server->id;
             $this->status = __('Game server added.');
         } else {
-            $audit->success(
-                category: 'admin',
-                action: 'game_server.updated',
-                target: $server,
-                details: [
-                    'before' => $before,
-                    'after' => $this->auditValues($server),
-                ],
-            );
             $this->status = __('Game server settings saved.');
         }
 
@@ -274,7 +240,7 @@ class GameServerManager extends Component
     {
         $this->ensureAuthorized();
         $server = GameServer::query()->with('loginServer')->findOrFail($serverId);
-        $this->applyDeleteImpact(app(GameServerDeletionImpact::class)->analyze($server));
+        $this->applyDeleteImpact(app(GameServerAdministration::class)->analyzeDeletion($server));
         $this->confirmingDeleteId = $serverId;
         $this->deleteImpactWarning = null;
     }
@@ -295,32 +261,15 @@ class GameServerManager extends Component
         $server = GameServer::query()->with(['translations', 'loginServer'])->findOrFail($this->confirmingDeleteId);
         $name = $server->name;
         $serverId = $server->id;
-        $values = $this->auditValues($server);
 
         try {
-            $impact = app(GameServerSettings::class)->delete($server, $this->deleteImpactFingerprint);
+            app(GameServerAdministration::class)->delete($server, $this->deleteImpactFingerprint);
         } catch (GameServerDeletionConfirmationRequired $exception) {
             $this->applyDeleteImpact($exception->impact);
             $this->deleteImpactWarning = __('The deletion impact changed. Review the updated account count and confirm again.');
 
             return;
         }
-
-        app(AuditLogger::class)->success(
-            category: 'admin',
-            action: 'game_server.deleted',
-            target: $name,
-            details: [
-                'game_server_id' => $serverId,
-                'values' => $values,
-                'deletion_impact' => [
-                    'login_server_id' => $impact['login_server_id'],
-                    'replacement_game_server_id' => $impact['replacement_game_server_id'],
-                    'accounts_becoming_unavailable' => $impact['accounts_becoming_unavailable'],
-                    'unavailable_after_deletion' => $impact['unavailable_after_deletion'],
-                ],
-            ],
-        );
 
         if ($this->editingId === $this->confirmingDeleteId) {
             $this->closeDrawer();
@@ -352,12 +301,16 @@ class GameServerManager extends Component
             'serverRates' => ['nullable', 'string', 'max:100'],
             'serverChronicle' => ['nullable', 'string', 'max:100'],
             'serverMode' => ['nullable', 'string', 'max:100'],
+            'maintenanceEnabled' => ['required', 'boolean'],
+            'maintenanceUntil' => ['nullable', 'date_format:Y-m-d\TH:i'],
+            'maintenanceMessages' => ['required', 'array'],
         ];
 
         foreach ($languages->enabledCodes() as $locale) {
             $rules['translations.'.$locale] = $locale === $languages->default()
                 ? ['required', 'string', 'max:100']
                 : ['nullable', 'string', 'max:100'];
+            $rules['maintenanceMessages.'.$locale] = ['nullable', 'string', 'max:255'];
         }
 
         return $rules;
@@ -395,10 +348,12 @@ class GameServerManager extends Component
             'serverRates' => __('Server rates validation attribute'),
             'serverChronicle' => __('Chronicle validation attribute'),
             'serverMode' => __('server mode'),
+            'maintenanceUntil' => __('Maintenance end time validation attribute'),
         ];
 
         foreach (app(LanguageManager::class)->enabledCodes() as $locale) {
             $attributes['translations.'.$locale] = __('Server name validation attribute');
+            $attributes['maintenanceMessages.'.$locale] = __('Maintenance message validation attribute');
         }
 
         return $attributes;
@@ -422,12 +377,17 @@ class GameServerManager extends Component
         ];
     }
 
-    /** @param array<string,mixed> $validated @return array{name:string,rates:string,chronicle:string,mode:string,translations:array<string,string>} */
+    /** @param array<string,mixed> $validated @return array<string,mixed> */
     private function generalValues(array $validated): array
     {
         $translations = [];
         foreach ((array) $validated['translations'] as $locale => $name) {
             $translations[(string) $locale] = trim((string) $name);
+        }
+
+        $maintenanceMessages = [];
+        foreach ((array) $validated['maintenanceMessages'] as $locale => $message) {
+            $maintenanceMessages[(string) $locale] = trim((string) $message);
         }
         $defaultLocale = app(LanguageManager::class)->default();
 
@@ -437,86 +397,27 @@ class GameServerManager extends Component
             'chronicle' => trim((string) ($validated['serverChronicle'] ?? '')),
             'mode' => trim((string) ($validated['serverMode'] ?? '')),
             'translations' => $translations,
+            'maintenance_enabled' => (bool) $validated['maintenanceEnabled'],
+            'maintenance_until' => $this->nullableString($validated['maintenanceUntil'] ?? null),
+            'maintenance_messages' => $maintenanceMessages,
         ];
     }
 
     /** @param array<string,mixed> $validated @return array<string,mixed> */
-    private function connectionValues(array $validated, ?GameServer $server): array
+    private function connectionValues(array $validated): array
     {
-        $password = (string) ($validated['databasePassword'] ?? '');
-        if ($password === '' && $server instanceof GameServer && ! $this->useLoginServerConnection) {
-            $password = $server->databasePassword() ?? '';
-        }
-
         return [
+            'login_server_id' => (int) $validated['loginServerId'],
             'driver' => trim((string) $validated['driver']),
             'use_login_server_connection' => (bool) $validated['useLoginServerConnection'],
             'database_host' => trim((string) ($validated['databaseHost'] ?? '')),
             'database_port' => (int) ($validated['databasePort'] ?? 3306),
             'database_name' => trim((string) ($validated['databaseName'] ?? '')),
             'database_username' => trim((string) ($validated['databaseUsername'] ?? '')),
-            'database_password' => $password,
+            'database_password' => (string) ($validated['databasePassword'] ?? ''),
             'database_charset' => trim((string) ($validated['databaseCharset'] ?? 'utf8mb4')),
             'service_host' => $this->nullableString($validated['serviceHost'] ?? null),
             'service_port' => (int) ($validated['servicePort'] ?? 7777),
-        ];
-    }
-
-    /** @param array<string,mixed> $validated */
-    private function saveConnection(GameServer $server, array $validated, GameServerSettings $settings): void
-    {
-        $loginServer = LoginServer::query()->findOrFail((int) $validated['loginServerId']);
-        $useLoginConnection = (bool) $validated['useLoginServerConnection'];
-        $password = (string) ($validated['databasePassword'] ?? '');
-        $settings->reassignLinkedAccountsBeforeDisconnect($server, $loginServer->id);
-        $values = [
-            'login_server_id' => $loginServer->id,
-            'driver' => trim((string) $validated['driver']),
-            'use_login_server_connection' => $useLoginConnection,
-            'database_host' => $useLoginConnection ? null : trim((string) $validated['databaseHost']),
-            'database_port' => $useLoginConnection ? null : (int) $validated['databasePort'],
-            'database_name' => $useLoginConnection ? null : trim((string) $validated['databaseName']),
-            'database_username' => $useLoginConnection ? null : trim((string) $validated['databaseUsername']),
-            'database_charset' => $useLoginConnection ? null : trim((string) $validated['databaseCharset']),
-            'service_host' => $this->nullableString($validated['serviceHost'] ?? null),
-            'service_port' => (int) $validated['servicePort'],
-            'monitor_status' => 'unknown',
-            'monitor_failures' => 0,
-            'monitor_checked_at' => null,
-            'monitor_last_online_at' => null,
-            'online_players' => null,
-            'online_checked_at' => null,
-        ];
-
-        if ($useLoginConnection) {
-            $values['database_password'] = null;
-        } elseif ($password !== '') {
-            $values['database_password'] = $password;
-        }
-
-        $server->update($values);
-        $settings->restoreOrphanedAccountLinks($server);
-    }
-
-    /** @return array<string,mixed> */
-    private function auditValues(GameServer $server): array
-    {
-        return [
-            'name' => $server->name,
-            'rates' => $server->rates,
-            'chronicle' => $server->chronicle,
-            'mode' => $server->mode,
-            'login_server_id' => $server->login_server_id,
-            'driver' => $server->driver,
-            'use_login_server_connection' => $server->use_login_server_connection,
-            'database_host' => $server->database_host,
-            'database_port' => $server->database_port,
-            'database_name' => $server->database_name,
-            'database_username' => $server->database_username,
-            'database_charset' => $server->database_charset,
-            'database_password_saved' => $server->hasDatabasePassword(),
-            'service_host' => $server->service_host,
-            'service_port' => $server->service_port,
         ];
     }
 
@@ -537,42 +438,13 @@ class GameServerManager extends Component
         return ['state' => 'success', 'message' => __('Database connection established.')];
     }
 
-    /** @param array<string,mixed> $report */
-    private function auditConnectionTest(array $report, ?GameServer $server, LoginServer $loginServer): void
-    {
-        $details = [
-            'login_server_id' => $loginServer->id,
-            'driver' => $report['driver'] ?? null,
-            'connected' => $report['connected'] ?? false,
-            'compatible' => $report['compatible'] ?? null,
-        ];
-        $audit = app(AuditLogger::class);
-        $target = $server ?? ($this->translations[app(LanguageManager::class)->default()] ?? __('New game server'));
-
-        if ($report['connected'] ?? false) {
-            $audit->success(
-                category: 'admin',
-                action: 'game_server.connection_tested',
-                target: $target,
-                details: $details,
-            );
-
-            return;
-        }
-
-        $audit->failed(
-            category: 'admin',
-            action: 'game_server.connection_tested',
-            target: $target,
-            details: $details,
-        );
-    }
-
     private function initializeTranslations(): void
     {
         $this->translations = [];
+        $this->maintenanceMessages = [];
         foreach (app(LanguageManager::class)->enabledCodes() as $locale) {
             $this->translations[$locale] = '';
+            $this->maintenanceMessages[$locale] = '';
         }
     }
 
@@ -581,6 +453,8 @@ class GameServerManager extends Component
         $this->editingId = null;
         $this->clearDeleteConfirmation();
         $this->initializeTranslations();
+        $this->maintenanceEnabled = false;
+        $this->maintenanceUntil = '';
         $this->serverRates = '';
         $this->serverChronicle = '';
         $this->serverMode = '';

@@ -6,6 +6,18 @@
 @section('content')
 @php
     $stateLabels = [
+        'maintenance' => __('Maintenance'),
+        'online' => __('Server online'),
+        'configured' => __('Configured'),
+        'not_configured' => __('Not configured'),
+        'unknown' => __('Status pending'),
+    ];
+    $databaseStateLabels = [
+        'configured' => __('Connected'),
+        'not_configured' => __('Connection failed'),
+        'unknown' => __('Status pending'),
+    ];
+    $serviceStateLabels = [
         'online' => __('Running'),
         'offline' => __('Unavailable'),
         'unknown' => __('Status pending'),
@@ -15,7 +27,7 @@
 <div
     class="admin-dashboard-stack"
     data-server-monitor-dashboard
-    data-refresh-url="{{ public_route('server-monitor.refresh') }}"
+    data-refresh-url="{{ route('admin.server-monitor.status') }}"
     data-auto-refresh="{{ $monitorRefreshDue ? '1' : '0' }}"
 >
     <section class="dashboard-monitor-summary">
@@ -48,7 +60,7 @@
                 @forelse($monitor['game_servers'] as $server)
                     <a class="dashboard-monitor-row" data-monitor-admin-game="{{ $server['id'] }}" href="{{ route('admin.settings.game-server') }}">
                         <span class="dashboard-monitor-dot {{ $server['state'] }}" data-monitor-dot aria-hidden="true"></span>
-                        <span class="dashboard-monitor-name">{{ $server['name'] }}</span>
+                        <span class="dashboard-monitor-name-wrap"><span class="dashboard-monitor-name">{{ $server['name'] }}</span><small data-monitor-details>{{ __('Database: :database · Service: :service', ['database' => $databaseStateLabels[$server['database_state']], 'service' => $serviceStateLabels[$server['service_state']]]) }}</small></span>
                         <span class="dashboard-monitor-state" data-monitor-state>{{ $stateLabels[$server['state']] }}</span>
                         <strong class="dashboard-monitor-online" data-monitor-online>
                             {{ $server['players'] !== null
@@ -72,7 +84,7 @@
                 @forelse($monitor['login_servers'] as $server)
                     <a class="dashboard-monitor-row dashboard-monitor-row-login" data-monitor-admin-login="{{ $server['id'] }}" href="{{ route('admin.settings.login-server') }}">
                         <span class="dashboard-monitor-dot {{ $server['state'] }}" data-monitor-dot aria-hidden="true"></span>
-                        <span class="dashboard-monitor-name">{{ $server['name'] }}</span>
+                        <span class="dashboard-monitor-name-wrap"><span class="dashboard-monitor-name">{{ $server['name'] }}</span><small data-monitor-details>{{ __('Database: :database · Service: :service', ['database' => $databaseStateLabels[$server['database_state']], 'service' => $serviceStateLabels[$server['service_state']]]) }}</small></span>
                         <span class="dashboard-monitor-state" data-monitor-state>{{ $stateLabels[$server['state']] }}</span>
                     </a>
                 @empty

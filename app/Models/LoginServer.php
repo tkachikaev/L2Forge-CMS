@@ -20,6 +20,9 @@ use Illuminate\Support\Carbon;
  * @property string $database_charset
  * @property string|null $service_host
  * @property int|null $service_port
+ * @property string $database_status
+ * @property string|null $database_error
+ * @property Carbon|null $database_checked_at
  * @property string $monitor_status
  * @property int $monitor_failures
  * @property Carbon|null $monitor_checked_at
@@ -40,6 +43,9 @@ class LoginServer extends Model
         'database_charset',
         'service_host',
         'service_port',
+        'database_status',
+        'database_error',
+        'database_checked_at',
         'monitor_status',
         'monitor_failures',
         'monitor_checked_at',
@@ -56,6 +62,7 @@ class LoginServer extends Model
             'database_port' => 'integer',
             'database_password' => 'encrypted',
             'service_port' => 'integer',
+            'database_checked_at' => 'datetime',
             'monitor_failures' => 'integer',
             'monitor_checked_at' => 'datetime',
             'monitor_last_online_at' => 'datetime',
@@ -83,6 +90,11 @@ class LoginServer extends Model
         } catch (DecryptException) {
             return null;
         }
+    }
+
+    public function databaseVerified(): bool
+    {
+        return $this->database_status === 'configured' && $this->database_checked_at !== null;
     }
 
     public function hasDatabasePassword(): bool

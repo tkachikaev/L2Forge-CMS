@@ -2304,3 +2304,5 @@ a.admin-section-card:hover { border-color: #bfdbfe; box-shadow: 0 8px 24px rgba(
     .dashboard-monitor-row-login { grid-template-columns: 10px minmax(100px, 1fr) auto; }
     .dashboard-monitor-row-login .dashboard-monitor-state { display: block; }
 }
+.dashboard-monitor-name-wrap{display:flex;min-width:0;flex-direction:column}.dashboard-monitor-name-wrap small{overflow:hidden;color:#6b7280;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.dashboard-monitor-dot.configured{background:#d97706;box-shadow:0 0 0 3px #fef3c7}.dashboard-monitor-dot.not_configured{background:#ef4444;box-shadow:0 0 0 3px #fee2e2}.notice-info{border-color:#bfdbfe;background:#eff6ff;color:#1e40af}.security-cleanup-empty{margin:14px 0 0}.security-cleanup-empty p{margin:0}
+.dashboard-monitor-dot.maintenance{background:#f59e0b;box-shadow:0 0 0 3px #fef3c7}

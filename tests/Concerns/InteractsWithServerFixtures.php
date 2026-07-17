@@ -16,8 +16,8 @@ trait InteractsWithServerFixtures
     }
 
     /**
-     * @param array<string,mixed> $loginServerValues
-     * @param array<string,mixed> $gameServerValues
+     * @param  array<string,mixed>  $loginServerValues
+     * @param  array<string,mixed>  $gameServerValues
      * @return array{LoginServer,GameServer}
      */
     protected function freshMobiusServerPair(

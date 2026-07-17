@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Auth\TwoFactorChallengeController as AdminTwoFact
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\GameAccountSettingsController as AdminGameAccountSettingsController;
 use App\Http\Controllers\Admin\GameServerConnectionController as AdminGameServerConnectionController;
+use App\Http\Controllers\Admin\GameServerController as AdminGameServerController;
 use App\Http\Controllers\Admin\LoginServerController as AdminLoginServerController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\NewsImageController as AdminNewsImageController;
@@ -149,6 +150,9 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
 
     Route::middleware('admin.auth')->group(function (): void {
         Route::get('', AdminDashboardController::class)->name('dashboard');
+        Route::post('/server-monitor/status', [AdminDashboardController::class, 'status'])
+            ->middleware('throttle:120,1')
+            ->name('server-monitor.status');
         Route::post('/server-monitor/refresh', [AdminDashboardController::class, 'refresh'])
             ->middleware('throttle:6,1')
             ->name('server-monitor.refresh');
@@ -227,10 +231,10 @@ Route::prefix('admin')->name('admin.')->middleware('admin.headers')->group(funct
 
         Route::get('/settings', [AdminSettingsController::class, 'general'])->name('settings.general');
         Route::put('/settings', [AdminSettingsController::class, 'updateGeneral'])->name('settings.general.update');
-        Route::get('/settings/game-server', [AdminSettingsController::class, 'gameServer'])->name('settings.game-server');
-        Route::post('/settings/game-server', [AdminSettingsController::class, 'storeGameServer'])->name('settings.game-server.store');
-        Route::put('/settings/game-server/{gameServer}', [AdminSettingsController::class, 'updateGameServer'])->name('settings.game-server.update');
-        Route::delete('/settings/game-server/{gameServer}', [AdminSettingsController::class, 'destroyGameServer'])->name('settings.game-server.destroy');
+        Route::get('/settings/game-server', [AdminGameServerController::class, 'index'])->name('settings.game-server');
+        Route::post('/settings/game-server', [AdminGameServerController::class, 'store'])->name('settings.game-server.store');
+        Route::put('/settings/game-server/{gameServer}', [AdminGameServerController::class, 'update'])->name('settings.game-server.update');
+        Route::delete('/settings/game-server/{gameServer}', [AdminGameServerController::class, 'destroy'])->name('settings.game-server.destroy');
         Route::post('/settings/game-server/{gameServer}/connection', [AdminGameServerConnectionController::class, 'update'])
             ->middleware('throttle:10,1')
             ->name('settings.game-server.connection');

@@ -34,7 +34,9 @@ class SecuritySettingsTest extends TestCase
             ->assertSee('100')
             ->assertSee('90')
             ->assertSee('30')
-            ->assertSee('Очистить устаревшие записи');
+            ->assertSee('Очистить устаревшие записи')
+            ->assertSee('Удалять пока нечего. Записи аудита считаются устаревшими через 90 дней, а записи входа администраторов — через 30 дней.')
+            ->assertSee('data-security-cleanup-disabled="1"', false);
     }
 
     public function test_administrator_can_save_safe_security_settings(): void
@@ -216,6 +218,11 @@ class SecuritySettingsTest extends TestCase
             'successful' => false,
             'failure_reason' => 'invalid_credentials',
         ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings/security')
+            ->assertOk()
+            ->assertSee('data-security-cleanup-disabled="0"', false);
 
         $this->actingAs($admin, 'admin')
             ->post('/admin/settings/security/logs/cleanup', [

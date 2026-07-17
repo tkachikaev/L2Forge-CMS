@@ -121,8 +121,17 @@
                 ]) }}</small>
             </div>
 
+            @if(($statistics['audit_expired'] + $statistics['admin_login_expired']) === 0)
+                <div class="notice notice-info security-cleanup-empty" role="status">
+                    <p>{{ __('There is nothing to delete yet. Audit entries become eligible after :audit days, and administrator sign-in entries after :login days.', [
+                        'audit' => $statistics['audit_retention_days'],
+                        'login' => $statistics['admin_login_retention_days'],
+                    ]) }}</p>
+                </div>
+            @endif
+
             <div class="security-cleanup-actions">
-                <button class="button button-danger" type="button" data-security-cleanup-open @disabled(($statistics['audit_expired'] + $statistics['admin_login_expired']) === 0)>
+                <button class="button button-danger" type="button" data-security-cleanup-open data-security-cleanup-disabled="{{ ($statistics['audit_expired'] + $statistics['admin_login_expired']) === 0 ? '1' : '0' }}" @disabled(($statistics['audit_expired'] + $statistics['admin_login_expired']) === 0) title="{{ ($statistics['audit_expired'] + $statistics['admin_login_expired']) === 0 ? __('There are no expired records to delete.') : __('Delete expired records') }}">
                     {{ __('Delete expired records') }}
                 </button>
             </div>

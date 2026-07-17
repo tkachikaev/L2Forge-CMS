@@ -26,7 +26,11 @@ final class HomeController
                 if (! is_array($status)) {
                     $status = [
                         'state' => 'unknown',
+                        'availability_state' => 'unknown',
                         'players' => null,
+                        'public_players' => null,
+                        'maintenance_until_label' => null,
+                        'maintenance_message' => $server['maintenance_message'] ?? null,
                         'checked_at' => null,
                     ];
                 }
@@ -44,6 +48,7 @@ final class HomeController
             'servers' => $servers,
             'topCharacters' => $game->topCharacters(),
             'monitorRefreshDue' => $monitorCoordinator->isDue(),
+            'publicOnlineVisible' => (bool) $monitor['public_online_visible'],
         ]);
     }
 }

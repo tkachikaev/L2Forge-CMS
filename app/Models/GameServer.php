@@ -31,12 +31,17 @@ use Throwable;
  * @property string|null $database_charset
  * @property string|null $service_host
  * @property int|null $service_port
+ * @property string $database_status
+ * @property string|null $database_error
+ * @property Carbon|null $database_checked_at
  * @property string $monitor_status
  * @property int $monitor_failures
  * @property Carbon|null $monitor_checked_at
  * @property Carbon|null $monitor_last_online_at
  * @property int|null $online_players
  * @property Carbon|null $online_checked_at
+ * @property bool $maintenance_enabled
+ * @property Carbon|null $maintenance_until
  * @property-read LoginServer|null $loginServer
  * @property-read Collection<int, GameServerTranslation> $translations
  */
@@ -61,12 +66,17 @@ class GameServer extends Model
         'database_charset',
         'service_host',
         'service_port',
+        'database_status',
+        'database_error',
+        'database_checked_at',
         'monitor_status',
         'monitor_failures',
         'monitor_checked_at',
         'monitor_last_online_at',
         'online_players',
         'online_checked_at',
+        'maintenance_enabled',
+        'maintenance_until',
     ];
 
     protected $hidden = [
@@ -82,11 +92,14 @@ class GameServer extends Model
             'database_port' => 'integer',
             'database_password' => 'encrypted',
             'service_port' => 'integer',
+            'database_checked_at' => 'datetime',
             'monitor_failures' => 'integer',
             'monitor_checked_at' => 'datetime',
             'monitor_last_online_at' => 'datetime',
             'online_players' => 'integer',
             'online_checked_at' => 'datetime',
+            'maintenance_enabled' => 'boolean',
+            'maintenance_until' => 'datetime',
         ];
     }
 
@@ -110,6 +123,11 @@ class GameServer extends Model
         $value = $this->getRawOriginal('database_password');
 
         return is_string($value) && $value !== '';
+    }
+
+    public function databaseVerified(): bool
+    {
+        return $this->database_status === 'configured' && $this->database_checked_at !== null;
     }
 
     public function connectionConfigured(): bool
@@ -163,6 +181,37 @@ class GameServer extends Model
         }
 
         return trim((string) $this->name);
+    }
+
+    public function maintenanceMessageFor(?string $locale = null, bool $withFallback = true): string
+    {
+        $locale ??= app()->getLocale();
+        $languages = app(LanguageManager::class);
+        $locale = $languages->normalizeCode($locale) ?? $languages->default();
+
+        if (! $this->translationsTableExists()) {
+            return '';
+        }
+
+        $candidates = $withFallback
+            ? $languages->fallbackCandidates($locale)
+            : [$locale];
+
+        $translations = $this->relationLoaded('translations')
+            ? $this->getRelation('translations')
+            : $this->translations()->whereIn('locale', $candidates)->get();
+
+        if ($translations instanceof Collection) {
+            foreach ($candidates as $candidate) {
+                $translation = $translations->firstWhere('locale', $candidate);
+                if ($translation instanceof GameServerTranslation
+                    && trim((string) $translation->maintenance_message) !== '') {
+                    return trim((string) $translation->maintenance_message);
+                }
+            }
+        }
+
+        return '';
     }
 
     private function translationsTableExists(): bool

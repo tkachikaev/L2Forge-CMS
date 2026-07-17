@@ -23,8 +23,9 @@
                 @php
                     $driver = $server['driver'] !== null ? ($gameDrivers[$server['driver']] ?? null) : null;
                     $cardTestResult = $cardTestResults[$server['id']] ?? null;
-                    $cardConfigured = $server['connection_configured']
-                        && (! is_array($cardTestResult) || $cardTestResult['state'] === 'success');
+                    $maintenanceEnabled = $server['maintenance_enabled'];
+                    $cardConfigured = $server['database_status'] === 'configured';
+                    $databasePending = $server['database_status'] === 'unknown';
                     $endpoint = $server['use_login_server_connection']
                         ? $server['login_server_name']
                         : trim($server['database_host'].':'.($server['database_port'] ?? '').' / '.$server['database_name'], ' /');
@@ -40,8 +41,14 @@
                                 @endforeach
                             </p>
                         </div>
-                        <span @class(['status-badge', 'status-badge-success' => $cardConfigured, 'status-badge-muted' => ! $cardConfigured])>
-                            {{ $cardConfigured ? __('Configured') : __('Not configured') }}
+                        <span @class([
+                            'status-badge',
+                            'status-badge-warning' => $maintenanceEnabled,
+                            'status-badge-success' => ! $maintenanceEnabled && $cardConfigured,
+                            'status-badge-muted' => ! $maintenanceEnabled && $databasePending,
+                            'status-badge-danger' => ! $maintenanceEnabled && ! $cardConfigured && ! $databasePending,
+                        ])>
+                            {{ $maintenanceEnabled ? __('Maintenance') : ($cardConfigured ? __('Configured') : ($databasePending ? __('Status pending') : __('Not configured'))) }}
                         </span>
                     </div>
 
@@ -58,6 +65,24 @@
                             <div>
                                 <dt>{{ __('Database') }}</dt>
                                 <dd>{{ $endpoint ?: __('Inherited from login server') }}</dd>
+                            </div>
+                        @endif
+                        <div>
+                            <dt>{{ __('Database status') }}</dt>
+                            <dd>{{ $server['database_status'] === 'configured' ? __('Connected') : ($server['database_status'] === 'not_configured' ? __('Connection failed') : __('Status pending')) }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ __('Service status') }}</dt>
+                            <dd>{{ $server['service_status'] === 'online' ? __('Running') : ($server['service_status'] === 'offline' ? __('Unavailable') : __('Status pending')) }}</dd>
+                        </div>
+                        @if($maintenanceEnabled)
+                            <div>
+                                <dt>{{ __('Maintenance') }}</dt>
+                                <dd>
+                                    {{ $server['maintenance_until']?->isFuture()
+                                        ? __('Until :time', ['time' => $server['maintenance_until']->format('d.m.Y H:i T')])
+                                        : __('Until manually disabled') }}
+                                </dd>
                             </div>
                         @endif
                         @if($server['database_password_saved'])
@@ -138,6 +163,42 @@
                             @error('serverMode')<small class="field-error">{{ $message }}</small>@enderror
                         </div>
                     </div>
+                </section>
+
+                <section class="server-drawer-section">
+                    <label class="server-connection-enable">
+                        <span>
+                            <strong>{{ __('Maintenance mode') }}</strong>
+                            <small>{{ __('The public website will show an orange maintenance status. Database and service monitoring will continue.') }}</small>
+                        </span>
+                        <span class="switch-control">
+                            <input type="checkbox" wire:model.live="maintenanceEnabled">
+                            <span></span>
+                        </span>
+                    </label>
+
+                    @if($maintenanceEnabled)
+                        <div class="server-form-grid">
+                            <div class="form-group">
+                                <label for="live_game_maintenance_until">{{ __('Maintenance end time') }}</label>
+                                <input id="live_game_maintenance_until" type="datetime-local" wire:model="maintenanceUntil">
+                                <small>{{ __('Optional. The time is informational and does not disable maintenance mode automatically.') }}</small>
+                                @error('maintenanceUntil')<small class="field-error">{{ $message }}</small>@enderror
+                            </div>
+                        </div>
+
+                        <div class="server-language-grid">
+                            @foreach($languages as $code => $language)
+                                <div class="form-group">
+                                    <label for="live_game_maintenance_message_{{ $code }}">
+                                        {{ __('Maintenance message') }} — {{ $language['native_name'] }}
+                                    </label>
+                                    <input id="live_game_maintenance_message_{{ $code }}" type="text" maxlength="255" wire:model="maintenanceMessages.{{ $code }}" placeholder="{{ __('Installing an update') }}">
+                                    @error('maintenanceMessages.'.$code)<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </section>
 
                 <section class="server-drawer-section">

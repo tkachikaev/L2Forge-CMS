@@ -18,6 +18,13 @@ class GameServerConnectionSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->instance(ExternalDatabaseConnectionTester::class, new FakeExternalDatabaseConnectionTester);
+    }
+
     public function test_game_server_connection_requires_authentication(): void
     {
         $gameServer = GameServer::query()->firstOrFail();

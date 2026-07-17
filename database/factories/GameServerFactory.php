@@ -31,18 +31,26 @@ class GameServerFactory extends Factory
             'database_charset' => null,
             'service_host' => 'game.example.test',
             'service_port' => 7777,
+            'database_status' => 'unknown',
+            'database_error' => null,
+            'database_checked_at' => null,
             'monitor_status' => 'unknown',
             'monitor_failures' => 0,
             'monitor_checked_at' => null,
             'monitor_last_online_at' => null,
             'online_players' => null,
             'online_checked_at' => null,
+            'maintenance_enabled' => false,
+            'maintenance_until' => null,
         ];
     }
 
     public function online(int $players = 0): static
     {
         return $this->state(fn (): array => [
+            'database_status' => 'configured',
+            'database_error' => null,
+            'database_checked_at' => now(),
             'monitor_status' => 'online',
             'monitor_failures' => 0,
             'monitor_checked_at' => now(),
@@ -55,6 +63,9 @@ class GameServerFactory extends Factory
     public function offline(): static
     {
         return $this->state(fn (): array => [
+            'database_status' => 'configured',
+            'database_error' => null,
+            'database_checked_at' => now(),
             'monitor_status' => 'offline',
             'monitor_failures' => 3,
             'monitor_checked_at' => now(),
@@ -66,6 +77,9 @@ class GameServerFactory extends Factory
     public function stale(int $players = 0, string $status = 'online'): static
     {
         return $this->state(fn (): array => [
+            'database_status' => 'configured',
+            'database_error' => null,
+            'database_checked_at' => now()->subHours(4),
             'monitor_status' => $status,
             'monitor_failures' => $status === 'offline' ? 3 : 0,
             'monitor_checked_at' => now()->subHours(4),

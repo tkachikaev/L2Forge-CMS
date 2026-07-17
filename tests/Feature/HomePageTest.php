@@ -24,6 +24,12 @@ class HomePageTest extends TestCase
         $this->assertStringNotContainsString('Скачать клиент', $footer[0]);
         $this->assertStringNotContainsString('Навигация', $footer[0]);
         $this->assertStringNotContainsString('Документы', $footer[0]);
+        $this->assertStringContainsString('class="footer-section-links"', $footer[0]);
+
+        $css = file_get_contents(public_path('themes/default/assets/css/app.css'));
+        $this->assertIsString($css);
+        $this->assertStringContainsString('grid-auto-flow:column', $css);
+        $this->assertStringContainsString('grid-template-rows:repeat(3,auto)', $css);
     }
 
     public function test_home_page_is_available(): void

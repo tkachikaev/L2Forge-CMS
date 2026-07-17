@@ -82,33 +82,10 @@
 
 <section class="account-section password-section">
     <div class="account-section-heading"><div><span class="account-eyebrow">{{ __('Security') }}</span><h2>{{ __('Change game password') }}</h2></div></div>
-    <form class="account-form-card compact" method="POST" action="{{ public_route('game-accounts.password', ['gameAccount' => $account]) }}">
-        @csrf
-        @method('PUT')
-        <label>
-            <span>{{ __('Current personal account password') }}</span>
-            <div class="account-field-control">
-                <input type="password" name="current_password" autocomplete="current-password" required @class(['account-field-invalid' => $errors->has('current_password')]) @error('current_password') aria-describedby="current-password-error" @enderror>
-                @error('current_password')<small class="account-field-error" id="current-password-error" role="alert">{{ $message }}</small>@enderror
-            </div>
-        </label>
-        <div class="account-form-grid">
-            <label>
-                <span>{{ __('New game password') }}</span>
-                <div class="account-field-control">
-                    <input type="password" name="game_password" autocomplete="new-password" required @class(['account-field-invalid' => $errors->has('game_password')]) @error('game_password') aria-describedby="new-game-password-error" @enderror>
-                    @error('game_password')<small class="account-field-error" id="new-game-password-error" role="alert">{{ $message }}</small>@enderror
-                </div>
-            </label>
-            <label>
-                <span>{{ __('Repeat game password') }}</span>
-                <div class="account-field-control">
-                    <input type="password" name="game_password_confirmation" autocomplete="new-password" required @class(['account-field-invalid' => $errors->has('game_password_confirmation')]) @error('game_password_confirmation') aria-describedby="new-game-password-confirmation-error" @enderror>
-                    @error('game_password_confirmation')<small class="account-field-error" id="new-game-password-confirmation-error" role="alert">{{ $message }}</small>@enderror
-                </div>
-            </label>
-        </div>
-        <div class="account-form-actions"><button class="account-button primary" type="submit">{{ __('Change password') }}</button></div>
-    </form>
+    <livewire:account.game-account-password-form :account-id="$account->id" />
 </section>
 @endsection
+
+@push('framework-scripts')
+    @livewireScripts
+@endpush

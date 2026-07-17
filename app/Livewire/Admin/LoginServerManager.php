@@ -3,11 +3,8 @@
 namespace App\Livewire\Admin;
 
 use App\Models\LoginServer;
-use App\Services\AuditLogger;
-use App\Services\Servers\ServerConnectionTester;
+use App\Services\Servers\LoginServerAdministration;
 use App\Services\Servers\ServerDriverRegistry;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Livewire\Attributes\Locked;
@@ -103,9 +100,8 @@ class LoginServerManager extends Component
     {
         $this->ensureAuthorized();
         $server = LoginServer::query()->findOrFail($serverId);
-        $report = app(ServerConnectionTester::class)->testLoginServer($server);
+        $report = app(LoginServerAdministration::class)->testStored($server);
 
-        $this->auditConnectionTest($report, $server->name, $server);
         $this->cardTestResults[$server->id] = $this->cardTestResult($report);
     }
 
@@ -118,14 +114,11 @@ class LoginServerManager extends Component
             ? LoginServer::query()->findOrFail($this->editingId)
             : null;
 
-        if ($values['database_password'] === '' && $server instanceof LoginServer) {
-            $values['database_password'] = $server->databasePassword() ?? '';
-        }
-
-        $report = app(ServerConnectionTester::class)->testLoginValues($values);
-        $this->auditConnectionTest($report, $this->name, $server);
-
-        $this->connectionReport = $report;
+        $this->connectionReport = app(LoginServerAdministration::class)->test(
+            $values,
+            $this->name,
+            $server,
+        );
         $this->showChecks = false;
         $this->status = null;
         $this->drawerOpen = true;
@@ -136,44 +129,16 @@ class LoginServerManager extends Component
         $this->ensureAuthorized();
         $validated = $this->validate($this->rules(), [], $this->attributes());
         $values = $this->connectionValues($validated);
-        $audit = app(AuditLogger::class);
+        $server = $this->editingId !== null
+            ? LoginServer::query()->findOrFail($this->editingId)
+            : null;
+        $result = app(LoginServerAdministration::class)->save($server, $values);
+        $server = $result['server'];
 
-        if ($this->editingId === null) {
-            $values['database_password'] = $values['database_password'] !== ''
-                ? $values['database_password']
-                : null;
-            $server = LoginServer::query()->create($values);
-
-            $audit->success(
-                category: 'admin',
-                action: 'login_server.created',
-                target: $server,
-                details: ['values' => $this->auditValues($server)],
-            );
-
+        if ($result['created']) {
             $this->editingId = $server->id;
             $this->status = __('LoginServer added.');
         } else {
-            $server = LoginServer::query()->findOrFail($this->editingId);
-            $before = $this->auditValues($server);
-
-            if ($values['database_password'] === '') {
-                unset($values['database_password']);
-            }
-
-            $server->update($values);
-            $server->refresh();
-
-            $audit->success(
-                category: 'admin',
-                action: 'login_server.updated',
-                target: $server,
-                details: [
-                    'before' => $before,
-                    'after' => $this->auditValues($server),
-                ],
-            );
-
             $this->status = __('LoginServer settings saved.');
         }
 
@@ -203,33 +168,8 @@ class LoginServerManager extends Component
         }
 
         $serverId = $this->confirmingDeleteId;
-
-        try {
-            /** @var array{name:string,values:array<string,mixed>}|null $deleted */
-            $deleted = DB::transaction(function () use ($serverId): ?array {
-                $server = LoginServer::query()
-                    ->lockForUpdate()
-                    ->findOrFail($serverId);
-
-                if ($server->gameServers()->exists() || $server->userGameAccounts()->exists()) {
-                    return null;
-                }
-
-                $result = [
-                    'name' => $server->name,
-                    'values' => $this->auditValues($server),
-                ];
-                $server->delete();
-
-                return $result;
-            });
-        } catch (QueryException $exception) {
-            if (! $this->isIntegrityConstraintViolation($exception)) {
-                throw $exception;
-            }
-
-            $deleted = null;
-        }
+        $server = LoginServer::query()->findOrFail($serverId);
+        $deleted = app(LoginServerAdministration::class)->delete($server);
 
         if ($deleted === null) {
             $this->addError('loginServer', __('The LoginServer is used by game servers or player accounts and cannot be deleted.'));
@@ -237,13 +177,6 @@ class LoginServerManager extends Component
 
             return;
         }
-
-        app(AuditLogger::class)->success(
-            category: 'admin',
-            action: 'login_server.deleted',
-            target: $deleted['name'],
-            details: ['values' => $deleted['values']],
-        );
 
         if ($this->editingId === $serverId) {
             $this->closeDrawer();
@@ -321,23 +254,6 @@ class LoginServerManager extends Component
         ];
     }
 
-    /** @return array<string,mixed> */
-    private function auditValues(LoginServer $server): array
-    {
-        return [
-            'name' => $server->name,
-            'driver' => $server->driver,
-            'database_host' => $server->database_host,
-            'database_port' => $server->database_port,
-            'database_name' => $server->database_name,
-            'database_username' => $server->database_username,
-            'database_charset' => $server->database_charset,
-            'service_host' => $server->service_host,
-            'service_port' => $server->service_port,
-            'database_password_saved' => $server->hasDatabasePassword(),
-        ];
-    }
-
     /** @param array<string,mixed> $report @return array{state:string,message:string} */
     private function cardTestResult(array $report): array
     {
@@ -353,35 +269,6 @@ class LoginServerManager extends Component
         }
 
         return ['state' => 'success', 'message' => __('Database connection established.')];
-    }
-
-    /** @param array<string,mixed> $report */
-    private function auditConnectionTest(array $report, string $name, ?LoginServer $server): void
-    {
-        $details = [
-            'driver' => $report['driver'] ?? null,
-            'connected' => $report['connected'] ?? false,
-            'compatible' => $report['compatible'] ?? null,
-        ];
-        $audit = app(AuditLogger::class);
-
-        if ($report['connected'] ?? false) {
-            $audit->success(
-                category: 'admin',
-                action: 'login_server.connection_tested',
-                target: $server ?? $name,
-                details: $details,
-            );
-
-            return;
-        }
-
-        $audit->failed(
-            category: 'admin',
-            action: 'login_server.connection_tested',
-            target: $server ?? $name,
-            details: $details,
-        );
     }
 
     private function resetForm(): void
@@ -413,12 +300,5 @@ class LoginServerManager extends Component
     private function ensureAuthorized(): void
     {
         abort_unless(auth('admin')->check(), 403);
-    }
-
-    private function isIntegrityConstraintViolation(QueryException $exception): bool
-    {
-        $code = (string) $exception->getCode();
-
-        return str_starts_with($code, '23') || in_array($code, ['19', '1451'], true);
     }
 }

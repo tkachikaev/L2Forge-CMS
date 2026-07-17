@@ -60,7 +60,8 @@
             <div class="server-list">
                 @foreach ($servers as $currentServer)
                     @php
-                        $statusLabel = match ($currentServer['state']) {
+                        $statusLabel = match ($currentServer['availability_state']) {
+                            'maintenance' => __('Maintenance'),
                             'online' => __('In game'),
                             'offline' => __('Unavailable'),
                             default => __('Status pending'),
@@ -69,11 +70,17 @@
                     <div class="server-row" data-monitor-game-server="{{ $currentServer['id'] }}">
                         <div class="server-summary">
                             <strong>{{ $currentServer['name'] }}</strong>
-                            <span class="status {{ $currentServer['state'] }}" data-monitor-public-state>{{ $statusLabel }}</span>
-                            <small data-monitor-public-online aria-live="polite">
-                                {{ $currentServer['players'] !== null
-                                    ? __('Online: :count', ['count' => number_format($currentServer['players'], 0, '.', ' ')])
+                            <span class="status {{ $currentServer['availability_state'] }}" data-monitor-public-state>{{ $statusLabel }}</span>
+                            <small data-monitor-public-online aria-live="polite" @if(!$publicOnlineVisible || $currentServer['availability_state'] === 'maintenance') hidden @endif>
+                                {{ $currentServer['public_players'] !== null
+                                    ? __('Online: :count', ['count' => number_format($currentServer['public_players'], 0, '.', ' ')])
                                     : __('Online temporarily unavailable') }}
+                            </small>
+                            <small class="server-maintenance-until" data-monitor-maintenance-until @if($currentServer['availability_state'] !== 'maintenance' || !$currentServer['maintenance_until_label']) hidden @endif>
+                                {{ $currentServer['maintenance_until_label'] }}
+                            </small>
+                            <small class="server-maintenance-message" data-monitor-maintenance-message @if($currentServer['availability_state'] !== 'maintenance' || $currentServer['maintenance_message'] === '') hidden @endif>
+                                {{ $currentServer['maintenance_message'] }}
                             </small>
                         </div>
 

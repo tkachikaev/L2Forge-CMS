@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const stateClasses = ['online', 'offline', 'unknown'];
+    const stateClasses = ['maintenance', 'online', 'configured', 'not_configured', 'offline', 'unknown'];
     let attempts = 0;
 
     const rowFor = (selector, dataKey, id) => Array.from(dashboard.querySelectorAll(selector))
@@ -55,6 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = rowFor('[data-monitor-admin-game]', 'monitorAdminGame', server.id);
             applyState(row, server.state, server.admin_state_label);
 
+            const details = row?.querySelector('[data-monitor-details]');
+            if (details) {
+                details.textContent = server.details_label;
+            }
+
             const online = row?.querySelector('[data-monitor-online]');
             if (online) {
                 online.textContent = server.admin_online_label;
@@ -64,6 +69,11 @@ document.addEventListener('DOMContentLoaded', () => {
         payload.login_servers.forEach((server) => {
             const row = rowFor('[data-monitor-admin-login]', 'monitorAdminLogin', server.id);
             applyState(row, server.state, server.state_label);
+
+            const details = row?.querySelector('[data-monitor-details]');
+            if (details) {
+                details.textContent = server.details_label;
+            }
         });
     };
 

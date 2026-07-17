@@ -15,6 +15,8 @@ final class ServerMonitor
         private readonly ServicePortProbe $ports,
         private readonly GameServerOnlineCounter $onlineCounter,
         private readonly ServerDriverRegistry $drivers,
+        private readonly ServerConnectionTester $connections,
+        private readonly ServerDatabaseState $databaseState,
     ) {}
 
     /** @return array{login_servers:int,game_servers:int} */
@@ -38,6 +40,7 @@ final class ServerMonitor
 
     public function monitorLoginServer(LoginServer $loginServer): void
     {
+        $this->checkLoginDatabase($loginServer);
         $driver = $this->drivers->loginDriver($loginServer->driver);
         $host = $this->serviceHost($loginServer->service_host, $loginServer->database_host);
         $port = $this->servicePort($loginServer->service_port, $driver['service_port'] ?? 2106);
@@ -50,6 +53,7 @@ final class ServerMonitor
 
     public function monitorGameServer(GameServer $gameServer): void
     {
+        $databaseConfigured = $this->checkGameDatabase($gameServer);
         $driver = $this->drivers->gameDriver((string) $gameServer->driver);
         $fallbackHost = $gameServer->use_login_server_connection
             ? (string) $gameServer->loginServer?->database_host
@@ -61,7 +65,12 @@ final class ServerMonitor
 
         $this->updateServiceState($gameServer, $serviceOnline);
 
-        if (! $serviceOnline || ! is_array($driver['online_count'] ?? null)) {
+        if (! $databaseConfigured || ! $serviceOnline || ! is_array($driver['online_count'] ?? null)) {
+            $gameServer->forceFill([
+                'online_players' => null,
+                'online_checked_at' => now(),
+            ])->save();
+
             return;
         }
 
@@ -72,12 +81,48 @@ final class ServerMonitor
                 'online_checked_at' => now(),
             ])->save();
         } catch (Throwable $exception) {
+            $gameServer->forceFill([
+                'online_players' => null,
+                'online_checked_at' => now(),
+            ])->save();
             Log::warning('GameServer online count failed.', [
                 'game_server_id' => $gameServer->id,
                 'driver' => $gameServer->driver,
                 'exception' => $exception::class,
                 'message' => $exception->getMessage(),
             ]);
+        }
+    }
+
+    private function checkLoginDatabase(LoginServer $server): bool
+    {
+        try {
+            return $this->databaseState->apply($server, $this->connections->testLoginServer($server));
+        } catch (Throwable $exception) {
+            Log::warning('LoginServer database monitoring failed.', [
+                'login_server_id' => $server->id,
+                'exception' => $exception::class,
+            ]);
+
+            $this->databaseState->markUnknown($server, 'check_failed');
+
+            return false;
+        }
+    }
+
+    private function checkGameDatabase(GameServer $server): bool
+    {
+        try {
+            return $this->databaseState->apply($server, $this->connections->testGameServer($server));
+        } catch (Throwable $exception) {
+            Log::warning('GameServer database monitoring failed.', [
+                'game_server_id' => $server->id,
+                'exception' => $exception::class,
+            ]);
+
+            $this->databaseState->markUnknown($server, 'check_failed');
+
+            return false;
         }
     }
 

@@ -18,6 +18,13 @@ class LoginServerSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->instance(ExternalDatabaseConnectionTester::class, new FakeExternalDatabaseConnectionTester);
+    }
+
     public function test_login_server_settings_require_authentication(): void
     {
         $this->get('/admin/settings/login-server')->assertRedirect(route('admin.login'));

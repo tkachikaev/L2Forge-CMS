@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Exceptions\GameServerDeletionConfirmationRequired;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\SaveGameServerSettingsRequest;
 use App\Http\Requests\Admin\SaveGeneralSettingsRequest;
 use App\Http\Requests\Admin\SaveLanguageSettingsRequest;
 use App\Http\Requests\Admin\SaveMailSettingsRequest;
@@ -15,10 +13,8 @@ use App\Http\Requests\Admin\SendCustomMailRequest;
 use App\Http\Requests\Admin\SendMailTemplateTestRequest;
 use App\Http\Requests\Admin\SendTestMailRequest;
 use App\Mail\CustomHtmlMail;
-use App\Models\GameServer;
 use App\Notifications\MailTemplateTestNotification;
 use App\Services\AuditLogger;
-use App\Services\GameServerSettings;
 use App\Services\Localization\LanguageManager;
 use App\Services\Mail\CustomMailHtmlSanitizer;
 use App\Services\MailSettings;
@@ -39,7 +35,9 @@ use Throwable;
 
 class SettingsController extends Controller
 {
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(private readonly AuditLogger $auditLogger)
+    {
+    }
 
     public function general(SiteSettings $siteSettings): View
     {
@@ -88,6 +86,7 @@ class SettingsController extends Controller
                 'timezone' => (string) $validated['timezone'],
                 'admin_email' => (string) ($validated['admin_email'] ?? ''),
                 'footer_text' => (string) ($validated['footer_text'] ?? $current['footer_text']),
+                'show_public_online' => (bool) ($validated['show_public_online'] ?? $current['show_public_online']),
             ], $translations);
         } catch (Throwable $exception) {
             if ($storedLogo !== null) {
@@ -127,93 +126,6 @@ class SettingsController extends Controller
         return redirect()
             ->route('admin.settings.general')
             ->with('status', __('General settings saved.'));
-    }
-
-    public function gameServer(): View
-    {
-        return view('admin.settings.game-server');
-    }
-
-    public function storeGameServer(
-        SaveGameServerSettingsRequest $request,
-        GameServerSettings $gameServerSettings,
-    ): RedirectResponse {
-        $validated = $request->validated();
-
-        $gameServer = $gameServerSettings->create($this->gameServerValues($validated));
-
-        $this->auditLogger->success(
-            category: 'admin',
-            action: 'game_server.created',
-            target: $gameServer,
-            details: ['values' => $this->gameServerAuditValues($gameServer)],
-        );
-
-        return redirect()
-            ->route('admin.settings.game-server')
-            ->with('status', __('Game server added.'));
-    }
-
-    public function updateGameServer(
-        SaveGameServerSettingsRequest $request,
-        GameServer $gameServer,
-        GameServerSettings $gameServerSettings,
-    ): RedirectResponse {
-        $validated = $request->validated();
-        $before = $this->gameServerAuditValues($gameServer);
-
-        $gameServerSettings->update($gameServer, $this->gameServerValues($validated));
-        $gameServer->refresh();
-
-        $this->auditLogger->success(
-            category: 'admin',
-            action: 'game_server.updated',
-            target: $gameServer,
-            details: ['changes' => $this->auditChanges($before, $this->gameServerAuditValues($gameServer))],
-        );
-
-        return redirect()
-            ->route('admin.settings.game-server')
-            ->with('status', __('Game server settings saved.'));
-    }
-
-    public function destroyGameServer(
-        GameServer $gameServer,
-        GameServerSettings $gameServerSettings,
-    ): RedirectResponse {
-        $name = $gameServer->name;
-        $gameServerId = $gameServer->id;
-        $values = $this->gameServerAuditValues($gameServer);
-
-        try {
-            $impact = $gameServerSettings->delete($gameServer);
-        } catch (GameServerDeletionConfirmationRequired $exception) {
-            return redirect()
-                ->route('admin.settings.game-server')
-                ->with('warning', __('This GameServer cannot be deleted through the legacy endpoint because :count game accounts would become unavailable. Use the current server card confirmation.', [
-                    'count' => $exception->impact['accounts_becoming_unavailable'],
-                ]));
-        }
-
-        $this->auditLogger->success(
-            category: 'admin',
-            action: 'game_server.deleted',
-            target: $name,
-            details: [
-                'game_server_id' => $gameServerId,
-                'values' => $values,
-                'deletion_impact' => [
-                    'login_server_id' => $impact['login_server_id'],
-                    'replacement_game_server_id' => $impact['replacement_game_server_id'],
-                    'accounts_becoming_unavailable' => $impact['accounts_becoming_unavailable'],
-                    'unavailable_after_deletion' => $impact['unavailable_after_deletion'],
-                ],
-            ],
-        );
-
-        return redirect()
-            ->route('admin.settings.game-server')
-            ->with('status', __('Game server :name deleted.', ['name' => $name]));
     }
 
     public function system(
@@ -672,7 +584,9 @@ class SettingsController extends Controller
         return $changes;
     }
 
-    /** @param array<string, mixed> $values */
+    /**
+     * @param  array<string, mixed>  $values
+     */
     private function generalAuditValues(array $values): array
     {
         return [
@@ -683,20 +597,14 @@ class SettingsController extends Controller
             'footer_text' => $values['footer_text'] ?? '',
             'logo_configured' => ! empty($values['logo']),
             'favicon_configured' => ! empty($values['favicon']),
+            'show_public_online' => (bool) ($values['show_public_online'] ?? true),
         ];
     }
 
-    private function gameServerAuditValues(GameServer $gameServer): array
-    {
-        return [
-            'name' => $gameServer->name,
-            'rates' => $gameServer->rates,
-            'chronicle' => $gameServer->chronicle,
-            'mode' => $gameServer->mode,
-        ];
-    }
-
-    /** @param array<string, mixed> $values @return array<string, string> */
+    /**
+     * @param  array<string, mixed>  $values
+     * @return array<string, string>
+     */
     private function mailTemplateAuditValues(array $values): array
     {
         return [
@@ -709,7 +617,9 @@ class SettingsController extends Controller
         ];
     }
 
-    /** @param array<string, mixed> $values */
+    /**
+     * @param  array<string, mixed>  $values
+     */
     private function mailAuditValues(array $values): array
     {
         return [
@@ -721,28 +631,6 @@ class SettingsController extends Controller
             'from_name' => $values['from_name'] ?? '',
             'admin_email' => $values['admin_email'] ?? '',
             'password_saved' => (bool) ($values['password_saved'] ?? false),
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $validated
-     * @return array{name: string, rates: string|null, chronicle: string|null, mode: string|null}
-     */
-    private function gameServerValues(array $validated): array
-    {
-        $translations = [];
-        foreach ((array) ($validated['translations'] ?? []) as $locale => $translation) {
-            if (is_array($translation)) {
-                $translations[(string) $locale] = (string) ($translation['name'] ?? '');
-            }
-        }
-
-        return [
-            'name' => (string) ($validated['server_name'] ?? ''),
-            'translations' => $translations,
-            'rates' => isset($validated['server_rates']) ? (string) $validated['server_rates'] : null,
-            'chronicle' => isset($validated['server_chronicle']) ? (string) $validated['server_chronicle'] : null,
-            'mode' => isset($validated['server_mode']) ? (string) $validated['server_mode'] : null,
         ];
     }
 

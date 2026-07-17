@@ -22,6 +22,13 @@ class ReactiveServerManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->instance(ExternalDatabaseConnectionTester::class, new FakeExternalDatabaseConnectionTester);
+    }
+
     public function test_login_connection_is_checked_inside_the_livewire_drawer_without_saving(): void
     {
         $fake = new FakeExternalDatabaseConnectionTester;
@@ -78,6 +85,9 @@ class ReactiveServerManagementTest extends TestCase
             ->assertSet("cardTestResults.{$server->id}.state", 'failed')
             ->assertSee('Не настроено')
             ->assertSee('Не удалось подключиться к базе данных.');
+
+        $this->assertSame('not_configured', $server->fresh()?->database_status);
+        $this->assertSame('connection_failed', $server->fresh()?->database_error);
     }
 
     public function test_login_server_can_be_created_from_the_livewire_drawer(): void
@@ -104,6 +114,41 @@ class ReactiveServerManagementTest extends TestCase
         $this->assertSame('Primary Login', $server->name);
         $this->assertSame('SecretLoginPassword', $server->databasePassword());
         $this->assertNotSame('SecretLoginPassword', $server->getRawOriginal('database_password'));
+        $this->assertSame('configured', $server->database_status);
+        $this->assertNotNull($server->database_checked_at);
+    }
+
+    public function test_random_login_server_credentials_are_saved_as_not_configured(): void
+    {
+        $fake = new FakeExternalDatabaseConnectionTester;
+        $fake->report = [
+            'connected' => false,
+            'compatible' => null,
+            'server_version' => null,
+            'error' => 'Access denied',
+            'checks' => [],
+        ];
+        $this->app->instance(ExternalDatabaseConnectionTester::class, $fake);
+        $this->actingAs($this->createAdmin(), 'admin');
+
+        Livewire::test(LoginServerManager::class)
+            ->call('create')
+            ->set('name', 'Random Login')
+            ->set('driver', 'l2j_mobius')
+            ->set('databaseHost', 'random.invalid')
+            ->set('databasePort', '3306')
+            ->set('databaseName', 'random_database')
+            ->set('databaseUsername', 'random_user')
+            ->set('databasePassword', 'RandomPassword')
+            ->set('databaseCharset', 'utf8mb4')
+            ->call('save')
+            ->assertSee('Не настроено')
+            ->assertSee('status-badge-danger', false);
+
+        $server = LoginServer::query()->where('name', 'Random Login')->firstOrFail();
+        $this->assertSame('not_configured', $server->database_status);
+        $this->assertSame('connection_failed', $server->database_error);
+        $this->assertNotNull($server->database_checked_at);
     }
 
     public function test_game_connection_is_checked_inside_the_livewire_drawer_without_saving(): void
@@ -152,6 +197,8 @@ class ReactiveServerManagementTest extends TestCase
             ->assertSet("cardTestResults.{$gameServer->id}.state", 'failed')
             ->assertSee('Не настроено')
             ->assertSee('Не удалось подключиться к базе данных.');
+
+        $this->assertSame('not_configured', $gameServer->fresh()?->database_status);
     }
 
     public function test_game_server_can_be_saved_from_the_livewire_drawer(): void
@@ -181,6 +228,34 @@ class ReactiveServerManagementTest extends TestCase
         $this->assertSame($loginServer->id, $gameServer->login_server_id);
         $this->assertSame('l2j_mobius_ct0_interlude', $gameServer->driver);
         $this->assertTrue($gameServer->use_login_server_connection);
+        $this->assertSame('configured', $gameServer->database_status);
+        $this->assertNotNull($gameServer->database_checked_at);
+    }
+
+    public function test_game_server_maintenance_can_be_saved_from_the_livewire_drawer(): void
+    {
+        $gameServer = GameServer::query()->firstOrFail();
+        $this->actingAs($this->createAdmin(), 'admin');
+
+        $maintenanceUntil = now()->addDay()->startOfMinute();
+
+        Livewire::test(GameServerManager::class)
+            ->call('edit', $gameServer->id)
+            ->set('maintenanceEnabled', true)
+            ->set('maintenanceUntil', $maintenanceUntil->format('Y-m-d\TH:i'))
+            ->set('maintenanceMessages.ru', 'Установка обновления')
+            ->call('save')
+            ->assertSee('На обслуживании')
+            ->assertSee('status-badge-warning', false);
+
+        $gameServer->refresh();
+        $this->assertTrue($gameServer->maintenance_enabled);
+        $this->assertSame($maintenanceUntil->format('Y-m-d H:i'), $gameServer->maintenance_until?->format('Y-m-d H:i'));
+        $this->assertDatabaseHas('game_server_translations', [
+            'game_server_id' => $gameServer->id,
+            'locale' => 'ru',
+            'maintenance_message' => 'Установка обновления',
+        ]);
     }
 
     public function test_unused_login_server_can_be_deleted_from_the_livewire_confirmation(): void

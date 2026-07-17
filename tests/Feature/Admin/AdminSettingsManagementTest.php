@@ -87,6 +87,30 @@ class AdminSettingsManagementTest extends TestCase
         $this->assertSame('Europe/Moscow', config('app.timezone'));
     }
 
+    public function test_admin_can_hide_public_online_count_for_all_servers(): void
+    {
+        $admin = $this->createAdmin();
+
+        $this->actingAs($admin, 'admin')
+            ->post('/admin/settings', [
+                '_method' => 'PUT',
+                'site_name' => 'L2Forge CMS',
+                'site_description' => '',
+                'timezone' => 'UTC',
+                'admin_email' => '',
+                'footer_text' => '© 2026 L2Forge-CMS',
+                'show_public_online' => '0',
+                'remove_logo' => '0',
+                'remove_favicon' => '0',
+            ])
+            ->assertRedirect(route('admin.settings.general'));
+
+        $this->assertDatabaseHas('cms_settings', [
+            'key' => 'site.show_public_online',
+            'value' => '0',
+        ]);
+    }
+
     public function test_admin_can_upload_logo_and_favicon(): void
     {
         $admin = $this->createAdmin();

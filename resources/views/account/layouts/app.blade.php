@@ -10,6 +10,7 @@
         <link rel="icon" href="{{ site_favicon_url() }}">
     @endif
     <title>@yield('title', __('Personal account')) — {{ site_name() }}</title>
+    @livewireStyles
     <link rel="stylesheet" href="{{ asset('assets/account/css/app.css') }}?v={{ cms_version() }}">
 </head>
 <body class="account-body">
@@ -64,5 +65,6 @@
         </div>
     </main>
 </div>
+    @stack('framework-scripts')
 </body>
 </html>

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\CmsSetting;
+use App\Models\GameServer;
+use App\Models\LoginServer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -10,6 +12,72 @@ use Tests\TestCase;
 class UpgradeGameServerMigrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_database_status_migration_preserves_existing_servers(): void
+    {
+        $migration = require database_path('migrations/2026_07_17_000200_add_database_status_to_servers.php');
+        $migration->down();
+
+        $loginServer = LoginServer::query()->create([
+            'name' => 'Existing LoginServer',
+            'driver' => 'l2j_mobius',
+            'database_host' => '127.0.0.1',
+            'database_port' => 3306,
+            'database_name' => 'login',
+            'database_username' => 'cms',
+            'database_password' => 'secret',
+            'database_charset' => 'utf8mb4',
+        ]);
+        $gameServer = GameServer::query()->create([
+            'name' => 'Existing GameServer',
+            'sort_order' => 0,
+            'login_server_id' => $loginServer->id,
+            'driver' => 'l2j_mobius_ct0_interlude',
+            'use_login_server_connection' => true,
+        ]);
+
+        $migration->up();
+
+        $this->assertDatabaseHas('login_servers', [
+            'id' => $loginServer->id,
+            'name' => 'Existing LoginServer',
+            'database_status' => 'unknown',
+        ]);
+        $this->assertDatabaseHas('game_servers', [
+            'id' => $gameServer->id,
+            'name' => 'Existing GameServer',
+            'database_status' => 'unknown',
+        ]);
+    }
+
+    public function test_maintenance_migration_preserves_existing_game_servers_and_translations(): void
+    {
+        $migration = require database_path('migrations/2026_07_17_000300_add_game_server_maintenance_fields.php');
+        $migration->down();
+
+        $gameServer = GameServer::query()->create([
+            'name' => 'Existing GameServer',
+            'sort_order' => 0,
+        ]);
+        $gameServer->translations()->create([
+            'locale' => 'ru',
+            'name' => 'Существующий сервер',
+        ]);
+
+        $migration->up();
+
+        $this->assertDatabaseHas('game_servers', [
+            'id' => $gameServer->id,
+            'name' => 'Existing GameServer',
+            'maintenance_enabled' => 0,
+        ]);
+        $this->assertDatabaseHas('game_server_translations', [
+            'game_server_id' => $gameServer->id,
+            'locale' => 'ru',
+            'name' => 'Существующий сервер',
+            'maintenance_message' => null,
+        ]);
+    }
 
     public function test_legacy_071_settings_are_copied_to_the_first_game_server(): void
     {

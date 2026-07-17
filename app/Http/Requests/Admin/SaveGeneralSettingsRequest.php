@@ -21,6 +21,7 @@ class SaveGeneralSettingsRequest extends AdminFormRequest
             'translations' => ['nullable', 'array'],
             'timezone' => ['required', 'string', Rule::in(timezone_identifiers_list())],
             'admin_email' => ['nullable', 'string', 'email:rfc', 'max:255'],
+            'show_public_online' => ['sometimes', 'boolean'],
             'logo' => [
                 'nullable',
                 'file',
@@ -59,6 +60,7 @@ class SaveGeneralSettingsRequest extends AdminFormRequest
             'site_description' => __('Short description validation attribute'),
             'timezone' => __('Time zone validation attribute'),
             'admin_email' => __('Administrator email validation attribute'),
+            'show_public_online' => __('Show public online validation attribute'),
             'footer_text' => __('Footer text validation attribute'),
             'logo' => __('Logo validation attribute'),
             'favicon' => 'favicon',
@@ -87,6 +89,9 @@ class SaveGeneralSettingsRequest extends AdminFormRequest
             'site_description' => trim((string) $this->input('site_description')),
             'timezone' => trim((string) $this->input('timezone')),
             'admin_email' => trim((string) $this->input('admin_email')),
+            ...($this->has('show_public_online')
+                ? ['show_public_online' => $this->boolean('show_public_online')]
+                : []),
             'footer_text' => trim((string) $this->input('footer_text')),
             'translations' => $translations,
             'remove_logo' => $this->boolean('remove_logo'),

@@ -12,13 +12,15 @@
                 <p>{{ site_description() }}</p>
             @endif
         </div>
-        <div>
+        <div class="footer-sections">
             <h3>{{ __('Sections') }}</h3>
-            <a href="{{ public_route('news.index') }}">{{ __('News') }}</a>
-            <a href="{{ public_route('about') }}">{{ __('Server description') }}</a>
-            @foreach ($footerPages ?? [] as $menuPage)
-                <a href="{{ page_url($menuPage) }}">{{ $menuPage->titleFor() }}</a>
-            @endforeach
+            <div class="footer-section-links">
+                <a href="{{ public_route('news.index') }}">{{ __('News') }}</a>
+                <a href="{{ public_route('about') }}">{{ __('Server description') }}</a>
+                @foreach ($footerPages ?? [] as $menuPage)
+                    <a href="{{ page_url($menuPage) }}">{{ $menuPage->titleFor() }}</a>
+                @endforeach
+            </div>
         </div>
         <div><h3>{{ __('Community') }}</h3><div class="socials"><a href="#">VK</a><a href="#">Discord</a><a href="#">Telegram</a></div></div>
     </div>

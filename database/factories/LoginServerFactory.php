@@ -24,6 +24,9 @@ class LoginServerFactory extends Factory
             'database_charset' => 'utf8',
             'service_host' => 'login.example.test',
             'service_port' => 2106,
+            'database_status' => 'unknown',
+            'database_error' => null,
+            'database_checked_at' => null,
             'monitor_status' => 'unknown',
             'monitor_failures' => 0,
             'monitor_checked_at' => null,
@@ -39,6 +42,9 @@ class LoginServerFactory extends Factory
     public function online(): static
     {
         return $this->state(fn (): array => [
+            'database_status' => 'configured',
+            'database_error' => null,
+            'database_checked_at' => now(),
             'monitor_status' => 'online',
             'monitor_failures' => 0,
             'monitor_checked_at' => now(),
@@ -49,6 +55,9 @@ class LoginServerFactory extends Factory
     public function offline(): static
     {
         return $this->state(fn (): array => [
+            'database_status' => 'configured',
+            'database_error' => null,
+            'database_checked_at' => now(),
             'monitor_status' => 'offline',
             'monitor_failures' => 3,
             'monitor_checked_at' => now(),
@@ -58,6 +67,9 @@ class LoginServerFactory extends Factory
     public function stale(string $status = 'online'): static
     {
         return $this->state(fn (): array => [
+            'database_status' => 'configured',
+            'database_error' => null,
+            'database_checked_at' => now()->subHours(4),
             'monitor_status' => $status,
             'monitor_failures' => $status === 'offline' ? 3 : 0,
             'monitor_checked_at' => now()->subHours(4),

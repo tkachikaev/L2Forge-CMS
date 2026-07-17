@@ -23,6 +23,7 @@ return [
         'timezone' => env('APP_TIMEZONE', 'Europe/Moscow'),
         'admin_email' => env('SITE_ADMIN_EMAIL', ''),
         'footer_text' => env('SITE_FOOTER_TEXT', '© 2026 L2Forge-CMS'),
+        'show_public_online' => (bool) env('SITE_SHOW_PUBLIC_ONLINE', true),
         'translations' => [
             'ru' => [
                 'name' => env('SITE_NAME_RU', env('SITE_NAME', env('APP_NAME', 'L2Forge CMS'))),

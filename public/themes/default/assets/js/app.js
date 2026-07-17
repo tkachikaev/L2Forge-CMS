@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const stateClasses = ['online', 'offline', 'unknown'];
+    const stateClasses = ['online', 'offline', 'unknown', 'maintenance'];
     let attempts = 0;
 
     const rowFor = (id) => Array.from(monitor.querySelectorAll('[data-monitor-game-server]'))
@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const state = server.availability_state || 'unknown';
             const stateElement = row.querySelector('[data-monitor-public-state]');
             const onlineElement = row.querySelector('[data-monitor-public-online]');
+            const maintenanceUntilElement = row.querySelector('[data-monitor-maintenance-until]');
+            const maintenanceMessageElement = row.querySelector('[data-monitor-maintenance-message]');
 
             if (stateElement) {
                 stateElement.classList.remove(...stateClasses);
@@ -45,6 +47,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (onlineElement) {
                 onlineElement.textContent = server.public_online_label;
+                onlineElement.hidden = !payload.public_online_visible || state === 'maintenance';
+            }
+
+            if (maintenanceUntilElement) {
+                maintenanceUntilElement.textContent = server.maintenance_until_label || '';
+                maintenanceUntilElement.hidden = state !== 'maintenance' || !server.maintenance_until_label;
+            }
+
+            if (maintenanceMessageElement) {
+                maintenanceMessageElement.textContent = server.maintenance_message || '';
+                maintenanceMessageElement.hidden = state !== 'maintenance' || !server.maintenance_message;
             }
         });
     };

@@ -2,3 +2,4 @@
 
 /* Floating field validation messages 0.13.17 */
 .account-field-control{position:relative;min-width:0}.account-field-control>.account-field-error{position:absolute;z-index:20;right:8px;top:calc(100% + 6px);display:block;max-width:min(330px,calc(100vw - 56px));padding:6px 9px;border:1px solid #653434;border-radius:8px;background:#2b1719;box-shadow:0 10px 26px rgba(0,0,0,.32);color:#ffb4b4;font-size:11px;font-weight:700;line-height:1.35;pointer-events:none}.account-field-control>.account-field-error:before{content:"";position:absolute;right:14px;top:-5px;width:8px;height:8px;border-left:1px solid #653434;border-top:1px solid #653434;background:#2b1719;transform:rotate(45deg)}
+.account-button:disabled{cursor:wait;opacity:.65}

@@ -26,7 +26,8 @@
             @foreach($servers as $server)
                 @php($driver = $drivers[$server->driver] ?? null)
                 @php($cardTestResult = $cardTestResults[$server->id] ?? null)
-                @php($cardConfigured = ! is_array($cardTestResult) || $cardTestResult['state'] === 'success')
+                @php($cardConfigured = $server->database_status === 'configured')
+                @php($databasePending = $server->database_status === 'unknown')
                 <article class="server-summary-card" wire:key="login-server-{{ $server->id }}">
                     <div class="server-summary-head">
                         <div class="server-summary-icon" aria-hidden="true">L</div>
@@ -34,8 +35,8 @@
                             <h2>{{ $server->name }}</h2>
                             <p>{{ $driver['label'] ?? $server->driver }}</p>
                         </div>
-                        <span @class(['status-badge', 'status-badge-success' => $cardConfigured, 'status-badge-muted' => ! $cardConfigured])>
-                            {{ $cardConfigured ? __('Configured') : __('Not configured') }}
+                        <span @class(['status-badge', 'status-badge-success' => $cardConfigured, 'status-badge-muted' => $databasePending, 'status-badge-danger' => ! $cardConfigured && ! $databasePending])>
+                            {{ $cardConfigured ? __('Configured') : ($databasePending ? __('Status pending') : __('Not configured')) }}
                         </span>
                     </div>
 
@@ -47,6 +48,14 @@
                         <div>
                             <dt>{{ __('Usage') }}</dt>
                             <dd>{{ trans_choice(':count game server|:count game servers', $server->game_servers_count, ['count' => $server->game_servers_count]) }} · {{ trans_choice(':count player account|:count player accounts', $server->user_game_accounts_count, ['count' => $server->user_game_accounts_count]) }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ __('Database status') }}</dt>
+                            <dd>{{ $server->database_status === 'configured' ? __('Connected') : ($server->database_status === 'not_configured' ? __('Connection failed') : __('Status pending')) }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ __('Service status') }}</dt>
+                            <dd>{{ $server->monitor_status === 'online' ? __('Running') : ($server->monitor_status === 'offline' ? __('Unavailable') : __('Status pending')) }}</dd>
                         </div>
                         @if($server->hasDatabasePassword())
                             <div>

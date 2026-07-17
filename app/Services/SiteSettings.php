@@ -21,13 +21,15 @@ final class SiteSettings
 
     public const KEY_FOOTER_TEXT = 'site.footer_text';
 
+    public const KEY_SHOW_PUBLIC_ONLINE = 'site.show_public_online';
+
     public function __construct(
         private readonly CmsSettings $settings,
         private readonly SettingsImageStorage $images,
         private readonly LanguageManager $languages,
     ) {}
 
-    /** @return array{name: string, description: string, logo: string|null, logo_url: string|null, favicon: string|null, favicon_url: string|null, timezone: string, admin_email: string, footer_text: string, locale:string} */
+    /** @return array{name: string, description: string, logo: string|null, logo_url: string|null, favicon: string|null, favicon_url: string|null, timezone: string, admin_email: string, footer_text: string, show_public_online: bool, locale:string} */
     public function values(?string $locale = null): array
     {
         $defaults = $this->defaults();
@@ -50,6 +52,7 @@ final class SiteSettings
             self::KEY_TIMEZONE => $defaults['timezone'],
             self::KEY_ADMIN_EMAIL => $defaults['admin_email'],
             self::KEY_FOOTER_TEXT => $defaults['footer_text'],
+            self::KEY_SHOW_PUBLIC_ONLINE => $defaults['show_public_online'] ? '1' : '0',
         ], $localizedDefaults));
 
         $logo = $this->images->normalizePath($values[self::KEY_LOGO] ?? null, 'logo');
@@ -84,6 +87,10 @@ final class SiteSettings
                 self::KEY_FOOTER_TEXT,
                 $candidates,
                 $localeDefaults['footer_text'],
+            ),
+            'show_public_online' => $this->booleanValue(
+                $values[self::KEY_SHOW_PUBLIC_ONLINE] ?? null,
+                $defaults['show_public_online'],
             ),
             'locale' => $locale,
         ];
@@ -138,7 +145,7 @@ final class SiteSettings
     }
 
     /**
-     * @param  array{name: string, description: string, logo: string|null, favicon: string|null, timezone: string, admin_email: string, footer_text: string}  $values
+     * @param  array{name: string, description: string, logo: string|null, favicon: string|null, timezone: string, admin_email: string, footer_text: string, show_public_online: bool}  $values
      * @param  array<string, array{name?:string,description?:string,footer_text?:string}>  $translations
      */
     public function update(array $values, array $translations = []): void
@@ -167,6 +174,7 @@ final class SiteSettings
             self::KEY_TIMEZONE => $values['timezone'],
             self::KEY_ADMIN_EMAIL => $values['admin_email'],
             self::KEY_FOOTER_TEXT => (string) ($defaultTranslation['footer_text'] ?? $values['footer_text']),
+            self::KEY_SHOW_PUBLIC_ONLINE => $values['show_public_online'] ? '1' : '0',
         ];
 
         foreach ($translations as $locale => $translation) {
@@ -209,6 +217,11 @@ final class SiteSettings
         return $this->values($locale)['footer_text'];
     }
 
+    public function showPublicOnline(): bool
+    {
+        return $this->values()['show_public_online'];
+    }
+
     public function applyConfiguredTimezone(): void
     {
         $defaults = $this->defaults();
@@ -227,7 +240,7 @@ final class SiteSettings
         date_default_timezone_set($timezone);
     }
 
-    /** @return array{name: string, description: string, timezone: string, admin_email: string, footer_text: string} */
+    /** @return array{name: string, description: string, timezone: string, admin_email: string, footer_text: string, show_public_online: bool} */
     private function defaults(): array
     {
         $applicationName = trim((string) config('app.name', 'L2Forge CMS'));
@@ -240,6 +253,7 @@ final class SiteSettings
             'timezone' => $this->normalizeTimezone($timezone, 'UTC'),
             'admin_email' => (string) config('cms.site_defaults.admin_email', ''),
             'footer_text' => (string) config('cms.site_defaults.footer_text', '© 2026 L2Forge-CMS'),
+            'show_public_online' => (bool) config('cms.site_defaults.show_public_online', true),
         ];
     }
 
@@ -308,6 +322,15 @@ final class SiteSettings
         }
 
         return in_array($fallback, timezone_identifiers_list(), true) ? $fallback : 'UTC';
+    }
+
+    private function booleanValue(?string $value, bool $fallback): bool
+    {
+        if ($value === null) {
+            return $fallback;
+        }
+
+        return in_array(mb_strtolower(trim($value)), ['1', 'true', 'yes', 'on'], true);
     }
 
     private function nonEmptyString(?string $value, string $fallback): string
