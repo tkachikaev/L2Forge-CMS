@@ -8,7 +8,16 @@
             <span>{{ __('Game server count') }}</span>
             <strong>{{ count($servers) }}</strong>
         </div>
-        <button class="button button-primary" type="button" wire:click="create">+ {{ __('Add game server') }}</button>
+        <div class="server-manager-toolbar-actions">
+            <label class="server-manager-online-toggle" for="show_public_online">
+                <span>{{ __('Show online on public website') }}</span>
+                <span class="switch-control">
+                    <input id="show_public_online" type="checkbox" @checked($showPublicOnline) wire:change="setShowPublicOnline($event.target.checked)">
+                    <span aria-hidden="true"></span>
+                </span>
+            </label>
+            <button class="button button-primary" type="button" wire:click="create">+ {{ __('Add game server') }}</button>
+        </div>
     </div>
 
     @if($servers === [])

@@ -62,7 +62,7 @@
                     @php
                         $statusLabel = match ($currentServer['availability_state']) {
                             'maintenance' => __('Maintenance'),
-                            'online' => __('In game'),
+                            'online' => __('Available'),
                             'offline' => __('Unavailable'),
                             default => __('Status pending'),
                         };
@@ -71,11 +71,13 @@
                         <div class="server-summary">
                             <strong>{{ $currentServer['name'] }}</strong>
                             <span class="status {{ $currentServer['availability_state'] }}" data-monitor-public-state>{{ $statusLabel }}</span>
-                            <small data-monitor-public-online aria-live="polite" @if(!$publicOnlineVisible || $currentServer['availability_state'] === 'maintenance') hidden @endif>
-                                {{ $currentServer['public_players'] !== null
-                                    ? __('Online: :count', ['count' => number_format($currentServer['public_players'], 0, '.', ' ')])
-                                    : __('Online temporarily unavailable') }}
-                            </small>
+                            @if($publicOnlineVisible)
+                                <small data-monitor-public-online aria-live="polite" @if($currentServer['availability_state'] === 'maintenance') hidden @endif>
+                                    {{ $currentServer['public_players'] !== null
+                                        ? __('Online: :count', ['count' => number_format($currentServer['public_players'], 0, '.', ' ')])
+                                        : __('Online temporarily unavailable') }}
+                                </small>
+                            @endif
                             <small class="server-maintenance-message" data-monitor-maintenance-message @if($currentServer['availability_state'] !== 'maintenance' || $currentServer['maintenance_message'] === '') hidden @endif>
                                 {{ $currentServer['maintenance_message'] }}
                             </small>

@@ -14,7 +14,7 @@ final class ServerStatusPayload
     {
         $publicOnlineVisible = (bool) ($monitor['public_online_visible'] ?? true);
         $games = array_values(array_map(
-            fn (mixed $server): array => $this->publicGame((array) $server),
+            fn (mixed $server): array => $this->publicGame((array) $server, $publicOnlineVisible),
             (array) ($monitor['game_servers'] ?? []),
         ));
         $publicTotalOnline = $publicOnlineVisible
@@ -66,7 +66,7 @@ final class ServerStatusPayload
      * @param  array<string, mixed>  $server
      * @return array<string, mixed>
      */
-    private function publicGame(array $server): array
+    private function publicGame(array $server, bool $publicOnlineVisible): array
     {
         $state = (string) ($server['availability_state'] ?? 'unknown');
         $players = isset($server['public_players'])
@@ -79,9 +79,11 @@ final class ServerStatusPayload
             'public_players' => $players,
             'maintenance_message' => (string) ($server['maintenance_message'] ?? ''),
             'public_state_label' => $this->publicStateLabel($state),
-            'public_online_label' => $players !== null
-                ? __('Online: :count', ['count' => number_format($players, 0, '.', ' ')])
-                : __('Online temporarily unavailable'),
+            'public_online_label' => ! $publicOnlineVisible
+                ? null
+                : ($players !== null
+                    ? __('Online: :count', ['count' => number_format($players, 0, '.', ' ')])
+                    : __('Online temporarily unavailable')),
         ];
     }
 
@@ -143,7 +145,7 @@ final class ServerStatusPayload
     {
         return match ($state) {
             'maintenance' => __('Maintenance'),
-            'online' => __('In game'),
+            'online' => __('Available'),
             'offline' => __('Unavailable'),
             default => __('Status pending'),
         };

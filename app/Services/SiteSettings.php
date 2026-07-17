@@ -222,6 +222,11 @@ final class SiteSettings
         return $this->values()['show_public_online'];
     }
 
+    public function setShowPublicOnline(bool $visible): void
+    {
+        $this->settings->set(self::KEY_SHOW_PUBLIC_ONLINE, $visible ? '1' : '0');
+    }
+
     public function applyConfiguredTimezone(): void
     {
         $defaults = $this->defaults();

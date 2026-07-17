@@ -6,10 +6,12 @@ use App\Exceptions\GameServerDeletionConfirmationRequired;
 use App\Models\GameServer;
 use App\Models\GameServerTranslation;
 use App\Models\LoginServer;
+use App\Services\AuditLogger;
 use App\Services\GameServerSettings;
 use App\Services\Localization\LanguageManager;
 use App\Services\Servers\GameServerAdministration;
 use App\Services\Servers\ServerDriverRegistry;
+use App\Services\SiteSettings;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Livewire\Attributes\Locked;
@@ -47,6 +49,8 @@ class GameServerManager extends Component
     public array $maintenanceMessages = [];
 
     public bool $maintenanceEnabled = false;
+
+    public bool $showPublicOnline = true;
 
     public string $serverRates = '';
 
@@ -91,6 +95,7 @@ class GameServerManager extends Component
     public function mount(): void
     {
         $this->ensureAuthorized();
+        $this->showPublicOnline = app(SiteSettings::class)->showPublicOnline();
         $this->initializeTranslations();
     }
 
@@ -170,6 +175,31 @@ class GameServerManager extends Component
         $this->maintenanceEnabled = $enabled;
         $this->syncEnabledLanguageFields();
         $this->resetValidation('maintenanceMessages');
+    }
+
+    public function setShowPublicOnline(bool $enabled): void
+    {
+        $this->ensureAuthorized();
+        $settings = app(SiteSettings::class);
+        $previous = $settings->showPublicOnline();
+
+        $settings->setShowPublicOnline($enabled);
+        $this->showPublicOnline = $enabled;
+        $this->status = $enabled
+            ? __('Public online count enabled.')
+            : __('Public online count disabled.');
+
+        if ($previous !== $enabled) {
+            app(AuditLogger::class)->success(
+                category: 'admin',
+                action: 'settings.public_online_visibility_updated',
+                target: __('Game servers'),
+                details: [
+                    'before' => $previous,
+                    'after' => $enabled,
+                ],
+            );
+        }
     }
 
     public function testStored(int $serverId): void

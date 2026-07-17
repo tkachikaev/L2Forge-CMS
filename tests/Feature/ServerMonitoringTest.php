@@ -137,7 +137,7 @@ class ServerMonitoringTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Interlude')
-            ->assertSee('В игре')
+            ->assertSee('Доступен')
             ->assertSee('Онлайн: 37')
             ->assertDontSee('/ 5 000')
             ->assertDontSee('class="progress"', false);
@@ -283,14 +283,17 @@ class ServerMonitoringTest extends TestCase
 
         $this->get('/')
             ->assertOk()
-            ->assertSee('В игре')
-            ->assertDontSee('Онлайн: 37');
+            ->assertSee('Доступен')
+            ->assertDontSee('Онлайн: 37')
+            ->assertDontSee('Онлайн временно недоступен')
+            ->assertDontSee('data-monitor-public-online', false);
 
         $this->postJson('/server-status/refresh')
             ->assertOk()
             ->assertJsonPath('monitor.public_online_visible', false)
             ->assertJsonPath('monitor.total_online', null)
             ->assertJsonPath('monitor.game_servers.0.public_players', null)
+            ->assertJsonPath('monitor.game_servers.0.public_online_label', null)
             ->assertJsonMissingPath('monitor.game_servers.0.players')
             ->assertJsonMissingPath('monitor.game_servers.0.database_state');
 
@@ -328,7 +331,7 @@ class ServerMonitoringTest extends TestCase
             ->assertJsonPath('fresh', true)
             ->assertJsonPath('monitor.total_online', 48)
             ->assertJsonPath('monitor.game_servers.0.availability_state', 'online')
-            ->assertJsonPath('monitor.game_servers.0.public_state_label', 'В игре')
+            ->assertJsonPath('monitor.game_servers.0.public_state_label', 'Доступен')
             ->assertJsonPath('monitor.game_servers.0.public_online_label', 'Онлайн: 48');
 
         $this->assertSame('online', $gameServer->fresh()?->monitor_status);
@@ -371,7 +374,7 @@ class ServerMonitoringTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Недоступно')
-            ->assertDontSee('В игре');
+            ->assertDontSee('Доступен');
     }
 
     public function test_home_marks_old_snapshot_for_automatic_refresh_and_does_not_show_old_offline_as_current(): void

@@ -87,9 +87,13 @@ class AdminSettingsManagementTest extends TestCase
         $this->assertSame('Europe/Moscow', config('app.timezone'));
     }
 
-    public function test_admin_can_hide_public_online_count_for_all_servers(): void
+    public function test_general_settings_update_preserves_public_online_visibility(): void
     {
         $admin = $this->createAdmin();
+        CmsSetting::query()->updateOrCreate(
+            ['key' => 'site.show_public_online'],
+            ['value' => '0'],
+        );
 
         $this->actingAs($admin, 'admin')
             ->post('/admin/settings', [
@@ -99,7 +103,6 @@ class AdminSettingsManagementTest extends TestCase
                 'timezone' => 'UTC',
                 'admin_email' => '',
                 'footer_text' => '© 2026 L2Forge-CMS',
-                'show_public_online' => '0',
                 'remove_logo' => '0',
                 'remove_favicon' => '0',
             ])

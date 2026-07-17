@@ -1392,5 +1392,8 @@
     "Maintenance message": "Maintenance message",
     "Installing an update": "Installing an update",
     "Maintenance message validation attribute": "Maintenance message validation attribute",
-    "Maintenance messages are stored separately for every enabled language. Newly enabled languages appear automatically.": "Maintenance messages are stored separately for every enabled language. Newly enabled languages appear automatically."
+    "Maintenance messages are stored separately for every enabled language. Newly enabled languages appear automatically.": "Maintenance messages are stored separately for every enabled language. Newly enabled languages appear automatically.",
+    "Show online on public website": "Show online on public website",
+    "Public online count enabled.": "Public online count enabled.",
+    "Public online count disabled.": "Public online count disabled."
 }

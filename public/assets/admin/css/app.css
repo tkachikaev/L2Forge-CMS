@@ -1948,6 +1948,27 @@ a.admin-section-card:hover { border-color: #bfdbfe; box-shadow: 0 8px 24px rgba(
 .server-manager-toolbar strong { display: block; }
 .server-manager-toolbar span { color: var(--muted); font-size: 11px; }
 .server-manager-toolbar strong { margin-top: 2px; font-size: 21px; }
+.server-manager-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+.server-manager-online-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #f8fafc;
+    cursor: pointer;
+}
+.server-manager-online-toggle > span:first-child {
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+}
 .server-card-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2229,6 +2250,8 @@ a.admin-section-card:hover { border-color: #bfdbfe; box-shadow: 0 8px 24px rgba(
 
 @media (max-width: 760px) {
     .server-manager-toolbar { align-items: stretch; flex-direction: column; }
+    .server-manager-toolbar-actions { align-items: stretch; flex-direction: column; margin-left: 0; }
+    .server-manager-online-toggle { justify-content: space-between; }
     .server-manager-toolbar .button { width: 100%; }
     .server-summary-head { grid-template-columns: 38px minmax(0, 1fr); }
     .server-summary-head > .status-badge { grid-column: 2; justify-self: start; }

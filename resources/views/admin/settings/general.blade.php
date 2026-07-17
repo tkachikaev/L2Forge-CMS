@@ -88,17 +88,6 @@
                 <small>{{ __('Public contact address. SMTP credentials are stored separately.') }}</small>
             </div>
 
-            <label class="settings-toggle-row" for="show_public_online">
-                <span>
-                    <strong>{{ __('Show player online count on the public website') }}</strong>
-                    <small>{{ __('The setting applies to all game servers. Administrators will continue to see the online count.') }}</small>
-                </span>
-                <span class="switch-control">
-                    <input name="show_public_online" type="hidden" value="0">
-                    <input id="show_public_online" name="show_public_online" type="checkbox" value="1" @checked(old('show_public_online', $settings['show_public_online']))>
-                    <span aria-hidden="true"></span>
-                </span>
-            </label>
         </section>
 
         <aside class="settings-media-column">

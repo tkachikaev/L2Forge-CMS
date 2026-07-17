@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\UserGameAccount;
 use App\Services\GameServerSettings;
 use App\Services\Localization\LanguageManager;
+use App\Services\SiteSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
@@ -151,6 +152,27 @@ class ReactiveServerManagementTest extends TestCase
         $this->assertSame('not_configured', $server->database_status);
         $this->assertSame('connection_failed', $server->database_error);
         $this->assertNotNull($server->database_checked_at);
+    }
+
+    public function test_public_online_visibility_is_managed_from_game_servers(): void
+    {
+        $this->actingAs($this->createAdmin(), 'admin');
+
+        Livewire::test(GameServerManager::class)
+            ->assertSet('showPublicOnline', true)
+            ->assertSee('Показывать онлайн на сайте')
+            ->call('setShowPublicOnline', false)
+            ->assertSet('showPublicOnline', false)
+            ->assertSee('Показ онлайна на публичном сайте отключён.');
+
+        $this->assertDatabaseHas('cms_settings', [
+            'key' => SiteSettings::KEY_SHOW_PUBLIC_ONLINE,
+            'value' => '0',
+        ]);
+
+        $this->get(route('admin.settings.general'))
+            ->assertOk()
+            ->assertDontSee('show_public_online', false);
     }
 
     public function test_game_connection_is_checked_inside_the_livewire_drawer_without_saving(): void

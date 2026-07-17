@@ -1392,5 +1392,8 @@
     "Maintenance message": "Сообщение об обслуживании",
     "Installing an update": "Установка обновления",
     "Maintenance message validation attribute": "сообщение об обслуживании",
-    "Maintenance messages are stored separately for every enabled language. Newly enabled languages appear automatically.": "Сообщения сохраняются отдельно для каждого включённого языка. Новые включённые языки появляются автоматически."
+    "Maintenance messages are stored separately for every enabled language. Newly enabled languages appear automatically.": "Сообщения сохраняются отдельно для каждого включённого языка. Новые включённые языки появляются автоматически.",
+    "Show online on public website": "Показывать онлайн на сайте",
+    "Public online count enabled.": "Показ онлайна на публичном сайте включён.",
+    "Public online count disabled.": "Показ онлайна на публичном сайте отключён."
 }
