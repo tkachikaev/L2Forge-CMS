@@ -105,6 +105,8 @@ $registerPublicRoutes = static function (bool $localized = false): void {
 
         Route::middleware('site.verified')->group(function () use ($namePrefix): void {
             Route::get('/account', AccountController::class)->name($namePrefix.'account');
+            Route::get('/account/game-accounts', [GameAccountController::class, 'index'])
+                ->name($namePrefix.'game-accounts.index');
             Route::get('/account/game-accounts/create', [GameAccountController::class, 'create'])
                 ->name($namePrefix.'game-accounts.create');
             Route::post('/account/game-accounts', [GameAccountController::class, 'store'])

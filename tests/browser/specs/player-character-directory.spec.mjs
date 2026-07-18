@@ -24,3 +24,34 @@ test('player character display mode persists after reload', async ({ page }) => 
     await page.reload();
     await expect(all).toHaveAttribute('aria-selected', 'true');
 });
+
+test('player shell persists during account navigation and browser history', async ({ page }) => {
+    await signIn(page);
+
+    const sidebar = page.locator('[data-account-sidebar]');
+    const topbar = page.locator('[data-account-topbar]');
+    await sidebar.evaluate((element) => {
+        element.dataset.persistenceProbe = 'sidebar-kept';
+    });
+    await topbar.evaluate((element) => {
+        element.dataset.persistenceProbe = 'topbar-kept';
+    });
+
+    await page.locator('.account-nav').getByRole('link', { name: 'Игровые аккаунты' }).click();
+    await expect(page).toHaveURL(/\/account\/game-accounts$/);
+    await expect(sidebar).toHaveAttribute('data-persistence-probe', 'sidebar-kept');
+    await expect(topbar).toHaveAttribute('data-persistence-probe', 'topbar-kept');
+
+    await page.getByRole('link', { name: /Подробнее|View details/ }).first().click();
+    await expect(page).toHaveURL(/\/account\/game-accounts\/\d+$/);
+    await expect(sidebar).toHaveAttribute('data-persistence-probe', 'sidebar-kept');
+    await expect(topbar).toHaveAttribute('data-persistence-probe', 'topbar-kept');
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/account\/game-accounts$/);
+    await expect(sidebar).toHaveAttribute('data-persistence-probe', 'sidebar-kept');
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/account$/);
+    await expect(topbar).toHaveAttribute('data-persistence-probe', 'topbar-kept');
+});

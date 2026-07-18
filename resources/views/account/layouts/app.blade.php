@@ -5,51 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex, nofollow, noarchive">
-    <meta name="theme-color" content="#10151d">
+    <meta name="theme-color" content="#090d13">
     @if (site_favicon_url())
         <link rel="icon" href="{{ site_favicon_url() }}">
     @endif
     <title>@yield('title', __('Personal account')) — {{ site_name() }}</title>
+    <link rel="stylesheet" href="{{ asset('assets/account/css/app.css') }}?v={{ cms_version() }}" data-navigate-track>
+    <script src="{{ asset('assets/account/js/navigation.js') }}?v={{ cms_version() }}" defer data-navigate-track data-navigate-once></script>
     @livewireStyles
-    <link rel="stylesheet" href="{{ asset('assets/account/css/app.css') }}?v={{ cms_version() }}">
+    @stack('head')
 </head>
 <body class="account-body">
 <div class="account-shell">
-    <aside class="account-sidebar">
-        <a class="account-brand" href="{{ public_route('account') }}">
-            @if (site_logo_url())
-                <img src="{{ site_logo_url() }}" alt="{{ site_name() }}">
-            @else
-                <span class="account-brand-mark">L2</span>
-            @endif
-            <span><strong>{{ site_name() }}</strong><small>{{ __('Player account') }}</small></span>
-        </a>
-
-        <nav class="account-nav" aria-label="{{ __('Player account navigation') }}">
-            <a @class(['active' => request()->routeIs('account', 'localized.account')]) href="{{ public_route('account') }}">
-                <span aria-hidden="true">⌂</span>{{ __('Overview') }}
+    @persist('account-sidebar')
+        <aside class="account-sidebar" data-account-sidebar wire:navigate:scroll>
+            <a wire:navigate.hover class="account-brand" href="{{ public_route('account') }}">
+                @if (site_logo_url())
+                    <img src="{{ site_logo_url() }}" alt="{{ site_name() }}">
+                @else
+                    <span class="account-brand-mark">L2</span>
+                @endif
+                <span><strong>{{ site_name() }}</strong><small>{{ __('Player account') }}</small></span>
             </a>
-            <a @class(['active' => request()->routeIs('game-accounts.*', 'localized.game-accounts.*')]) href="{{ public_route('account') }}#game-accounts">
-                <span aria-hidden="true">▣</span>{{ __('Game accounts') }}
-            </a>
-        </nav>
 
-        <div class="account-sidebar-footer">
-            <a href="{{ public_route('home') }}">← {{ __('Back to website') }}</a>
-            <span>{{ __('Version :version', ['version' => cms_version()]) }}</span>
-        </div>
-    </aside>
+            @include('account.partials.navigation')
+
+            <div class="account-sidebar-footer">
+                <a href="{{ public_route('home') }}">← {{ __('Back to website') }}</a>
+                <span>{{ __('Version :version', ['version' => cms_version()]) }}</span>
+            </div>
+        </aside>
+    @endpersist
 
     <main class="account-main">
-        <header class="account-topbar">
-            <div><span>{{ __('Player account') }}</span><strong>{{ $user->name }}</strong></div>
-            <form method="POST" action="{{ public_route('logout') }}">
-                @csrf
-                <button type="submit">{{ __('Sign out') }}</button>
-            </form>
-        </header>
+        @persist('account-topbar')
+            <header class="account-topbar" data-account-topbar>
+                <button class="account-sidebar-toggle" type="button" data-account-sidebar-toggle aria-label="{{ __('Player account navigation') }}" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
 
-        <div class="account-content">
+                <div class="account-topbar-context">
+                    <span>{{ __('Player account') }}</span>
+                    <strong>{{ $user->name }}</strong>
+                </div>
+
+                <details class="account-profile-menu">
+                    <summary>
+                        <span class="account-profile-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
+                        <span class="account-profile-copy">
+                            <strong>{{ $user->name }}</strong>
+                            <small>{{ $user->email }}</small>
+                        </span>
+                        <span class="account-profile-chevron" aria-hidden="true">⌄</span>
+                    </summary>
+                    <div class="account-profile-dropdown">
+                        <a wire:navigate href="{{ public_route('account') }}">{{ __('Overview') }}</a>
+                        <a wire:navigate href="{{ public_route('game-accounts.index') }}">{{ __('Game accounts') }}</a>
+                        <a href="{{ public_route('home') }}">{{ __('Back to website') }}</a>
+                        <form method="POST" action="{{ public_route('logout') }}">
+                            @csrf
+                            <button type="submit">{{ __('Sign out') }}</button>
+                        </form>
+                    </div>
+                </details>
+            </header>
+        @endpersist
+
+        <div class="account-content" data-account-content>
             @if (session('status'))
                 <div class="account-notice success" role="status">{{ session('status') }}</div>
             @endif
@@ -65,6 +87,7 @@
         </div>
     </main>
 </div>
-    @stack('framework-scripts')
+@livewireScripts
+@stack('scripts')
 </body>
 </html>

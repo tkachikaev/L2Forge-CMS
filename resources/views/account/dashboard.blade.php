@@ -8,7 +8,7 @@
         <p>{{ __('Manage game accounts and see characters without leaving the player account.') }}</p>
     </div>
     @if ($settings['enabled'] && $quotaAccountCount < $settings['max_accounts'] && $availableServers > 0)
-        <a class="account-button primary" href="{{ public_route('game-accounts.create') }}">{{ __('Create game account') }}</a>
+        <a wire:navigate.hover class="account-button primary" href="{{ public_route('game-accounts.create') }}">{{ __('Create game account') }}</a>
     @endif
 </section>
 
@@ -27,11 +27,14 @@
 <section id="game-accounts" class="account-section">
     <div class="account-section-heading">
         <div><span class="account-eyebrow">{{ __('Game accounts') }}</span><h2>{{ __('My accounts') }}</h2></div>
-        @if (! $settings['enabled'])
+        <div class="account-section-actions">
+            <a wire:navigate.hover class="account-button secondary" href="{{ public_route('game-accounts.index') }}">{{ __('Manage') }}</a>
+            @if (! $settings['enabled'])
             <span class="account-chip muted">{{ __('Creation disabled') }}</span>
-        @elseif ($quotaAccountCount >= $settings['max_accounts'])
-            <span class="account-chip muted">{{ __('Limit reached') }}</span>
-        @endif
+            @elseif ($quotaAccountCount >= $settings['max_accounts'])
+                <span class="account-chip muted">{{ __('Limit reached') }}</span>
+            @endif
+        </div>
     </div>
 
     @if ($hiddenAccountCount > 0)
@@ -46,7 +49,7 @@
             <h3>{{ __('No game accounts yet') }}</h3>
             <p>{{ __('Create the first account, then its characters will appear here.') }}</p>
             @if ($settings['enabled'] && $quotaAccountCount < $settings['max_accounts'] && $availableServers > 0)
-                <a class="account-button primary" href="{{ public_route('game-accounts.create') }}">{{ __('Create game account') }}</a>
+                <a wire:navigate.hover class="account-button primary" href="{{ public_route('game-accounts.create') }}">{{ __('Create game account') }}</a>
             @elseif ($availableServers === 0)
                 <small>{{ __('No configured game servers are available for registration.') }}</small>
             @endif
@@ -73,7 +76,7 @@
                         </div>
                         <div><dt>{{ __('Created') }}</dt><dd>{{ $account->created_at?->format('d.m.Y') }}</dd></div>
                     </dl>
-                    <a class="account-card-link" href="{{ public_route('game-accounts.show', ['gameAccount' => $account]) }}">{{ __('View details') }} →</a>
+                    <a wire:navigate.hover class="account-card-link" href="{{ public_route('game-accounts.show', ['gameAccount' => $account]) }}">{{ __('View details') }} →</a>
                 </article>
             @endforeach
         </div>
@@ -81,7 +84,3 @@
 </section>
 @endsection
 
-
-@push('framework-scripts')
-    @livewireScripts
-@endpush

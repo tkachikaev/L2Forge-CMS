@@ -3,7 +3,7 @@
 @section('inline-validation-errors', '1')
 @section('content')
 <div class="account-page-heading">
-    <a href="{{ public_route('account') }}">← {{ __('My accounts') }}</a>
+    <a wire:navigate href="{{ public_route('game-accounts.index') }}">← {{ __('My accounts') }}</a>
     <span class="account-eyebrow">{{ __('Game accounts') }}</span>
     <h1>{{ __('Create game account') }}</h1>
     <p>{{ __('Choose a game world and set the login credentials. The form contains only the required fields.') }}</p>
@@ -62,7 +62,7 @@
     </div>
 
     <div class="account-form-actions">
-        <a class="account-button secondary" href="{{ public_route('account') }}">{{ __('Cancel') }}</a>
+        <a wire:navigate class="account-button secondary" href="{{ public_route('game-accounts.index') }}">{{ __('Cancel') }}</a>
         <button class="account-button primary" type="submit">{{ __('Create account') }}</button>
     </div>
 </form>

@@ -5,7 +5,7 @@
 @php($gameServers = $account->loginServer->gameServers)
 <div class="account-page-heading compact">
     @if ($accountCount > 1)
-        <a href="{{ public_route('account') }}">← {{ __('My accounts') }}</a>
+        <a wire:navigate href="{{ public_route('game-accounts.index') }}">← {{ __('My accounts') }}</a>
     @endif
     <span class="account-eyebrow">{{ __('Game account') }}</span>
     <div class="account-title-row">
@@ -21,7 +21,7 @@
     @endif
     @if ($canCreateAccount)
         <div class="account-page-actions">
-            <a class="account-button secondary" href="{{ public_route('game-accounts.create') }}">{{ __('Create game account') }}</a>
+            <a wire:navigate.hover class="account-button secondary" href="{{ public_route('game-accounts.create') }}">{{ __('Create game account') }}</a>
         </div>
     @endif
 </div>
@@ -85,7 +85,3 @@
     <livewire:account.game-account-password-form :account-id="$account->id" />
 </section>
 @endsection
-
-@push('framework-scripts')
-    @livewireScripts
-@endpush

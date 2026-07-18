@@ -37,6 +37,30 @@ class GameAccountController extends Controller
         private readonly GameAccountQuota $quota,
     ) {}
 
+    public function index(Request $request, GameAccountSettings $settings): View
+    {
+        $user = $request->user();
+        if (! $user instanceof User) {
+            abort(401);
+        }
+
+        $accounts = $user->availableGameAccounts()
+            ->with(['loginServer.gameServers.translations', 'registrationGameServer.translations'])
+            ->latest('id')
+            ->get();
+        $quotaAccountCount = $this->quota->count($user);
+        $values = $settings->values();
+
+        return view('account.game-accounts.index', [
+            'user' => $user,
+            'accounts' => $accounts,
+            'quotaAccountCount' => $quotaAccountCount,
+            'hiddenAccountCount' => max(0, $quotaAccountCount - $accounts->count()),
+            'settings' => $values,
+            'availableServers' => $this->availableGameServers()->count(),
+        ]);
+    }
+
     public function create(Request $request, GameAccountSettings $settings): View|RedirectResponse
     {
         $user = $request->user();

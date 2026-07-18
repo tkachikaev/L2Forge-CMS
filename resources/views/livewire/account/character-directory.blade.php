@@ -44,7 +44,7 @@
                                             <em>{{ trans_choice(':count character|:count characters', count($account['characters']), ['count' => count($account['characters'])]) }}</em>
                                         </button>
                                         <div class="account-group-actions">
-                                            <a href="{{ public_route('game-accounts.show', ['gameAccount' => $account['id']]) }}">{{ __('Manage') }}</a>
+                                            <a wire:navigate href="{{ public_route('game-accounts.show', ['gameAccount' => $account['id']]) }}">{{ __('Manage') }}</a>
                                             <button type="button" wire:click="hideAccount({{ $account['id'] }})">{{ __('Hide') }}</button>
                                         </div>
                                     </header>
