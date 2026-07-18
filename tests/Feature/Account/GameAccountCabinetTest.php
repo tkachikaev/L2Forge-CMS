@@ -10,6 +10,7 @@ use App\Models\LoginServer;
 use App\Models\User;
 use App\Models\UserCharacterPreference;
 use App\Models\UserGameAccount;
+use App\Services\GameAccounts\AccountCharacterDirectory;
 use App\Services\GameAccountSettings;
 use App\Services\GameServerDeletionImpact;
 use App\Services\GameServerSettings;
@@ -774,6 +775,61 @@ class GameAccountCabinetTest extends TestCase
         $settings->restoreOrphanedAccountLinks($replacement);
 
         $this->assertSame($replacement->id, $account->fresh()->registration_game_server_id);
+    }
+
+    public function test_character_directory_caches_successful_external_queries(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'Cached01',
+            'normalized_login' => 'cached01',
+        ]);
+        $this->gateway->charactersByServer[$gameServer->id] = [[
+            'id' => 300,
+            'name' => 'CachedHero',
+            'level' => 80,
+            'class_id' => 88,
+            'online' => true,
+            'last_access' => 0,
+            'created_at' => null,
+        ]];
+
+        $directory = app(AccountCharacterDirectory::class);
+
+        $this->assertSame('CachedHero', $directory->for($user)['characters'][0]['name']);
+        $this->assertSame('CachedHero', $directory->for($user)['characters'][0]['name']);
+        $this->assertSame(1, $this->gateway->characterCalls);
+    }
+
+    public function test_character_directory_uses_a_short_cooldown_after_external_failure(): void
+    {
+        $user = $this->user();
+        [$loginServer, $gameServer] = $this->servers();
+        UserGameAccount::query()->create([
+            'user_id' => $user->id,
+            'login_server_id' => $loginServer->id,
+            'registration_game_server_id' => $gameServer->id,
+            'game_login' => 'Failure01',
+            'normalized_login' => 'failure01',
+        ]);
+        $this->gateway->failCharacters = true;
+
+        $directory = app(AccountCharacterDirectory::class);
+        $first = $directory->for($user);
+        $second = $directory->for($user);
+
+        $this->assertFalse($first['servers'][0]['accounts'][0]['available']);
+        $this->assertFalse($second['servers'][0]['accounts'][0]['available']);
+        $this->assertSame(1, $this->gateway->characterCalls);
+
+        $this->travel(31)->seconds();
+        $directory->for($user);
+
+        $this->assertSame(2, $this->gateway->characterCalls);
     }
 
     public function test_character_directory_switches_between_grouped_and_flat_views(): void

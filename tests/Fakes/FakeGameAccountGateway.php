@@ -18,6 +18,8 @@ class FakeGameAccountGateway implements GameAccountGateway
 
     public bool $failCharacters = false;
 
+    public int $characterCalls = 0;
+
     /** @var list<array{login_server_id:int,login:string,password:string,email:string}> */
     public array $created = [];
 
@@ -83,6 +85,8 @@ class FakeGameAccountGateway implements GameAccountGateway
 
     public function characters(GameServer $gameServer, string $login): array
     {
+        $this->characterCalls++;
+
         if ($this->failCharacters) {
             throw new RuntimeException('external_character_query_failed');
         }

@@ -14,16 +14,19 @@ if (-not (Test-Path '.env')) {
 }
 
 if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete 0.20.1 patch with file replacement enabled.'
+    throw 'VERSION is missing. Re-extract the complete 0.20.2 patch with file replacement enabled.'
 }
 
 $cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
-if ($cmsVersion -ne '0.20.1') {
+if ($cmsVersion -ne '0.20.2') {
     throw "Unexpected patch version: $cmsVersion"
 }
 
 $requiredFiles = @(
-    'tests\Feature\BrandingTest.php',
+    'app\Services\GameAccounts\AccountCharacterDirectory.php',
+    'tests\Fakes\FakeGameAccountGateway.php',
+    'tests\Feature\Account\GameAccountCabinetTest.php',
+    'docs\PLAYER_ACCOUNT.md',
     'CHANGELOG.md',
     'README.md',
     'VERSION',
@@ -32,16 +35,16 @@ $requiredFiles = @(
 
 foreach ($requiredFile in $requiredFiles) {
     if (-not (Test-Path $requiredFile -PathType Leaf)) {
-        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.20.1 patch with file replacement enabled."
+        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.20.2 patch with file replacement enabled."
     }
 }
 
 Write-Host "KaevCMS $cmsVersion update"
-Write-Host 'Applying the console branding test fix.'
+Write-Host 'Adding cache and failure cooldown protection to the player character directory.'
 Write-Host ''
 
 Get-ChildItem -Path $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -ne 'apply-0.20.1.ps1' } |
+    Where-Object { $_.Name -ne 'apply-0.20.2.ps1' } |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
 & "$PSScriptRoot\update.ps1" -SkipTests:$SkipTests

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserGameAccount;
 use App\Services\GameWorld\InterludeCharacterLabels;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -44,6 +45,10 @@ use Throwable;
  */
 final class AccountCharacterDirectory
 {
+    private const CACHE_MINUTES = 2;
+
+    private const FAILURE_COOLDOWN_SECONDS = 30;
+
     public function __construct(
         private readonly GameAccountGateway $gateway,
         private readonly InterludeCharacterLabels $labels,
@@ -128,33 +133,62 @@ final class AccountCharacterDirectory
                 'accounts' => [],
             ];
 
-            $available = true;
-            try {
-                /** @var list<CharacterRow> $characters */
-                $characters = array_map(
-                    fn (array $character): array => $this->normalizeCharacter($character, $gameServer, $account),
-                    $this->gateway->characters($gameServer, $account->game_login),
-                );
-            } catch (Throwable $exception) {
-                $available = false;
-                $characters = [];
-                Log::warning('Player character directory loading failed.', [
-                    'exception' => $exception::class,
-                    'game_server_id' => $gameServer->id,
-                    'game_account_id' => $account->id,
-                ]);
-            }
+            $characterResult = $this->characters($gameServer, $account);
+            $characters = $characterResult['characters'];
 
             $servers[$serverId]['accounts'][] = [
                 'id' => (int) $account->id,
                 'login' => $account->game_login,
-                'available' => $available,
+                'available' => $characterResult['available'],
                 'characters' => $characters,
             ];
 
             foreach ($characters as $character) {
                 $allCharacters[] = $character;
             }
+        }
+    }
+
+    /** @return array{available:bool,characters:list<CharacterRow>} */
+    private function characters(GameServer $gameServer, UserGameAccount $account): array
+    {
+        $cacheKey = implode(':', [
+            'account-character-directory-v1',
+            $gameServer->id,
+            $gameServer->updated_at?->getTimestamp() ?? 0,
+            $account->id,
+            $account->updated_at?->getTimestamp() ?? 0,
+        ]);
+
+        $failureKey = $cacheKey.':unavailable';
+        if (Cache::has($failureKey)) {
+            return ['available' => false, 'characters' => []];
+        }
+
+        try {
+            /** @var list<array<string,mixed>> $rows */
+            $rows = Cache::remember(
+                $cacheKey,
+                now()->addMinutes(self::CACHE_MINUTES),
+                fn (): array => $this->gateway->characters($gameServer, $account->game_login),
+            );
+
+            /** @var list<CharacterRow> $characters */
+            $characters = array_map(
+                fn (array $character): array => $this->normalizeCharacter($character, $gameServer, $account),
+                $rows,
+            );
+
+            return ['available' => true, 'characters' => $characters];
+        } catch (Throwable $exception) {
+            Cache::put($failureKey, true, now()->addSeconds(self::FAILURE_COOLDOWN_SECONDS));
+            Log::warning('Player character directory loading failed.', [
+                'exception' => $exception::class,
+                'game_server_id' => $gameServer->id,
+                'game_account_id' => $account->id,
+            ]);
+
+            return ['available' => false, 'characters' => []];
         }
     }
 
