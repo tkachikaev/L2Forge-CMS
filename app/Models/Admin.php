@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Auth\AdminPermission;
+use App\Auth\AdminRole;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -15,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $password
  * @property string|null $remember_token
  * @property bool $is_active
+ * @property AdminRole $role
  * @property string|null $two_factor_secret
  * @property list<string>|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -25,6 +28,7 @@ class Admin extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $attributes = [
+        'role' => AdminRole::Owner->value,
         'session_version' => 1,
     ];
 
@@ -33,6 +37,7 @@ class Admin extends Authenticatable
         'email',
         'password',
         'is_active',
+        'role',
         'last_login_at',
         'last_login_ip',
         'locale',
@@ -50,6 +55,7 @@ class Admin extends Authenticatable
         return [
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'role' => AdminRole::class,
             'last_login_at' => 'datetime',
             'locale' => 'string',
             'two_factor_secret' => 'encrypted',
@@ -57,6 +63,26 @@ class Admin extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
             'session_version' => 'integer',
         ];
+    }
+
+    public function hasPermission(AdminPermission|string $permission): bool
+    {
+        return $this->role->allows($permission);
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->role === AdminRole::Owner;
+    }
+
+    public function roleLabel(): string
+    {
+        return $this->role->label();
+    }
+
+    public function roleDescription(): string
+    {
+        return $this->role->description();
     }
 
     public function twoFactorEnabled(): bool

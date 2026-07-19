@@ -38,6 +38,7 @@
                         <span class="admin-account-copy">
                             <strong>{{ auth('admin')->user()->name }}</strong>
                             <small>{{ auth('admin')->user()->email }}</small>
+                            <span class="admin-account-role">{{ auth('admin')->user()->roleLabel() }}</span>
                         </span>
                         <span class="admin-account-chevron" aria-hidden="true">⌄</span>
                     </summary>
@@ -75,7 +76,17 @@
         @endif
 
         <section class="admin-content">
-            @yield('content')
+            @if(request()->attributes->get('admin_read_only'))
+                <div class="notice notice-info admin-read-only-notice" role="status">
+                    <strong>{{ __('Read-only mode') }}</strong>
+                    <span>{{ __('Your role allows viewing this section, but changes are unavailable.') }}</span>
+                </div>
+                <fieldset class="admin-read-only-fieldset" disabled>
+                    @yield('content')
+                </fieldset>
+            @else
+                @yield('content')
+            @endif
         </section>
     </main>
 </div>

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Auth\Passwords\UtcPasswordBrokerManager;
+use App\Http\Middleware\RequireAdminAuthentication;
 use App\Services\Admin\AdminPathSettings;
 use App\Services\AdminLoginService;
 use App\Services\AdminTwoFactorAuthentication;
@@ -32,6 +33,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -71,6 +73,10 @@ class AppServiceProvider extends ServiceProvider
         SecuritySettings $securitySettings,
         AdminPathSettings $adminPathSettings,
     ): void {
+        Livewire::addPersistentMiddleware([
+            RequireAdminAuthentication::class,
+        ]);
+
         $this->configureRateLimiters($securitySettings);
 
         $defaultLocale = $languages->default();

@@ -4,7 +4,12 @@
 @section('description', __('Administrator address and server status refresh settings.'))
 
 @section('content')
+@php($canChangeAdminPath = auth('admin')->user()->hasPermission(\App\Auth\AdminPermission::AdminPathManage))
 @include('admin.settings._system_tabs')
+
+@if(! $canChangeAdminPath)
+    <div class="notice notice-info admin-critical-setting-notice"><p>{{ __('Only an owner can change the administrator panel address.') }}</p></div>
+@endif
 
 <section class="form-card admin-path-settings-card">
     <form
@@ -15,6 +20,7 @@
     >
         @csrf
         @method('PUT')
+        <fieldset class="admin-inline-permission-fieldset" @disabled(! $canChangeAdminPath)>
 
         <div class="system-monitor-settings-heading">
             <div>
@@ -59,9 +65,11 @@
 
             <button class="button button-primary" type="submit">{{ __('Change address') }}</button>
         </div>
+        </fieldset>
     </form>
 </section>
 
+@if($canChangeAdminPath)
 <dialog class="confirm-dialog admin-path-confirm-dialog" data-admin-path-dialog aria-labelledby="admin-path-dialog-title">
     <div class="confirm-dialog-card">
         <div class="confirm-dialog-copy">
@@ -80,6 +88,7 @@
         </div>
     </div>
 </dialog>
+@endif
 
 <section class="form-card system-monitor-settings-card">
     <form method="POST" action="{{ route('admin.settings.admin-panel.monitoring.update') }}">

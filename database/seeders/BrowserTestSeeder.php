@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Auth\AdminRole;
 use App\Models\Admin;
 use App\Models\GameServer;
 use App\Models\LoginServer;
@@ -28,6 +29,7 @@ class BrowserTestSeeder extends Seeder
                 'name' => 'Browser Test Admin',
                 'password' => Hash::make($adminPassword),
                 'is_active' => true,
+                'role' => AdminRole::Owner,
                 'locale' => 'ru',
             ],
         );

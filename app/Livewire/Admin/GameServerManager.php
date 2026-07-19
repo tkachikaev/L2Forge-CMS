@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Admin;
 
+use App\Auth\AdminPermission;
 use App\Exceptions\GameServerDeletionConfirmationRequired;
+use App\Models\Admin;
 use App\Models\GameServer;
 use App\Models\GameServerTranslation;
 use App\Models\LoginServer;
@@ -119,20 +121,20 @@ class GameServerManager extends Component
 
     public function mount(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanView();
         $this->showPublicOnline = app(SiteSettings::class)->showPublicOnline();
         $this->initializeTranslations();
     }
 
     public function hydrate(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanView();
         $this->syncEnabledLanguageFields();
     }
 
     public function create(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $this->resetValidation();
         $this->resetForm();
         $this->activeTab = 'general';
@@ -141,7 +143,7 @@ class GameServerManager extends Component
 
     public function edit(int $serverId): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $server = GameServer::query()
             ->with(['translations', 'loginServer'])
             ->findOrFail($serverId);
@@ -200,7 +202,7 @@ class GameServerManager extends Component
 
     public function setActiveTab(string $tab): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
 
         if (in_array($tab, ['general', 'statistics', 'miscellaneous'], true)) {
             $this->activeTab = $tab;
@@ -209,6 +211,7 @@ class GameServerManager extends Component
 
     public function closeDrawer(): void
     {
+        $this->ensureCanManage();
         $this->drawerOpen = false;
         $this->connectionReport = null;
         $this->showChecks = false;
@@ -218,7 +221,7 @@ class GameServerManager extends Component
 
     public function setMaintenanceEnabled(bool $enabled): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $this->activeTab = 'miscellaneous';
         $this->maintenanceEnabled = $enabled;
         $this->syncEnabledLanguageFields();
@@ -227,7 +230,7 @@ class GameServerManager extends Component
 
     public function setShowPublicOnline(bool $enabled): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $settings = app(SiteSettings::class);
         $previous = $settings->showPublicOnline();
 
@@ -252,7 +255,7 @@ class GameServerManager extends Component
 
     public function testStored(int $serverId): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $server = GameServer::query()->with('loginServer')->findOrFail($serverId);
         $report = app(GameServerAdministration::class)->testStored($server);
 
@@ -270,7 +273,7 @@ class GameServerManager extends Component
 
     public function testConnection(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $this->connectionEnabled = true;
         $validated = $this->validate($this->connectionRules(), [], $this->connectionAttributes());
         $loginServer = LoginServer::query()->findOrFail((int) $validated['loginServerId']);
@@ -293,7 +296,7 @@ class GameServerManager extends Component
 
     public function save(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         try {
             $general = $this->validate($this->generalRules(), [], $this->generalAttributes());
         } catch (ValidationException $exception) {
@@ -346,7 +349,7 @@ class GameServerManager extends Component
 
     public function confirmDelete(int $serverId): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $server = GameServer::query()->with('loginServer')->findOrFail($serverId);
         $this->applyDeleteImpact(app(GameServerAdministration::class)->analyzeDeletion($server));
         $this->confirmingDeleteId = $serverId;
@@ -355,12 +358,13 @@ class GameServerManager extends Component
 
     public function cancelDelete(): void
     {
+        $this->ensureCanManage();
         $this->clearDeleteConfirmation();
     }
 
     public function deleteServer(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
 
         if ($this->confirmingDeleteId === null) {
             return;
@@ -391,6 +395,8 @@ class GameServerManager extends Component
 
     public function render(): View
     {
+        $this->ensureCanView();
+
         return view('livewire.admin.game-server-manager', [
             'servers' => app(GameServerSettings::class)->all(),
             'loginServers' => LoginServer::query()->orderBy('name')->orderBy('id')->get(),
@@ -709,8 +715,23 @@ class GameServerManager extends Component
         return $value !== '' ? $value : null;
     }
 
-    private function ensureAuthorized(): void
+    private function ensureCanView(): void
     {
-        abort_unless(auth('admin')->check(), 403);
+        $admin = auth('admin')->user();
+
+        abort_unless(
+            $admin instanceof Admin && $admin->hasPermission(AdminPermission::ServersView),
+            403,
+        );
+    }
+
+    private function ensureCanManage(): void
+    {
+        $admin = auth('admin')->user();
+
+        abort_unless(
+            $admin instanceof Admin && $admin->hasPermission(AdminPermission::ServersManage),
+            403,
+        );
     }
 }

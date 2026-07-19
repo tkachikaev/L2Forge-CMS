@@ -57,6 +57,7 @@ class AuditLog extends Model
             'auth.logout' => __('Account signed out'),
             'administrator.created' => __('Administrator created'),
             'administrator.updated' => __('Administrator details changed'),
+            'administrator.role_changed' => __('Administrator role changed'),
             'administrator.password_changed' => __('Administrator password changed'),
             'administrator.activated' => __('Administrator enabled'),
             'administrator.deactivated' => __('Administrator disabled'),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Auth\AdminRole;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Rules\PasswordWithinHasherLimit;
@@ -31,23 +32,40 @@ class AdministratorController extends Controller
             'administrators' => $administrators,
             'totalCount' => Admin::query()->count(),
             'activeCount' => Admin::query()->where('is_active', true)->count(),
-            'currentAdmin' => Auth::guard('admin')->user(),
+            'activeOwnerCount' => $this->activeOwnerCount(),
+            'currentAdmin' => $this->currentAdmin(),
         ]);
     }
 
     public function create(): View
     {
-        return view('admin.administrators.create');
+        $currentAdmin = $this->currentAdmin();
+
+        return view('admin.administrators.create', [
+            'roles' => AdminRole::assignableBy($currentAdmin->role),
+            'defaultRole' => AdminRole::Administrator,
+        ]);
     }
 
     public function store(Request $request, AuditLogger $auditLogger): RedirectResponse
     {
-        $validated = $this->validateProfile($request, passwordRequired: true);
+        $currentAdmin = $this->currentAdmin();
+
+        if (! $request->filled('role')) {
+            $request->merge(['role' => AdminRole::Administrator->value]);
+        }
+        $validated = $this->validateProfile(
+            $request,
+            passwordRequired: true,
+            allowedRoles: AdminRole::assignableBy($currentAdmin->role),
+        );
+        $role = AdminRole::from($validated['role']);
 
         $administrator = Admin::query()->create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'role' => $role,
             'is_active' => true,
             'locale' => app()->getLocale(),
         ]);
@@ -59,6 +77,7 @@ class AdministratorController extends Controller
             details: [
                 'name' => $administrator->name,
                 'email' => $administrator->email,
+                'role' => $administrator->role->value,
                 'is_active' => true,
             ],
         );
@@ -70,41 +89,102 @@ class AdministratorController extends Controller
 
     public function edit(Admin $administrator): View
     {
-        $currentAdmin = Auth::guard('admin')->user();
-        $activeCount = Admin::query()->where('is_active', true)->count();
+        $currentAdmin = $this->currentAdmin();
+        $this->assertCanManageTarget($currentAdmin, $administrator);
+        $canManageRole = $this->canManageRole($currentAdmin, $administrator);
 
         return view('admin.administrators.edit', [
             'administrator' => $administrator,
             'currentAdmin' => $currentAdmin,
-            'activeCount' => $activeCount,
-            'isCurrentAdmin' => $currentAdmin?->is($administrator) ?? false,
+            'activeCount' => Admin::query()->where('is_active', true)->count(),
+            'activeOwnerCount' => $this->activeOwnerCount(),
+            'isCurrentAdmin' => $currentAdmin->is($administrator),
+            'canManageRole' => $canManageRole,
+            'roles' => $canManageRole ? AdminRole::assignableBy($currentAdmin->role) : [],
+            'canManageTarget' => $currentAdmin->is($administrator) || $this->canManageOtherTarget($currentAdmin, $administrator),
         ]);
     }
 
     public function update(Request $request, Admin $administrator, AuditLogger $auditLogger): RedirectResponse
     {
-        $validated = $this->validateProfile($request, $administrator);
-        $before = $administrator->only(['name', 'email']);
+        $currentAdmin = $this->currentAdmin();
+        $this->assertCanManageTarget($currentAdmin, $administrator);
+        $canManageRole = $this->canManageRole($currentAdmin, $administrator);
 
-        $administrator->fill([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-        ]);
+        if ($canManageRole && ! $request->filled('role')) {
+            $request->merge(['role' => $administrator->role->value]);
+        }
 
-        if (! $administrator->isDirty()) {
+        if (! $canManageRole && $request->filled('role') && $request->string('role')->toString() !== $administrator->role->value) {
+            abort(403);
+        }
+
+        $validated = $this->validateProfile(
+            $request,
+            $administrator,
+            allowedRoles: $canManageRole ? AdminRole::assignableBy($currentAdmin->role) : [],
+            roleRequired: $canManageRole,
+        );
+        $newRole = $canManageRole ? AdminRole::from($validated['role']) : $administrator->role;
+        $before = [
+            'name' => $administrator->name,
+            'email' => $administrator->email,
+            'role' => $administrator->role->value,
+        ];
+
+        DB::transaction(function () use ($administrator, $validated, $newRole): void {
+            /** @var Admin $lockedAdministrator */
+            $lockedAdministrator = Admin::query()
+                ->whereKey($administrator->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (
+                $lockedAdministrator->is_active
+                && $lockedAdministrator->isOwner()
+                && $newRole !== AdminRole::Owner
+                && $this->activeOwnerCount(lock: true) <= 1
+            ) {
+                throw ValidationException::withMessages([
+                    'role' => __('The last active owner cannot be assigned another role.'),
+                ]);
+            }
+
+            $roleChanged = $lockedAdministrator->role !== $newRole;
+            $lockedAdministrator->forceFill([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'role' => $newRole,
+                'session_version' => $roleChanged
+                    ? $lockedAdministrator->session_version + 1
+                    : $lockedAdministrator->session_version,
+                'remember_token' => $roleChanged
+                    ? Str::random(60)
+                    : $lockedAdministrator->remember_token,
+            ]);
+
+            if ($lockedAdministrator->isDirty()) {
+                $lockedAdministrator->save();
+            }
+        });
+
+        $administrator->refresh();
+        $changes = $this->changedValues($before, $administrator, ['name', 'email', 'role']);
+
+        if ($changes === []) {
             return redirect()
                 ->route('admin.administrators.edit', $administrator)
                 ->with('status', __('No changes.'));
         }
 
-        $administrator->save();
-        $changes = $this->changedValues($before, $administrator, ['name', 'email']);
-
         $auditLogger->success(
             category: 'admin',
-            action: 'administrator.updated',
+            action: array_key_exists('role', $changes) ? 'administrator.role_changed' : 'administrator.updated',
             target: $administrator,
-            details: ['changes' => $changes],
+            details: [
+                'changes' => $changes,
+                'sessions_invalidated' => array_key_exists('role', $changes),
+            ],
         );
 
         return redirect()
@@ -114,8 +194,8 @@ class AdministratorController extends Controller
 
     public function updatePassword(Request $request, Admin $administrator, AuditLogger $auditLogger): RedirectResponse
     {
-        /** @var Admin $currentAdmin */
-        $currentAdmin = Auth::guard('admin')->user();
+        $currentAdmin = $this->currentAdmin();
+        $this->assertCanManageTarget($currentAdmin, $administrator);
         $isCurrentAdmin = $currentAdmin->is($administrator);
 
         $validator = Validator::make(
@@ -178,14 +258,13 @@ class AdministratorController extends Controller
 
     public function updateStatus(Request $request, Admin $administrator, AuditLogger $auditLogger): RedirectResponse
     {
+        $currentAdmin = $this->currentAdmin();
+        $this->assertCanManageOtherTarget($currentAdmin, $administrator);
+
         $validated = $request->validate([
             'is_active' => ['required', 'boolean'],
         ]);
-
         $newStatus = (bool) $validated['is_active'];
-
-        /** @var Admin $currentAdmin */
-        $currentAdmin = Auth::guard('admin')->user();
 
         if (! $newStatus && $currentAdmin->is($administrator)) {
             throw ValidationException::withMessages([
@@ -205,12 +284,19 @@ class AdministratorController extends Controller
                 ->firstOrFail();
 
             if (! $newStatus) {
-                $activeAdministrators = Admin::query()
+                if ($lockedAdministrator->isOwner() && $this->activeOwnerCount(lock: true) <= 1) {
+                    throw ValidationException::withMessages([
+                        'is_active' => __('The last active owner cannot be disabled.'),
+                    ]);
+                }
+
+                $lockedActiveAdministrators = Admin::query()
                     ->where('is_active', true)
                     ->lockForUpdate()
                     ->get(['id']);
+                $activeAdministratorCount = count($lockedActiveAdministrators);
 
-                if ($activeAdministrators->count() <= 1) {
+                if ($activeAdministratorCount <= 1) {
                     throw ValidationException::withMessages([
                         'is_active' => __('The last active administrator account cannot be disabled.'),
                     ]);
@@ -237,6 +323,7 @@ class AdministratorController extends Controller
             details: [
                 'old' => ! $newStatus,
                 'new' => $newStatus,
+                'role' => $administrator->role->value,
             ],
         );
 
@@ -247,15 +334,22 @@ class AdministratorController extends Controller
     }
 
     /**
-     * @return array{name: string, email: string, password?: string}
+     * @param  list<AdminRole>  $allowedRoles
+     * @return array{name: string, email: string, password?: string, role?: string}
      */
-    private function validateProfile(Request $request, ?Admin $administrator = null, bool $passwordRequired = false): array
-    {
+    private function validateProfile(
+        Request $request,
+        ?Admin $administrator = null,
+        bool $passwordRequired = false,
+        array $allowedRoles = [],
+        bool $roleRequired = true,
+    ): array {
         $data = [
             'name' => trim((string) $request->input('name', '')),
             'email' => Str::lower(trim((string) $request->input('email', ''))),
             'password' => (string) $request->input('password', ''),
             'password_confirmation' => (string) $request->input('password_confirmation', ''),
+            'role' => (string) $request->input('role', ''),
         ];
 
         $rules = [
@@ -280,6 +374,13 @@ class AdministratorController extends Controller
             ];
         }
 
+        if ($roleRequired) {
+            $rules['role'] = [
+                'required',
+                Rule::in(array_map(static fn (AdminRole $role): string => $role->value, $allowedRoles)),
+            ];
+        }
+
         return Validator::make(
             $data,
             $rules,
@@ -289,8 +390,56 @@ class AdministratorController extends Controller
                 'email' => 'email',
                 'password' => __('Password validation attribute'),
                 'password_confirmation' => __('password confirmation'),
+                'role' => __('Role'),
             ],
         )->validate();
+    }
+
+    private function currentAdmin(): Admin
+    {
+        /** @var Admin $admin */
+        $admin = Auth::guard('admin')->user();
+
+        return $admin;
+    }
+
+    private function assertCanManageTarget(Admin $actor, Admin $target): void
+    {
+        abort_unless($actor->is($target) || $this->canManageOtherTarget($actor, $target), 403);
+    }
+
+    private function assertCanManageOtherTarget(Admin $actor, Admin $target): void
+    {
+        abort_unless($this->canManageOtherTarget($actor, $target), 403);
+    }
+
+    private function canManageOtherTarget(Admin $actor, Admin $target): bool
+    {
+        if ($actor->role === AdminRole::Owner) {
+            return true;
+        }
+
+        return $actor->role === AdminRole::Administrator && ! $target->isOwner();
+    }
+
+    private function canManageRole(Admin $actor, Admin $target): bool
+    {
+        return ! $actor->is($target) && $this->canManageOtherTarget($actor, $target);
+    }
+
+    private function activeOwnerCount(bool $lock = false): int
+    {
+        $query = Admin::query()
+            ->where('is_active', true)
+            ->where('role', AdminRole::Owner->value);
+
+        if ($lock) {
+            $lockedOwners = $query->lockForUpdate()->get(['id']);
+
+            return count($lockedOwners);
+        }
+
+        return $query->count();
     }
 
     /**
@@ -304,7 +453,8 @@ class AdministratorController extends Controller
 
         foreach ($fields as $field) {
             $old = $before[$field] ?? null;
-            $new = $administrator->getAttribute($field);
+            $value = $administrator->getAttribute($field);
+            $new = $value instanceof AdminRole ? $value->value : $value;
 
             if ($old !== $new) {
                 $changes[$field] = ['old' => $old, 'new' => $new];

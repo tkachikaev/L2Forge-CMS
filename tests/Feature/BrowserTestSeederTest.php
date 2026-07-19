@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Auth\AdminRole;
 use App\Models\Admin;
 use App\Models\User;
 use App\Models\UserGameAccount;
@@ -29,6 +30,7 @@ class BrowserTestSeederTest extends TestCase
 
         $this->assertSame('Browser Test Admin', $admin->name);
         $this->assertTrue($admin->is_active);
+        $this->assertSame(AdminRole::Owner, $admin->role);
         $this->assertSame('ru', $admin->locale);
         $this->assertTrue(Hash::check('ConfiguredBrowserPassword123!', $admin->password));
 

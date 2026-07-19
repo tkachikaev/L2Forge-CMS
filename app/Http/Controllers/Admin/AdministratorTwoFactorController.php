@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Auth\AdminRole;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Services\AuditLogger;
@@ -24,6 +25,12 @@ class AdministratorTwoFactorController extends Controller
                 'current_password' => __('Manage your own two-factor authentication from Account security.'),
             ]);
         }
+
+        abort_unless(
+            $currentAdmin->role === AdminRole::Owner
+            || ($currentAdmin->role === AdminRole::Administrator && ! $administrator->isOwner()),
+            403,
+        );
 
         $validated = $request->validate([
             'current_password' => ['required', 'string', 'max:4096'],

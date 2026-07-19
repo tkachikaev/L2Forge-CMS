@@ -1,88 +1,86 @@
+@php
+    $admin = auth('admin')->user();
+@endphp
 <nav class="admin-menu" wire:navigate:scroll aria-label="{{ __('Administrator menu') }}">
     <a wire:navigate.hover wire:current.exact="active" class="admin-menu-item" href="{{ route('admin.dashboard') }}">
         <span>{{ __('Dashboard') }}</span>
     </a>
 
-    <details class="admin-menu-group" data-admin-menu-group="content" @if (request()->routeIs('admin.news.*', 'admin.pages.*')) open @endif>
-        <summary class="admin-menu-group-summary">
-            <span>{{ __('Content') }}</span>
-            <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
-        </summary>
-        <div class="admin-menu-group-items">
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.news.index') }}">
-                <span>{{ __('News') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.pages.index') }}">
-                <span>{{ __('Pages') }}</span>
-            </a>
-        </div>
-    </details>
+    @if($admin->hasPermission(\App\Auth\AdminPermission::ContentManage))
+        <details class="admin-menu-group" data-admin-menu-group="content" @if (request()->routeIs('admin.news.*', 'admin.pages.*')) open @endif>
+            <summary class="admin-menu-group-summary">
+                <span>{{ __('Content') }}</span>
+                <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="admin-menu-group-items">
+                <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.news.index') }}"><span>{{ __('News') }}</span></a>
+                <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.pages.index') }}"><span>{{ __('Pages') }}</span></a>
+            </div>
+        </details>
+    @endif
 
-    <details class="admin-menu-group" data-admin-menu-group="appearance" @if (request()->routeIs('admin.themes.*', 'admin.account-themes.*')) open @endif>
-        <summary class="admin-menu-group-summary">
-            <span>{{ __('Appearance') }}</span>
-            <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
-        </summary>
-        <div class="admin-menu-group-items">
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.themes.index') }}">
-                <span>{{ __('Themes') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.account-themes.index') }}">
-                <span>{{ __('Player account themes') }}</span>
-            </a>
-        </div>
-    </details>
+    @if($admin->hasPermission(\App\Auth\AdminPermission::AppearanceView))
+        <details class="admin-menu-group" data-admin-menu-group="appearance" @if (request()->routeIs('admin.themes.*', 'admin.account-themes.*')) open @endif>
+            <summary class="admin-menu-group-summary">
+                <span>{{ __('Appearance') }}</span>
+                <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="admin-menu-group-items">
+                <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.themes.index') }}"><span>{{ __('Themes') }}</span></a>
+                <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.account-themes.index') }}"><span>{{ __('Player account themes') }}</span></a>
+            </div>
+        </details>
+    @endif
 
-    <details class="admin-menu-group" data-admin-menu-group="servers" @if (request()->routeIs('admin.settings.game-server*', 'admin.settings.login-server*')) open @endif>
-        <summary class="admin-menu-group-summary">
-            <span>{{ __('Servers') }}</span>
-            <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
-        </summary>
-        <div class="admin-menu-group-items">
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.game-server') }}">
-                <span>{{ __('Game servers') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.login-server') }}">
-                <span>{{ __('Login servers') }}</span>
-            </a>
-        </div>
-    </details>
+    @if($admin->hasPermission(\App\Auth\AdminPermission::ServersView))
+        <details class="admin-menu-group" data-admin-menu-group="servers" @if (request()->routeIs('admin.settings.game-server*', 'admin.settings.login-server*')) open @endif>
+            <summary class="admin-menu-group-summary">
+                <span>{{ __('Servers') }}</span>
+                <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="admin-menu-group-items">
+                <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.game-server') }}"><span>{{ __('Game servers') }}</span></a>
+                <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.login-server') }}"><span>{{ __('Login servers') }}</span></a>
+            </div>
+        </details>
+    @endif
 
-    <details class="admin-menu-group" data-admin-menu-group="users" @if (request()->routeIs('admin.users.*', 'admin.administrators.*')) open @endif>
-        <summary class="admin-menu-group-summary">
-            <span>{{ __('Users') }}</span>
-            <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
-        </summary>
-        <div class="admin-menu-group-items">
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.users.index') }}">
+    @if($admin->hasPermission(\App\Auth\AdminPermission::UsersManage) || $admin->hasPermission(\App\Auth\AdminPermission::AdministratorsManage))
+        <details class="admin-menu-group" data-admin-menu-group="users" @if (request()->routeIs('admin.users.*', 'admin.administrators.*')) open @endif>
+            <summary class="admin-menu-group-summary">
                 <span>{{ __('Users') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.administrators.index') }}">
-                <span>{{ __('Administrators') }}</span>
-            </a>
-        </div>
-    </details>
+                <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="admin-menu-group-items">
+                @if($admin->hasPermission(\App\Auth\AdminPermission::UsersManage))
+                    <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.users.index') }}"><span>{{ __('Users') }}</span></a>
+                @endif
+                @if($admin->hasPermission(\App\Auth\AdminPermission::AdministratorsManage))
+                    <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.administrators.index') }}"><span>{{ __('Administrators') }}</span></a>
+                @endif
+            </div>
+        </details>
+    @endif
 
-    <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.mail') }}">
-        <span>{{ __('Mail') }}</span>
-    </a>
+    @if($admin->hasPermission(\App\Auth\AdminPermission::MailView))
+        <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.mail') }}"><span>{{ __('Mail') }}</span></a>
+    @endif
 
-    <a
-        wire:navigate.hover
-        class="admin-menu-item"
-        data-admin-settings-link
-        @if (request()->routeIs('admin.settings.general*', 'admin.settings.admin-panel*', 'admin.settings.registration*', 'admin.settings.game-accounts*', 'admin.settings.languages*', 'admin.settings.security*', 'admin.settings.system')) data-current @endif
-        href="{{ route('admin.settings.general') }}"
-    >
-        <span>{{ __('Settings') }}</span>
-    </a>
+    @if($admin->hasPermission(\App\Auth\AdminPermission::SettingsView) || $admin->hasPermission(\App\Auth\AdminPermission::SystemView))
+        <a
+            wire:navigate.hover
+            class="admin-menu-item"
+            data-admin-settings-link
+            @if (request()->routeIs('admin.settings.general*', 'admin.settings.admin-panel*', 'admin.settings.registration*', 'admin.settings.game-accounts*', 'admin.settings.languages*', 'admin.settings.security*', 'admin.settings.system')) data-current @endif
+            href="{{ route('admin.settings.general') }}"
+        ><span>{{ __('Settings') }}</span></a>
+    @endif
 
-    <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.logs.index') }}">
-        <span>{{ __('Audit log') }}</span>
-    </a>
+    @if($admin->hasPermission(\App\Auth\AdminPermission::AuditView))
+        <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.logs.index') }}"><span>{{ __('Audit log') }}</span></a>
+    @endif
 
-    <span class="admin-menu-item disabled" aria-disabled="true">
-        <span>{{ __('Modules') }}</span>
-        <small>{{ __('Coming soon') }}</small>
-    </span>
+    @if($admin->isOwner())
+        <span class="admin-menu-item disabled" aria-disabled="true"><span>{{ __('Modules') }}</span><small>{{ __('Coming soon') }}</small></span>
+    @endif
 </nav>

@@ -185,3 +185,22 @@ test('admin catalogues share enterprise surfaces', async ({ page }) => {
         await expect(table.first()).toHaveCSS('border-radius', '12px');
     }
 });
+
+
+test('administrator role selector explains the selected access level', async ({ page }) => {
+    await page.goto('/admin/administrators');
+    await expect(page.locator('.administrator-role-badge.role-owner').first()).toContainText('Владелец');
+
+    await page.getByRole('link', { name: 'Создать администратора' }).click();
+    const roleSelect = page.locator('[data-admin-role-select]');
+    const roleDescription = page.locator('[data-admin-role-description]');
+
+    await expect(roleSelect).toBeVisible();
+    await expect(roleSelect.locator('option[value="moderator"]')).toHaveCount(0);
+
+    await roleSelect.selectOption('administrator');
+    await expect(roleDescription).toContainText('не может управлять владельцами');
+
+    await roleSelect.selectOption('editor');
+    await expect(roleDescription).toContainText('Работает только с новостями');
+});

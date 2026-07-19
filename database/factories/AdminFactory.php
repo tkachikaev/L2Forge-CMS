@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Auth\AdminRole;
 use App\Models\Admin;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -21,8 +22,19 @@ class AdminFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'password' => self::$password ??= Hash::make('CorrectPassword123'),
             'is_active' => true,
+            'role' => AdminRole::Owner,
             'locale' => 'ru',
         ];
+    }
+
+    public function administrator(): static
+    {
+        return $this->state(fn (): array => ['role' => AdminRole::Administrator]);
+    }
+
+    public function editor(): static
+    {
+        return $this->state(fn (): array => ['role' => AdminRole::Editor]);
     }
 
     public function inactive(): static

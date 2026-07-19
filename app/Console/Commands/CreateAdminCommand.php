@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Auth\AdminRole;
 use App\Models\Admin;
 use App\Rules\PasswordWithinHasherLimit;
 use App\Services\Localization\LanguageManager;
@@ -61,6 +62,7 @@ class CreateAdminCommand extends Command
             'email' => $email,
             'password' => Hash::make($password),
             'is_active' => true,
+            'role' => AdminRole::Owner,
             'locale' => $languages->default(),
         ]);
 

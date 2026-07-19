@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin;
 
+use App\Auth\AdminPermission;
+use App\Models\Admin;
 use App\Models\LoginServer;
 use App\Services\Servers\LoginServerAdministration;
 use App\Services\Servers\ServerDriverRegistry;
@@ -52,12 +54,17 @@ class LoginServerManager extends Component
 
     public function mount(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanView();
+    }
+
+    public function hydrate(): void
+    {
+        $this->ensureCanView();
     }
 
     public function create(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $this->resetValidation();
         $this->resetForm();
         $this->drawerOpen = true;
@@ -65,7 +72,7 @@ class LoginServerManager extends Component
 
     public function edit(int $serverId): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $server = LoginServer::query()->findOrFail($serverId);
 
         $this->resetValidation();
@@ -89,6 +96,7 @@ class LoginServerManager extends Component
 
     public function closeDrawer(): void
     {
+        $this->ensureCanManage();
         $this->drawerOpen = false;
         $this->connectionReport = null;
         $this->showChecks = false;
@@ -98,7 +106,7 @@ class LoginServerManager extends Component
 
     public function testStored(int $serverId): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $server = LoginServer::query()->findOrFail($serverId);
         $report = app(LoginServerAdministration::class)->testStored($server);
 
@@ -107,7 +115,7 @@ class LoginServerManager extends Component
 
     public function testConnection(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $validated = $this->validate($this->rules(), [], $this->attributes());
         $values = $this->connectionValues($validated);
         $server = $this->editingId !== null
@@ -126,7 +134,7 @@ class LoginServerManager extends Component
 
     public function save(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $validated = $this->validate($this->rules(), [], $this->attributes());
         $values = $this->connectionValues($validated);
         $server = $this->editingId !== null
@@ -150,18 +158,19 @@ class LoginServerManager extends Component
 
     public function confirmDelete(int $serverId): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
         $this->confirmingDeleteId = $serverId;
     }
 
     public function cancelDelete(): void
     {
+        $this->ensureCanManage();
         $this->confirmingDeleteId = null;
     }
 
     public function deleteServer(): void
     {
-        $this->ensureAuthorized();
+        $this->ensureCanManage();
 
         if ($this->confirmingDeleteId === null) {
             return;
@@ -190,6 +199,8 @@ class LoginServerManager extends Component
 
     public function render(): View
     {
+        $this->ensureCanView();
+
         return view('livewire.admin.login-server-manager', [
             'servers' => LoginServer::query()
                 ->withCount(['gameServers', 'userGameAccounts'])
@@ -297,8 +308,23 @@ class LoginServerManager extends Component
         return $value !== '' ? $value : null;
     }
 
-    private function ensureAuthorized(): void
+    private function ensureCanView(): void
     {
-        abort_unless(auth('admin')->check(), 403);
+        $admin = auth('admin')->user();
+
+        abort_unless(
+            $admin instanceof Admin && $admin->hasPermission(AdminPermission::ServersView),
+            403,
+        );
+    }
+
+    private function ensureCanManage(): void
+    {
+        $admin = auth('admin')->user();
+
+        abort_unless(
+            $admin instanceof Admin && $admin->hasPermission(AdminPermission::ServersManage),
+            403,
+        );
     }
 }

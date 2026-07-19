@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Auth\AdminPermission;
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Services\Mail\MailDeliveryMonitor;
 use App\Services\MailSettings;
 use App\Services\Servers\ServerMonitorCoordinator;
@@ -41,12 +43,19 @@ class DashboardController extends Controller
         ServerStatusPayload $payload,
     ): JsonResponse {
         $refresh = $monitorCoordinator->refreshIfDue();
+        $monitor = $payload->forAdmin($statuses->get());
+        $admin = Auth::guard('admin')->user();
+
+        if (! $admin instanceof Admin || ! $admin->hasPermission(AdminPermission::ServersView)) {
+            $monitor['game_servers'] = [];
+            $monitor['login_servers'] = [];
+        }
 
         return response()
             ->json([
                 'refreshing' => $refresh['refreshing'],
                 'fresh' => ! $monitorCoordinator->isDue(),
-                'monitor' => $payload->forAdmin($statuses->get()),
+                'monitor' => $monitor,
             ])
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache');

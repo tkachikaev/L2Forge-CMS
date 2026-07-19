@@ -53,7 +53,7 @@ Route::prefix('{adminPath}')->name('admin.')->middleware(['admin.path', 'admin.h
             ->name('two-factor.challenge.cancel');
     });
 
-    Route::middleware('admin.auth')->group(function (): void {
+    Route::middleware(['admin.auth', 'admin.access'])->group(function (): void {
         Route::get('', AdminDashboardController::class)->name('dashboard');
         Route::post('/server-monitor/status', [AdminDashboardController::class, 'status'])
             ->middleware('throttle:120,1')

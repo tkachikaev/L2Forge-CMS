@@ -22,6 +22,10 @@
         'offline' => __('Unavailable'),
         'unknown' => __('Status pending'),
     ];
+    $adminUser = auth('admin')->user();
+    $canRefreshMonitor = $adminUser->hasPermission(\App\Auth\AdminPermission::DashboardRefresh);
+    $canViewServers = $adminUser->hasPermission(\App\Auth\AdminPermission::ServersView);
+    $canViewMail = $adminUser->hasPermission(\App\Auth\AdminPermission::MailView);
 @endphp
 
 <div
@@ -42,14 +46,18 @@
                     ? __('Updated :time', ['time' => $monitor['checked_at']->diffForHumans()])
                     : __('Not checked yet') }}
             </span>
-            <form method="POST" action="{{ route('admin.server-monitor.refresh') }}">
-                @csrf
-                <button class="button button-secondary button-compact" type="submit">{{ __('Check now') }}</button>
-            </form>
+            @if($canRefreshMonitor)
+                <form method="POST" action="{{ route('admin.server-monitor.refresh') }}">
+                    @csrf
+                    <button class="button button-secondary button-compact" type="submit">{{ __('Check now') }}</button>
+                </form>
+            @endif
         </div>
     </section>
 
+    @if($canViewServers || $canViewMail)
     <div class="dashboard-monitor-grid">
+        @if($canViewServers)
         <section class="admin-data-card dashboard-monitor-card">
             <header>
                 <h2>{{ __('Game servers') }}</h2>
@@ -73,8 +81,10 @@
                 @endforelse
             </div>
         </section>
+        @endif
 
         <div class="dashboard-monitor-side">
+        @if($canViewServers)
         <section class="admin-data-card dashboard-monitor-card">
             <header>
                 <h2>{{ __('Login servers') }}</h2>
@@ -93,7 +103,9 @@
                 @endforelse
             </div>
         </section>
+        @endif
 
+        @if($canViewMail)
         <section class="admin-data-card dashboard-monitor-card">
             <header>
                 <h2>{{ __('Mail delivery') }}</h2>
@@ -130,8 +142,10 @@
                 @endif
             </div>
         </section>
+        @endif
         </div>
     </div>
+    @endif
 </div>
 @endsection
 

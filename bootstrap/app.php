@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminSecurityHeaders;
+use App\Http\Middleware\EnforceAdminAccess;
 use App\Http\Middleware\EnsureAdminPath;
 use App\Http\Middleware\RedirectAuthenticatedAdmin;
 use App\Http\Middleware\RequireActiveSiteUser;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', SetApplicationLocale::class);
         $middleware->alias([
             'admin.auth' => RequireAdminAuthentication::class,
+            'admin.access' => EnforceAdminAccess::class,
             'admin.path' => EnsureAdminPath::class,
             'admin.guest' => RedirectAuthenticatedAdmin::class,
             'admin.headers' => AdminSecurityHeaders::class,
