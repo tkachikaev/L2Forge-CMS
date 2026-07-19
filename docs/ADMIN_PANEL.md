@@ -2,39 +2,75 @@
 
 The administrative interface is part of KaevCMS Core and is never rendered through a public theme.
 
-## Single entry point
+## Administrator path
+
+The default panel address is `/admin`. The administrator may change only the suffix after the fixed `admin-` prefix, for example:
+
+```text
+/admin-test01
+/admin-control-2407
+```
+
+An empty suffix restores `/admin`. After a change, the previous address returns `404`, named routes immediately generate the new address, and the browser redirects the current administrator to it. The change form displays the current and new addresses and requires an explicit confirmation.
+
+The path is stored in `cms_settings` under `admin.path_suffix`. It is not a replacement for a strong password, rate limits or TOTP-2FA; it only removes the predictable public entry point and reduces automated noise.
+
+Recovery commands:
+
+```bash
+php artisan kaevcms:admin-path
+php artisan kaevcms:admin-path test01
+php artisan kaevcms:admin-path --reset
+```
+
+The first command shows the current address, the second sets a new suffix, and the third resets the panel to `/admin`. These commands are also shown in the information tooltip next to the setting.
+
+All examples below use the default `/admin` prefix. A configured suffix replaces it everywhere.
 
 - `/admin` — the main administration page and the single panel entry point.
 - `/admin/news` — news management inside the same administration shell.
 - `/admin/themes` — theme management inside the same administration shell.
-- `/admin/settings` — main public website settings; related sections remain on compatible `/admin/settings/*` routes.
+- `/admin/settings` — main system and public website settings; related sections remain on compatible `/admin/settings/*` routes.
+- `/admin/settings/admin-panel` — administrator path and server monitoring settings.
+- `/admin/settings/system` — read-only system diagnostics and safe support report.
 - `/admin/users` — CMS user management and account details.
 - `/admin/administrators` — administrator account management.
 - `/admin/logs` — human-readable audit log with categories and event details.
 - `/admin/login` — administrator authentication.
-- `/admin/dashboard` — compatibility redirect to `/admin`.
-
-All panel pages use:
-
-- `resources/views/admin/layouts/panel.blade.php`
-- `resources/views/admin/partials/navigation.blade.php`
-- `public/assets/admin/css/app.css`
-
-Public theme files cannot replace these resources.
+- `/admin/dashboard` — compatibility redirect to the current panel root.
 
 ## Navigation
 
 The left menu always shows both implemented and planned sections. Planned entries are disabled and have no writable route until their functionality is implemented.
 
-Current navigation groups:
+Current navigation structure:
 
 - **Content** — news and pages.
-- **Site** — main public website settings, languages and themes.
-- **Servers** — GameServer worlds, LoginServer connections and game-account policy.
-- **Users** — CMS users and registration settings.
-- **System** — mail, security, system information, administrators, activity log and the planned modules entry.
+- **Appearance** — public themes and player-account themes.
+- **Servers** — GameServer worlds and LoginServer connections.
+- **Users** — CMS users and administrators.
+- **Mail** — direct access to SMTP, delivery and mail-template settings.
+- **Settings** — one sidebar entry for site, administrator panel, registration, game-account policy, languages, security and system information.
+- **Audit log** — administrator and system activity.
+- **Modules** — reserved disabled entry until the module loader is implemented.
 
-The former global settings tab bar was removed. Existing `/admin/settings/*` URLs and route names are preserved for compatibility, while each page is now reached directly from the sidebar. Mail templates retain their own local tab bar because they belong to one mail module.
+Settings use a local tab bar so closely related pages stay together without crowding the sidebar. The **Administrator panel** tab contains the configurable panel path and server-monitoring interval. **System information** is read-only diagnostics. Existing legacy update endpoints under `/admin/settings/system/*` remain accepted for compatibility, while current forms use `/admin/settings/admin-panel/*`. Mail templates retain their own local tab bar because they belong to one mail module.
+
+## Administrative visual system
+
+KaevCMS 0.22.9 keeps the administration interface light and uses one component system across ordinary pages, catalogues, tables and server drawers:
+
+- `admin-overview` provides the shared summary/action surface used by content, themes, users, administrators, audit, account security and the dashboard;
+- `admin-card-list`, `admin-card-row` and `admin-card-grid` align catalogue rows and theme cards without removing their domain-specific layouts;
+- `admin-table-wrap` and `admin-table` provide one table header, row-hover, border and responsive overflow model;
+- `admin-filter-bar` and `admin-subtabs` align search filters and contextual navigation;
+- `admin-card-heading`, `admin-actions-panel`, `admin-page-toolbar` and `admin-empty-state` provide predictable headings, save areas, back actions and empty screens;
+- top-level Settings and Mail tabs continue to share `admin-tabs` / `admin-tab`;
+- GameServer drawer tabs keep their document-tab shape while using the same palette;
+- authentication pages consume the same surface, control, radius and focus tokens;
+- responsive layouts remain usable at desktop, tablet and phone widths.
+
+The source palette is defined in `public/assets/admin/css/app.css` through `--admin-*` variables. In addition to neutral surfaces, the token layer includes shared success, warning, danger and information states. Existing names such as `--accent`, `--surface`, `--border` and `--muted` remain compatibility aliases. A future dark theme should override the design tokens instead of copying component rules. The current release intentionally ships only the stabilized light palette.
 
 Navigation groups are collapsed by default. The group containing the current page opens automatically, while manually opened or closed inactive groups are remembered in browser storage. On narrow screens the links remain available in the horizontal navigation without extra expansion.
 
@@ -58,3 +94,16 @@ Before activation, the core checks:
 - minimum and maximum CMS versions when declared.
 
 Theme ZIP upload is deliberately not implemented yet. Archive extraction requires a separate security layer against path traversal, executable files, oversized archives, and unsafe symbolic links.
+
+
+## Route organization
+
+The web route entry point is intentionally small and loads three focused files:
+
+```text
+routes/public.php
+routes/account.php
+routes/admin.php
+```
+
+Public and account route names and URLs remain compatible. Administrative routes use an internal `{adminPath}` prefix checked by `EnsureAdminPath`. The middleware removes this infrastructure parameter before controller dispatch so it cannot replace real parameters such as a theme slug or model identifier.

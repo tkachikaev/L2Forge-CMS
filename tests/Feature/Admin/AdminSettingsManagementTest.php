@@ -50,9 +50,17 @@ class AdminSettingsManagementTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get('/admin/settings')
             ->assertOk()
-            ->assertSee('Основные')
-            ->assertSee('Игровые серверы')
-            ->assertSee('Логин серверы')
+            ->assertSee('Настройки')
+            ->assertSee('settings-section-tabs', false)
+            ->assertSeeInOrder([
+                'Сайт',
+                'Панель администратора',
+                'Регистрация',
+                'Игровые аккаунты',
+                'Языки',
+                'Безопасность',
+                'Системная информация',
+            ])
             ->assertSee('© 2026 KaevCMS')
             ->assertSee('translation-tab-label', false)
             ->assertSee('translation-tab-default', false)

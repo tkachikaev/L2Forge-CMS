@@ -39,7 +39,8 @@ function Remove-ObsoleteReleaseArtifacts {
 
     $obsoletePaths = @(
         'preview',
-        'resources\views\admin\settings\placeholder.blade.php'
+        'resources\views\admin\settings\placeholder.blade.php',
+        'app\Http\Controllers\Admin\SettingsController.php'
     )
 
     foreach ($obsoletePath in $obsoletePaths) {

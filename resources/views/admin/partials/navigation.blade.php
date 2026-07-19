@@ -18,18 +18,12 @@
         </div>
     </details>
 
-    <details class="admin-menu-group" data-admin-menu-group="site" @if (request()->routeIs('admin.settings.general*', 'admin.settings.languages*', 'admin.themes.*', 'admin.account-themes.*')) open @endif>
+    <details class="admin-menu-group" data-admin-menu-group="appearance" @if (request()->routeIs('admin.themes.*', 'admin.account-themes.*')) open @endif>
         <summary class="admin-menu-group-summary">
-            <span>{{ __('Site') }}</span>
+            <span>{{ __('Appearance') }}</span>
             <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
         </summary>
         <div class="admin-menu-group-items">
-            <a wire:navigate.hover wire:current.exact="active" class="admin-menu-item" href="{{ route('admin.settings.general') }}">
-                <span>{{ __('Main settings') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.languages') }}">
-                <span>{{ __('Languages') }}</span>
-            </a>
             <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.themes.index') }}">
                 <span>{{ __('Themes') }}</span>
             </a>
@@ -39,7 +33,7 @@
         </div>
     </details>
 
-    <details class="admin-menu-group" data-admin-menu-group="servers" @if (request()->routeIs('admin.settings.game-server*', 'admin.settings.login-server*', 'admin.settings.game-accounts*')) open @endif>
+    <details class="admin-menu-group" data-admin-menu-group="servers" @if (request()->routeIs('admin.settings.game-server*', 'admin.settings.login-server*')) open @endif>
         <summary class="admin-menu-group-summary">
             <span>{{ __('Servers') }}</span>
             <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
@@ -51,13 +45,10 @@
             <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.login-server') }}">
                 <span>{{ __('Login servers') }}</span>
             </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.game-accounts') }}">
-                <span>{{ __('Game accounts') }}</span>
-            </a>
         </div>
     </details>
 
-    <details class="admin-menu-group" data-admin-menu-group="users" @if (request()->routeIs('admin.users.*', 'admin.settings.registration*')) open @endif>
+    <details class="admin-menu-group" data-admin-menu-group="users" @if (request()->routeIs('admin.users.*', 'admin.administrators.*')) open @endif>
         <summary class="admin-menu-group-summary">
             <span>{{ __('Users') }}</span>
             <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
@@ -66,37 +57,32 @@
             <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.users.index') }}">
                 <span>{{ __('Users') }}</span>
             </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.registration') }}">
-                <span>{{ __('Registration') }}</span>
+            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.administrators.index') }}">
+                <span>{{ __('Administrators') }}</span>
             </a>
         </div>
     </details>
 
-    <details class="admin-menu-group" data-admin-menu-group="system" @if (request()->routeIs('admin.settings.mail*', 'admin.settings.security*', 'admin.settings.system', 'admin.administrators.*', 'admin.logs.*')) open @endif>
-        <summary class="admin-menu-group-summary">
-            <span>{{ __('System') }}</span>
-            <span class="admin-menu-group-chevron" aria-hidden="true">⌄</span>
-        </summary>
-        <div class="admin-menu-group-items">
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.mail') }}">
-                <span>{{ __('Mail') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.security') }}">
-                <span>{{ __('Security') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current.exact="active" class="admin-menu-item" href="{{ route('admin.settings.system') }}">
-                <span>{{ __('System information') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.administrators.index') }}">
-                <span>{{ __('Administrators') }}</span>
-            </a>
-            <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.logs.index') }}">
-                <span>{{ __('Audit log') }}</span>
-            </a>
-            <span class="admin-menu-item disabled" aria-disabled="true">
-                <span>{{ __('Modules') }}</span>
-                <small>{{ __('Coming soon') }}</small>
-            </span>
-        </div>
-    </details>
+    <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.settings.mail') }}">
+        <span>{{ __('Mail') }}</span>
+    </a>
+
+    <a
+        wire:navigate.hover
+        class="admin-menu-item"
+        data-admin-settings-link
+        @if (request()->routeIs('admin.settings.general*', 'admin.settings.admin-panel*', 'admin.settings.registration*', 'admin.settings.game-accounts*', 'admin.settings.languages*', 'admin.settings.security*', 'admin.settings.system')) data-current @endif
+        href="{{ route('admin.settings.general') }}"
+    >
+        <span>{{ __('Settings') }}</span>
+    </a>
+
+    <a wire:navigate.hover wire:current="active" class="admin-menu-item" href="{{ route('admin.logs.index') }}">
+        <span>{{ __('Audit log') }}</span>
+    </a>
+
+    <span class="admin-menu-item disabled" aria-disabled="true">
+        <span>{{ __('Modules') }}</span>
+        <small>{{ __('Coming soon') }}</small>
+    </span>
 </nav>

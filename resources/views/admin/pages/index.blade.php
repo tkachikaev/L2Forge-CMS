@@ -2,29 +2,29 @@
 @section('title', __('Pages'))
 @section('description', __('Create multilingual information pages and add them to website navigation.'))
 @section('content')
-<div class="content-toolbar">
-    <div class="content-stat"><span>{{ __('Total') }}</span><strong>{{ $totalCount }}</strong></div>
-    <div class="content-stat"><span>{{ __('Published') }}</span><strong>{{ $publishedCount }}</strong></div>
-    <div class="content-stat"><span>{{ __('Drafts') }}</span><strong>{{ $draftCount }}</strong></div>
-    <div class="content-stat"><span>{{ __('In navigation') }}</span><strong>{{ $menuCount }}</strong></div>
+<div class="admin-overview content-toolbar">
+    <div class="admin-overview-stat content-stat"><span>{{ __('Total') }}</span><strong>{{ $totalCount }}</strong></div>
+    <div class="admin-overview-stat content-stat"><span>{{ __('Published') }}</span><strong>{{ $publishedCount }}</strong></div>
+    <div class="admin-overview-stat content-stat"><span>{{ __('Drafts') }}</span><strong>{{ $draftCount }}</strong></div>
+    <div class="admin-overview-stat content-stat"><span>{{ __('In navigation') }}</span><strong>{{ $menuCount }}</strong></div>
     <a wire:navigate class="button button-primary" href="{{ route('admin.pages.create') }}">{{ __('Create page') }}</a>
 </div>
 
 @if ($pages->isEmpty())
-    <div class="empty-state">
+    <div class="admin-empty-state empty-state">
         <div class="empty-state-mark">P</div>
         <h2>{{ __('No pages yet') }}</h2>
         <p>{{ __('Create rules, contacts, privacy information or any other website page.') }}</p>
         <a wire:navigate class="button button-primary" href="{{ route('admin.pages.create') }}">{{ __('Create first page') }}</a>
     </div>
 @else
-    <div class="content-list">
+    <div class="admin-card-list content-list">
         @foreach ($pages as $item)
             @php
                 $itemTitle = $item->titleFor();
                 $translationCodes = $item->translations->pluck('locale')->all();
             @endphp
-            <article class="content-row">
+            <article class="admin-card-row content-row">
                 <a wire:navigate class="content-row-preview page-row-preview" href="{{ route('admin.pages.edit', $item) }}" aria-label="{{ __('Edit: :title', ['title' => $itemTitle]) }}">
                     <span>PAGE</span>
                 </a>
@@ -44,7 +44,7 @@
                         <a href="{{ page_url($item) }}" target="_blank" rel="noopener">{{ __('Open page') }} ↗</a>
                     @endif
                 </div>
-                <div class="content-row-actions">
+                <div class="admin-row-actions content-row-actions">
                     <a wire:navigate class="button button-primary" href="{{ route('admin.pages.edit', $item) }}">{{ __('Edit') }}</a>
                     <button class="button button-danger" type="button" data-page-delete-open data-page-delete-title="{{ $itemTitle }}" data-page-delete-url="{{ route('admin.pages.destroy', $item) }}">{{ __('Delete') }}</button>
                 </div>

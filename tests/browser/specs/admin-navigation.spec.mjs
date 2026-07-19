@@ -35,8 +35,8 @@ test('news editor initializes again after SPA navigation', async ({ page }) => {
     });
     await expect(source).toHaveValue('<p>Первый текст</p>');
 
-    await openMenuGroup(page, 'system');
-    await page.getByRole('link', { name: 'Системная информация' }).click();
+    await page.getByRole('link', { name: 'Настройки', exact: true }).click();
+    await page.locator('.settings-section-tabs').getByRole('link', { name: 'Системная информация' }).click();
     await expect(page).toHaveURL(/\/admin\/settings\/system$/);
     await openMenuGroup(page, 'content');
     await page.getByRole('link', { name: 'Новости' }).click();
@@ -68,22 +68,79 @@ test('two-factor QR is rendered after leaving and returning', async ({ page }) =
 });
 
 test('persisted sidebar keeps group state during navigation and history changes', async ({ page }) => {
-    const siteGroup = page.locator('[data-admin-menu-group="site"]');
-    await siteGroup.locator('summary').click();
-    await expect(siteGroup).toHaveAttribute('open', '');
+    const appearanceGroup = page.locator('[data-admin-menu-group="appearance"]');
+    await appearanceGroup.locator('summary').click();
+    await expect(appearanceGroup).toHaveAttribute('open', '');
 
     await openMenuGroup(page, 'servers');
     await page.getByRole('link', { name: 'Игровые серверы' }).click();
     await expect(page).toHaveURL(/\/admin\/settings\/game-server$/);
-    await expect(siteGroup).toHaveAttribute('open', '');
+    await expect(appearanceGroup).toHaveAttribute('open', '');
 
     await page.goBack();
     await expect(page).toHaveURL(/\/admin$/);
-    await expect(siteGroup).toHaveAttribute('open', '');
+    await expect(appearanceGroup).toHaveAttribute('open', '');
 
     await page.goForward();
     await expect(page).toHaveURL(/\/admin\/settings\/game-server$/);
-    await expect(siteGroup).toHaveAttribute('open', '');
+    await expect(appearanceGroup).toHaveAttribute('open', '');
+});
+
+
+test('settings use one sidebar entry and local tabs', async ({ page }) => {
+    await page.goto('/admin/settings');
+
+    const settingsLink = page.locator('[data-admin-settings-link]');
+    await expect(settingsLink).toHaveCount(1);
+    await expect(settingsLink).toHaveAttribute('data-current', '');
+
+    const settingsTabs = page.locator('.settings-section-tabs');
+    await expect(settingsTabs).toBeVisible();
+    await expect(settingsTabs).toHaveCSS('background-color', 'rgb(237, 242, 248)');
+    await expect(settingsTabs.locator('.admin-tab.active')).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+    await settingsTabs.getByRole('link', { name: 'Панель администратора' }).click();
+
+    await expect(page).toHaveURL(/\/admin\/settings\/admin-panel$/);
+    await expect(page.getByText('Адрес панели управления').first()).toBeVisible();
+    await expect(page.getByText('Мониторинг серверов').first()).toBeVisible();
+
+    const adminPathInputBox = await page.locator('#admin_path_suffix').boundingBox();
+    const changeAddressButtonBox = await page.getByRole('button', { name: 'Изменить адрес' }).boundingBox();
+    const monitorSelectBox = await page.locator('#refresh_interval_seconds').boundingBox();
+    const monitorButtonBox = await page.getByRole('button', { name: 'Сохранить настройки мониторинга' }).boundingBox();
+
+    expect(adminPathInputBox).not.toBeNull();
+    expect(changeAddressButtonBox).not.toBeNull();
+    expect(monitorSelectBox).not.toBeNull();
+    expect(monitorButtonBox).not.toBeNull();
+    expect(changeAddressButtonBox.y).toBeGreaterThanOrEqual(adminPathInputBox.y + adminPathInputBox.height);
+    expect(monitorButtonBox.y).toBeGreaterThanOrEqual(monitorSelectBox.y + monitorSelectBox.height);
+
+    await settingsTabs.getByRole('link', { name: 'Системная информация' }).click();
+    await expect(page).toHaveURL(/\/admin\/settings\/system$/);
+    await expect(page.getByText('Состояние компонентов').first()).toBeVisible();
+    await expect(page.getByText('Адрес панели управления')).toHaveCount(0);
+    await expect(page.getByText('Мониторинг серверов')).toHaveCount(0);
+
+    await settingsTabs.getByRole('link', { name: 'Игровые аккаунты' }).click();
+    await expect(page).toHaveURL(/\/admin\/settings\/game-accounts$/);
+    await expect(settingsLink).toHaveAttribute('data-current', '');
+    await expect(page.getByText('Максимум аккаунтов на пользователя CMS')).toBeVisible();
+    await expect(page.locator('label.settings-field small br')).toHaveCount(1);
+
+    const maxAccountsInputBox = await page.locator('input[name="max_accounts"]').boundingBox();
+    const limitHelpBox = await page.locator('[data-game-account-limit-help]').boundingBox();
+    expect(maxAccountsInputBox).not.toBeNull();
+    expect(limitHelpBox).not.toBeNull();
+    expect(limitHelpBox.y).toBeGreaterThanOrEqual(maxAccountsInputBox.y + maxAccountsInputBox.height);
+
+    const mailLink = page.getByRole('link', { name: 'Почта', exact: true });
+    await mailLink.click();
+    await expect(page).toHaveURL(/\/admin\/settings\/mail$/);
+    await expect(settingsLink).not.toHaveAttribute('data-current', '');
+    await expect(mailLink).toHaveClass(/active/);
+    await expect(page.locator('.mail-template-tabs')).toHaveCSS('background-color', 'rgb(237, 242, 248)');
+    await expect(page.locator('.mail-template-tabs .admin-tab.active')).toHaveCSS('background-color', 'rgb(37, 99, 235)');
 });
 
 test('game server settings keep fields separated by tabs', async ({ page }) => {
@@ -92,7 +149,9 @@ test('game server settings keep fields separated by tabs', async ({ page }) => {
 
     const dialog = page.getByRole('dialog', { name: /L2Server|Игровой сервер|Настройки игрового сервера/ });
     await expect(dialog).toBeVisible();
+    await expect(dialog.locator('.server-drawer-tabs')).toHaveCSS('background-color', 'rgb(237, 242, 248)');
     await expect(dialog.getByRole('tab', { name: 'Основное' })).toHaveAttribute('aria-selected', 'true');
+    await expect(dialog.getByRole('tab', { name: 'Основное' })).toHaveCSS('background-color', 'rgb(255, 255, 255)');
 
     await dialog.getByRole('tab', { name: 'Статистика' }).click();
     await expect(dialog.getByRole('tab', { name: 'Статистика' })).toHaveAttribute('aria-selected', 'true');
@@ -102,4 +161,27 @@ test('game server settings keep fields separated by tabs', async ({ page }) => {
     await expect(dialog.getByRole('tab', { name: 'Разное' })).toHaveAttribute('aria-selected', 'true');
     await expect(dialog.getByText('Режим обслуживания')).toBeVisible();
     await expect(dialog.getByText('Дополнительные сетевые настройки')).toBeVisible();
+});
+
+
+test('admin catalogues share enterprise surfaces', async ({ page }) => {
+    await page.goto('/admin/news');
+    const newsOverview = page.locator('.admin-overview').first();
+    await expect(newsOverview).toBeVisible();
+    await expect(newsOverview).toHaveCSS('border-radius', '12px');
+    await expect(newsOverview).not.toHaveCSS('box-shadow', 'none');
+
+    await openMenuGroup(page, 'users');
+    await page.getByRole('link', { name: 'Пользователи', exact: true }).click();
+    await expect(page).toHaveURL(/\/admin\/users$/);
+    await expect(page.locator('.admin-filter-bar')).toHaveCSS('border-radius', '12px');
+
+    await page.getByRole('link', { name: 'Журнал действий', exact: true }).click();
+    await expect(page).toHaveURL(/\/admin\/logs/);
+    await expect(page.locator('.admin-subtabs')).toHaveCSS('background-color', 'rgb(237, 242, 248)');
+
+    const table = page.locator('.admin-table-wrap');
+    if (await table.count()) {
+        await expect(table.first()).toHaveCSS('border-radius', '12px');
+    }
 });

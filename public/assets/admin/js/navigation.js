@@ -40,12 +40,36 @@
 
     const currentMenuItem = (sidebar) => sidebar.querySelector('.admin-menu-item.active, .admin-menu-item[data-current]');
 
+    const normalizePath = (path) => path.length > 1 ? path.replace(/\/$/, '') : path;
+
+    const synchronizeSettingsLink = (sidebar) => {
+        const settingsLink = sidebar.querySelector('[data-admin-settings-link]');
+
+        if (!settingsLink) {
+            return;
+        }
+
+        const settingsPath = normalizePath(new URL(settingsLink.href, window.location.origin).pathname);
+        const currentPath = normalizePath(window.location.pathname);
+        const excludedSections = ['mail', 'game-server', 'login-server'];
+        const isInsideSettings = currentPath === settingsPath || currentPath.startsWith(`${settingsPath}/`);
+        const isExcludedSection = excludedSections.some((section) => {
+            const excludedPath = `${settingsPath}/${section}`;
+
+            return currentPath === excludedPath || currentPath.startsWith(`${excludedPath}/`);
+        });
+
+        settingsLink.toggleAttribute('data-current', isInsideSettings && !isExcludedSection);
+    };
+
     const synchronizeSidebar = () => {
         const sidebar = document.querySelector('[data-admin-sidebar]');
 
         if (!sidebar) {
             return;
         }
+
+        synchronizeSettingsLink(sidebar);
 
         const savedState = loadSavedState();
         const groups = Array.from(sidebar.querySelectorAll('[data-admin-menu-group]'));

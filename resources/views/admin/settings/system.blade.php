@@ -4,6 +4,8 @@
 @section('description', __('Versions, environment and KaevCMS component status.'))
 
 @section('content')
+@include('admin.settings._system_tabs')
+
 <section class="system-overview">
     <div>
         <span class="system-eyebrow">KaevCMS</span>
@@ -20,52 +22,6 @@
             data-copy-error="{{ __('Could not copy the report.') }}"
         >{{ __('Copy report') }}</button>
     </div>
-</section>
-
-<section class="form-card system-monitor-settings-card">
-    <form method="POST" action="{{ route('admin.settings.system.monitoring.update') }}">
-        @csrf
-        @method('PUT')
-
-        <div class="system-monitor-settings-heading">
-            <div>
-                <h2>{{ __('Server monitoring') }}</h2>
-                <p>{{ __('CMS refreshes stale server status when the public home page or administrator dashboard is opened.') }}</p>
-            </div>
-        </div>
-
-        <div class="system-monitor-settings-controls">
-            <div class="form-group">
-                <div class="field-label-with-help">
-                    <label for="refresh_interval_seconds">{{ __('Server status refresh interval') }}</label>
-                    <span class="field-help-tooltip" tabindex="0" aria-label="{{ __('About the server status refresh interval') }}">
-                        <span class="field-help-tooltip-icon" aria-hidden="true">?</span>
-                        <span class="field-help-tooltip-content" role="tooltip">{{ __('How often CMS may repeat LoginServer and GameServer availability checks and update the online player count. Between checks, the site uses the saved result.') }}</span>
-                    </span>
-                </div>
-                <select id="refresh_interval_seconds" name="refresh_interval_seconds" required>
-                    @foreach($monitorRefreshOptions as $seconds)
-                        <option
-                            value="{{ $seconds }}"
-                            @selected((int) old('refresh_interval_seconds', $monitorSettings['refresh_interval_seconds']) === $seconds)
-                        >
-                            {{ match ($seconds) {
-                                30 => __('30 seconds'),
-                                60 => __('1 minute'),
-                                120 => __('2 minutes'),
-                                300 => __('5 minutes'),
-                                default => __(':count seconds', ['count' => $seconds]),
-                            } }}
-                        </option>
-                    @endforeach
-                </select>
-                <small>{{ __('Minimum: 30 seconds. Default: 1 minute.') }}</small>
-                @error('refresh_interval_seconds')<p class="field-error">{{ $message }}</p>@enderror
-            </div>
-
-            <button class="button button-primary" type="submit">{{ __('Save monitoring settings') }}</button>
-        </div>
-    </form>
 </section>
 
 <div class="system-information-grid">

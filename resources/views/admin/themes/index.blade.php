@@ -4,18 +4,18 @@
 @section('description', __('Public website appearance. The control panel design does not depend on the active theme.'))
 
 @section('content')
-<div class="content-toolbar themes-toolbar">
-    <div class="content-stat"><span>{{ __('Active theme') }}</span><strong>{{ $activeThemeSlug ?: '—' }}</strong></div>
-    <div class="content-stat"><span>{{ __('Installed') }}</span><strong>{{ count($themes) }}</strong></div>
+<div class="admin-overview content-toolbar themes-toolbar">
+    <div class="admin-overview-stat content-stat"><span>{{ __('Active theme') }}</span><strong>{{ $activeThemeSlug ?: '—' }}</strong></div>
+    <div class="admin-overview-stat content-stat"><span>{{ __('Installed') }}</span><strong>{{ count($themes) }}</strong></div>
     <a class="button button-secondary" href="{{ public_route('home') }}" target="_blank" rel="noopener">{{ __('Open website') }} ↗</a>
 </div>
 
 @if ($themes === [])
-    <div class="empty-box">{!! __('No themes found. Check the <code>themes</code> directory.') !!}</div>
+    <div class="admin-empty-state empty-box">{!! __('No themes found. Check the <code>themes</code> directory.') !!}</div>
 @else
-    <div class="theme-grid">
+    <div class="admin-card-grid theme-grid">
         @foreach ($themes as $theme)
-            <article @class(['theme-card', 'active' => $theme['active'], 'invalid' => ! $theme['valid']])>
+            <article @class(['admin-card-row', 'theme-card', 'active' => $theme['active'], 'invalid' => ! $theme['valid']])>
                 <div class="theme-preview">
                     @if ($theme['preview_url'])
                         <img src="{{ $theme['preview_url'] }}" alt="{{ __('Theme preview: :name', ['name' => $theme['name']]) }}">
@@ -25,7 +25,7 @@
                 </div>
 
                 <div class="theme-card-body">
-                    <div class="theme-card-heading">
+                    <div class="admin-card-heading theme-card-heading">
                         <div><h2>{{ $theme['name'] }}</h2><p>{{ $theme['description'] ?: __('No theme description.') }}</p></div>
                         @if ($theme['active'])
                             <span class="theme-state active">{{ __('Active') }}</span>
@@ -46,7 +46,7 @@
                         <div class="notice notice-error"><p>{{ $theme['error'] }}</p></div>
                     @endif
 
-                    <div class="theme-actions">
+                    <div class="admin-row-actions theme-actions">
                         @if ($theme['active'])
                             <a class="button button-secondary" href="{{ public_route('home') }}" target="_blank" rel="noopener">{{ __('View') }}</a>
                         @elseif ($theme['valid'])

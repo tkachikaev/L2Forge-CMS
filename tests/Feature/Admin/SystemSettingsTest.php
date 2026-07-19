@@ -40,7 +40,10 @@ class SystemSettingsTest extends TestCase
             ->assertSee(app()->version())
             ->assertSee('Тип хеша')
             ->assertSee($hashLabel)
-            ->assertDontSee('THIS_MUST_NOT_BE_RENDERED_IN_SYSTEM_INFORMATION');
+            ->assertSee('Разделы настроек')
+            ->assertDontSee('THIS_MUST_NOT_BE_RENDERED_IN_SYSTEM_INFORMATION')
+            ->assertDontSee('Адрес панели управления')
+            ->assertDontSee('Мониторинг серверов');
     }
 
     public function test_system_information_explains_bcrypt_only_when_argon2id_is_unavailable(): void
@@ -67,7 +70,28 @@ class SystemSettingsTest extends TestCase
         }
     }
 
-    public function test_server_monitor_refresh_interval_can_be_saved_from_system_page(): void
+    public function test_administrator_panel_page_contains_address_and_monitoring_settings(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'Panel Settings Admin',
+            'email' => 'panel-settings@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings/admin-panel')
+            ->assertOk()
+            ->assertSee('Панель администратора')
+            ->assertSee('Адрес панели управления')
+            ->assertSee('Мониторинг серверов')
+            ->assertSee('Интервал обновления статуса')
+            ->assertSee('php artisan kaevcms:admin-path --reset')
+            ->assertDontSee('Состояние компонентов')
+            ->assertDontSee('Расширения PHP');
+    }
+
+    public function test_server_monitor_refresh_interval_can_be_saved_from_administrator_panel_page(): void
     {
         $admin = Admin::query()->create([
             'name' => 'Monitor Settings Admin',
@@ -77,7 +101,7 @@ class SystemSettingsTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->get('/admin/settings/system')
+            ->get('/admin/settings/admin-panel')
             ->assertOk()
             ->assertSee('Мониторинг серверов')
             ->assertSee('Интервал обновления статуса')
@@ -88,10 +112,10 @@ class SystemSettingsTest extends TestCase
             ->assertSee('5 минут');
 
         $this->actingAs($admin, 'admin')
-            ->put('/admin/settings/system/monitoring', [
+            ->put('/admin/settings/admin-panel/monitoring', [
                 'refresh_interval_seconds' => 120,
             ])
-            ->assertRedirect(route('admin.settings.system'))
+            ->assertRedirect(route('admin.settings.admin-panel'))
             ->assertSessionHas('status', 'Настройки мониторинга серверов сохранены.');
 
         $this->assertDatabaseHas('cms_settings', [
@@ -115,16 +139,34 @@ class SystemSettingsTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->from('/admin/settings/system')
-            ->put('/admin/settings/system/monitoring', [
+            ->from('/admin/settings/admin-panel')
+            ->put('/admin/settings/admin-panel/monitoring', [
                 'refresh_interval_seconds' => 15,
             ])
-            ->assertRedirect('/admin/settings/system')
+            ->assertRedirect('/admin/settings/admin-panel')
             ->assertSessionHasErrors('refresh_interval_seconds');
 
         $this->assertDatabaseMissing('cms_settings', [
             'key' => ServerMonitorSettings::KEY_REFRESH_INTERVAL_SECONDS,
         ]);
+    }
+
+    public function test_legacy_system_monitoring_endpoint_remains_compatible(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'Legacy Monitor Admin',
+            'email' => 'legacy-monitor@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->put('/admin/settings/system/monitoring', [
+                'refresh_interval_seconds' => 300,
+            ])
+            ->assertRedirect(route('admin.settings.admin-panel'));
+
+        $this->assertSame(300, app(ServerMonitorSettings::class)->refreshIntervalSeconds());
     }
 
     public function test_version_is_read_from_the_root_version_file(): void

@@ -2,7 +2,7 @@
 @section('title', __('Administrator'))
 @section('description', __('Edit account details, password and status.'))
 @section('content')
-<div class="administrator-page-toolbar">
+<div class="admin-page-toolbar administrator-page-toolbar">
     <a wire:navigate class="button button-secondary" href="{{ route('admin.administrators.index') }}">← {{ __('Back to list') }}</a>
     <span @class(['status-badge','status-badge-success' => $administrator->is_active,'status-badge-muted' => ! $administrator->is_active])>{{ $administrator->is_active ? __('Active') : __('Disabled') }}</span>
 </div>
@@ -16,7 +16,7 @@
             <div class="form-group"><label for="email">Email</label><input id="email" name="email" type="email" maxlength="255" required autocomplete="username" value="{{ old('email', $administrator->email) }}"><small>{{ __('Email is used to sign in to the control panel.') }}</small></div>
             <div class="administrator-metadata"><div><span>{{ __('Created') }}</span><strong>{{ $administrator->created_at?->format('d.m.Y H:i') ?? '—' }}</strong></div><div><span>{{ __('Last sign in') }}</span><strong>{{ $administrator->last_login_at?->format('d.m.Y H:i') ?? __('Never') }}</strong></div></div>
         </section>
-        <div class="settings-actions administrator-form-actions"><button class="button button-primary" type="submit">{{ __('Save details') }}</button></div>
+        <div class="admin-actions-panel settings-actions administrator-form-actions"><button class="button button-primary" type="submit">{{ __('Save details') }}</button></div>
     </form>
     <div class="administrator-side-column">
         <form class="administrator-form" method="POST" action="{{ route('admin.administrators.password', $administrator) }}">

@@ -37,7 +37,11 @@ class GameAccountSettingsTest extends TestCase
             ->get('/admin/settings/game-accounts')
             ->assertOk()
             ->assertSee('Игровые аккаунты')
+            ->assertSee('settings-section-tabs', false)
             ->assertSee('Максимум аккаунтов на пользователя CMS')
+            ->assertSee('data-game-account-limit-help', false)
+            ->assertSee('Лимит считается суммарно по всем настроенным LoginServer.')
+            ->assertSee('Временно недоступные игровые аккаунты также учитываются в лимите.')
             ->assertDontSee('name="login_lower"', false)
             ->assertDontSee('name="login_upper"', false)
             ->assertSee('name="password_lower"', false)
@@ -64,6 +68,36 @@ class GameAccountSettingsTest extends TestCase
         $this->assertTrue($settings['password_lower']);
         $this->assertTrue($settings['password_upper']);
         $this->assertTrue($settings['password_digit']);
+    }
+
+    public function test_game_account_settings_are_available_inside_the_settings_section(): void
+    {
+        $admin = $this->createAdmin();
+
+        $response = $this->actingAs($admin, 'admin')->get('/admin/settings/game-accounts');
+
+        $response
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Сайт',
+                'Панель администратора',
+                'Регистрация',
+                'Игровые аккаунты',
+                'Языки',
+            ])
+            ->assertSee('data-admin-settings-link', false)
+            ->assertDontSee('data-admin-menu-group="system"', false);
+
+        $html = $response->getContent();
+        $serversStart = strpos($html, 'data-admin-menu-group="servers"');
+        $usersStart = strpos($html, 'data-admin-menu-group="users"');
+
+        $this->assertNotFalse($serversStart);
+        $this->assertNotFalse($usersStart);
+        $this->assertStringNotContainsString(
+            route('admin.settings.game-accounts'),
+            substr($html, $serversStart, $usersStart - $serversStart),
+        );
     }
 
     public function test_legacy_hidden_login_case_requirements_are_ignored(): void

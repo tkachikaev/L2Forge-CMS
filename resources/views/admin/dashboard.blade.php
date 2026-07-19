@@ -30,7 +30,7 @@
     data-refresh-url="{{ route('admin.server-monitor.status') }}"
     data-auto-refresh="{{ $monitorRefreshDue ? '1' : '0' }}"
 >
-    <section class="dashboard-monitor-summary">
+    <section class="admin-overview dashboard-monitor-summary">
         <div>
             <span>{{ __('Total online') }}</span>
             <strong data-monitor-total-online>{{ number_format($monitor['total_online'], 0, '.', ' ') }}</strong>
@@ -50,15 +50,15 @@
     </section>
 
     <div class="dashboard-monitor-grid">
-        <section class="dashboard-monitor-card">
+        <section class="admin-data-card dashboard-monitor-card">
             <header>
                 <h2>{{ __('Game servers') }}</h2>
                 <a wire:navigate href="{{ route('admin.settings.game-server') }}">{{ __('Settings') }}</a>
             </header>
 
-            <div class="dashboard-monitor-list">
+            <div class="admin-compact-list dashboard-monitor-list">
                 @forelse($monitor['game_servers'] as $server)
-                    <a wire:navigate class="dashboard-monitor-row" data-monitor-admin-game="{{ $server['id'] }}" href="{{ route('admin.settings.game-server') }}">
+                    <a wire:navigate class="admin-compact-row dashboard-monitor-row" data-monitor-admin-game="{{ $server['id'] }}" href="{{ route('admin.settings.game-server') }}">
                         <span class="dashboard-monitor-dot {{ $server['state'] }}" data-monitor-dot aria-hidden="true"></span>
                         <span class="dashboard-monitor-name-wrap"><span class="dashboard-monitor-name">{{ $server['name'] }}</span><small data-monitor-details>{{ __('Database: :database · Service: :service', ['database' => $databaseStateLabels[$server['database_state']], 'service' => $serviceStateLabels[$server['service_state']]]) }}</small></span>
                         <span class="dashboard-monitor-state" data-monitor-state>{{ $stateLabels[$server['state']] }}</span>
@@ -75,15 +75,15 @@
         </section>
 
         <div class="dashboard-monitor-side">
-        <section class="dashboard-monitor-card">
+        <section class="admin-data-card dashboard-monitor-card">
             <header>
                 <h2>{{ __('Login servers') }}</h2>
                 <a wire:navigate href="{{ route('admin.settings.login-server') }}">{{ __('Settings') }}</a>
             </header>
 
-            <div class="dashboard-monitor-list">
+            <div class="admin-compact-list dashboard-monitor-list">
                 @forelse($monitor['login_servers'] as $server)
-                    <a wire:navigate class="dashboard-monitor-row dashboard-monitor-row-login" data-monitor-admin-login="{{ $server['id'] }}" href="{{ route('admin.settings.login-server') }}">
+                    <a wire:navigate class="admin-compact-row dashboard-monitor-row dashboard-monitor-row-login" data-monitor-admin-login="{{ $server['id'] }}" href="{{ route('admin.settings.login-server') }}">
                         <span class="dashboard-monitor-dot {{ $server['state'] }}" data-monitor-dot aria-hidden="true"></span>
                         <span class="dashboard-monitor-name-wrap"><span class="dashboard-monitor-name">{{ $server['name'] }}</span><small data-monitor-details>{{ __('Database: :database · Service: :service', ['database' => $databaseStateLabels[$server['database_state']], 'service' => $serviceStateLabels[$server['service_state']]]) }}</small></span>
                         <span class="dashboard-monitor-state" data-monitor-state>{{ $stateLabels[$server['state']] }}</span>
@@ -94,7 +94,7 @@
             </div>
         </section>
 
-        <section class="dashboard-monitor-card">
+        <section class="admin-data-card dashboard-monitor-card">
             <header>
                 <h2>{{ __('Mail delivery') }}</h2>
                 <a wire:navigate href="{{ route('admin.settings.mail') }}">{{ __('Settings') }}</a>

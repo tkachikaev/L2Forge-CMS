@@ -181,7 +181,8 @@ if (! function_exists('localized_current_url')) {
             $sourceLocale = $languages->normalizeCode(array_shift($segments));
         }
 
-        if ($segments !== [] && in_array(strtolower($segments[0]), ['admin', 'language'], true)) {
+        $firstSegment = strtolower((string) ($segments[0] ?? ''));
+        if ($firstSegment === 'language' || $firstSegment === 'admin' || str_starts_with($firstSegment, 'admin-')) {
             $segments = [];
             $query = '';
         }

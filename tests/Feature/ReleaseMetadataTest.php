@@ -51,7 +51,12 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString("Get-ChildItem -LiteralPath \$PSScriptRoot -Filter 'apply-*.ps1'", $updateScript);
         $this->assertStringContainsString("'preview'", $updateScript);
         $this->assertStringContainsString("'resources\\views\\admin\\settings\\placeholder.blade.php'", $updateScript);
+        $this->assertStringContainsString("'app\\Http\\Controllers\\Admin\\SettingsController.php'", $updateScript);
         $this->assertStringContainsString('Remove-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion', $updateScript);
+
+        $qualityScript = $this->readReleaseFile('quality.ps1');
+        $this->assertStringContainsString('php artisan route:cache', $qualityScript);
+        $this->assertSame(2, substr_count($qualityScript, 'php artisan route:clear'));
 
         $cleanupPosition = strpos($updateScript, 'Remove-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion');
         $testPosition = strpos($updateScript, 'php artisan test');
@@ -65,6 +70,10 @@ class ReleaseMetadataTest extends TestCase
     {
         $this->assertDirectoryDoesNotExist(base_path('preview'));
         $this->assertFileDoesNotExist(resource_path('views/admin/settings/placeholder.blade.php'));
+        $this->assertFileDoesNotExist(app_path('Http/Controllers/Admin/SettingsController.php'));
+        $this->assertFileExists(base_path('routes/public.php'));
+        $this->assertFileExists(base_path('routes/account.php'));
+        $this->assertFileExists(base_path('routes/admin.php'));
     }
 
     private function readReleaseFile(string $path): string

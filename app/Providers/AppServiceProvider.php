@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Auth\Passwords\UtcPasswordBrokerManager;
+use App\Services\Admin\AdminPathSettings;
 use App\Services\AdminLoginService;
 use App\Services\AdminTwoFactorAuthentication;
 use App\Services\AuditLogger;
 use App\Services\GameAccountSettings;
 use App\Services\GameServerSettings;
+use App\Services\Html\SafeHtmlSanitizer;
 use App\Services\Localization\LanguageManager;
 use App\Services\Localization\LocalizedContentResolver;
 use App\Services\Mail\MailDeliveryDispatcher;
@@ -36,11 +38,13 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->extend('auth.password', fn ($manager, $app): UtcPasswordBrokerManager => new UtcPasswordBrokerManager($app));
+        $this->app->singleton(AdminPathSettings::class);
         $this->app->singleton(AdminLoginService::class);
         $this->app->singleton(AdminTwoFactorAuthentication::class);
         $this->app->singleton(AuditLogger::class);
         $this->app->singleton(GameAccountSettings::class);
         $this->app->singleton(GameServerSettings::class);
+        $this->app->singleton(SafeHtmlSanitizer::class);
         $this->app->singleton(MailSettings::class);
         $this->app->singleton(MailDeliveryMonitor::class);
         $this->app->singleton(MailDeliveryDispatcher::class);
@@ -65,6 +69,7 @@ class AppServiceProvider extends ServiceProvider
         MailSettings $mailSettings,
         LanguageManager $languages,
         SecuritySettings $securitySettings,
+        AdminPathSettings $adminPathSettings,
     ): void {
         $this->configureRateLimiters($securitySettings);
 
@@ -76,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
         app('translator')->setFallback($fallbackLocale);
         $siteSettings->applyConfiguredTimezone();
         $mailSettings->applyConfiguration();
+        URL::defaults(['adminPath' => $adminPathSettings->path()]);
 
         if (config('app.force_https')) {
             URL::forceScheme('https');

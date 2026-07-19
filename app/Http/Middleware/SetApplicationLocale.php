@@ -22,7 +22,7 @@ final class SetApplicationLocale
         }
 
         if ($locale === null || ! $this->languages->isEnabled($locale)) {
-            $isAdmin = $request->is('admin') || $request->is('admin/*');
+            $isAdmin = $request->routeIs('admin.*');
             $sessionKey = $isAdmin ? 'admin_locale' : 'locale';
             $sessionLocale = $request->hasSession() ? $request->session()->get($sessionKey) : null;
             $locale = is_string($sessionLocale) ? $this->languages->normalizeCode($sessionLocale) : null;

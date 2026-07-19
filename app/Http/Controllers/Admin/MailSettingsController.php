@@ -2,13 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\InteractsWithSettingsAudit;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\SaveGeneralSettingsRequest;
-use App\Http\Requests\Admin\SaveLanguageSettingsRequest;
 use App\Http\Requests\Admin\SaveMailSettingsRequest;
 use App\Http\Requests\Admin\SaveMailTemplateRequest;
-use App\Http\Requests\Admin\SaveRegistrationSettingsRequest;
-use App\Http\Requests\Admin\SaveServerMonitorSettingsRequest;
 use App\Http\Requests\Admin\SendCustomMailRequest;
 use App\Http\Requests\Admin\SendMailTemplateTestRequest;
 use App\Http\Requests\Admin\SendTestMailRequest;
@@ -19,11 +16,6 @@ use App\Services\Localization\LanguageManager;
 use App\Services\Mail\CustomMailHtmlSanitizer;
 use App\Services\MailSettings;
 use App\Services\MailTemplateSettings;
-use App\Services\RegistrationSettings;
-use App\Services\Servers\ServerMonitorSettings;
-use App\Services\Settings\SettingsImageStorage;
-use App\Services\SiteSettings;
-use App\Services\SystemInformation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Message;
@@ -33,206 +25,11 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 use Throwable;
 
-class SettingsController extends Controller
+class MailSettingsController extends Controller
 {
+    use InteractsWithSettingsAudit;
+
     public function __construct(private readonly AuditLogger $auditLogger) {}
-
-    public function general(SiteSettings $siteSettings): View
-    {
-        return view('admin.settings.general', [
-            'settings' => $siteSettings->values(),
-            'translations' => $siteSettings->translations(),
-            'languages' => app(LanguageManager::class)->enabled(),
-            'defaultLocale' => app(LanguageManager::class)->default(),
-            'timezones' => timezone_identifiers_list(),
-        ]);
-    }
-
-    public function updateGeneral(
-        SaveGeneralSettingsRequest $request,
-        SiteSettings $siteSettings,
-        SettingsImageStorage $images,
-    ): RedirectResponse {
-        $validated = $request->validated();
-        $current = $siteSettings->values();
-        $storedLogo = null;
-        $storedFavicon = null;
-
-        try {
-            if ($request->hasFile('logo')) {
-                $storedLogo = $images->store($request->file('logo'), 'logo');
-            }
-
-            if ($request->hasFile('favicon')) {
-                $storedFavicon = $images->store($request->file('favicon'), 'favicon');
-            }
-
-            $logo = $storedLogo
-                ?? ($request->boolean('remove_logo') ? null : $current['logo']);
-            $favicon = $storedFavicon
-                ?? ($request->boolean('remove_favicon') ? null : $current['favicon']);
-
-            $translations = is_array($validated['translations'] ?? null)
-                ? $validated['translations']
-                : [];
-
-            $siteSettings->update([
-                'name' => (string) ($validated['site_name'] ?? $current['name']),
-                'description' => (string) ($validated['site_description'] ?? $current['description']),
-                'logo' => $logo,
-                'favicon' => $favicon,
-                'timezone' => (string) $validated['timezone'],
-                'admin_email' => (string) ($validated['admin_email'] ?? ''),
-                'footer_text' => (string) ($validated['footer_text'] ?? $current['footer_text']),
-                'show_public_online' => (bool) ($validated['show_public_online'] ?? $current['show_public_online']),
-            ], $translations);
-        } catch (Throwable $exception) {
-            if ($storedLogo !== null) {
-                $images->delete($storedLogo, 'logo');
-            }
-
-            if ($storedFavicon !== null) {
-                $images->delete($storedFavicon, 'favicon');
-            }
-
-            throw $exception;
-        }
-
-        if ($current['logo'] !== null && $current['logo'] !== $logo) {
-            $images->delete($current['logo'], 'logo');
-        }
-
-        if ($current['favicon'] !== null && $current['favicon'] !== $favicon) {
-            $images->delete($current['favicon'], 'favicon');
-        }
-
-        $after = $siteSettings->values();
-        $this->auditLogger->success(
-            category: 'admin',
-            action: 'settings.general_updated',
-            target: __('General settings'),
-            details: [
-                'changes' => $this->auditChanges(
-                    $this->generalAuditValues($current),
-                    $this->generalAuditValues($after),
-                ),
-                'logo_changed' => $current['logo'] !== $after['logo'],
-                'favicon_changed' => $current['favicon'] !== $after['favicon'],
-            ],
-        );
-
-        return redirect()
-            ->route('admin.settings.general')
-            ->with('status', __('General settings saved.'));
-    }
-
-    public function system(
-        SystemInformation $systemInformation,
-        ServerMonitorSettings $monitorSettings,
-    ): View {
-        return view('admin.settings.system', [
-            'system' => $systemInformation->collect(),
-            'monitorSettings' => $monitorSettings->values(),
-            'monitorRefreshOptions' => ServerMonitorSettings::REFRESH_INTERVAL_OPTIONS,
-        ]);
-    }
-
-    public function updateSystemMonitoring(
-        SaveServerMonitorSettingsRequest $request,
-        ServerMonitorSettings $monitorSettings,
-    ): RedirectResponse {
-        $before = $monitorSettings->values();
-        $validated = $request->validated();
-        $monitorSettings->update((int) $validated['refresh_interval_seconds']);
-        $after = $monitorSettings->values();
-
-        $this->auditLogger->success(
-            category: 'admin',
-            action: 'settings.server_monitor_updated',
-            target: __('Server monitoring'),
-            details: ['changes' => $this->auditChanges($before, $after)],
-        );
-
-        return redirect()
-            ->route('admin.settings.system')
-            ->with('status', __('Server monitoring settings saved.'));
-    }
-
-    public function languages(LanguageManager $languages): View
-    {
-        return view('admin.settings.languages', [
-            'installedLanguages' => $languages->installed(),
-            'enabledLocales' => $languages->enabledCodes(),
-            'defaultLocale' => $languages->default(),
-            'fallbackLocale' => $languages->fallback(),
-        ]);
-    }
-
-    public function updateLanguages(
-        SaveLanguageSettingsRequest $request,
-        LanguageManager $languages,
-    ): RedirectResponse {
-        $validated = $request->validated();
-        $before = [
-            'enabled' => $languages->enabledCodes(),
-            'default' => $languages->default(),
-            'fallback' => $languages->fallback(),
-        ];
-
-        $languages->update(
-            enabled: array_values(array_map('strval', (array) $validated['enabled_locales'])),
-            default: (string) $validated['default_locale'],
-            fallback: (string) $validated['fallback_locale'],
-        );
-
-        $after = [
-            'enabled' => $languages->enabledCodes(),
-            'default' => $languages->default(),
-            'fallback' => $languages->fallback(),
-        ];
-
-        $this->auditLogger->success(
-            category: 'admin',
-            action: 'settings.languages_updated',
-            target: __('Language settings'),
-            details: ['changes' => $this->auditChanges($before, $after)],
-        );
-
-        return redirect()
-            ->route('admin.settings.languages')
-            ->with('status', __('Language settings saved.'));
-    }
-
-    public function registration(RegistrationSettings $registrationSettings, MailSettings $mailSettings): View
-    {
-        return view('admin.settings.registration', [
-            'settings' => $registrationSettings->values(),
-            'mailReady' => $mailSettings->isReady(),
-        ]);
-    }
-
-    public function updateRegistration(
-        SaveRegistrationSettingsRequest $request,
-        RegistrationSettings $registrationSettings,
-    ): RedirectResponse {
-        $before = $registrationSettings->values();
-        $registrationSettings->update(
-            enabled: $request->boolean('registration_enabled'),
-            emailVerificationRequired: $request->boolean('email_verification_required'),
-        );
-        $after = $registrationSettings->values();
-
-        $this->auditLogger->success(
-            category: 'admin',
-            action: 'settings.registration_updated',
-            target: __('Registration settings'),
-            details: ['changes' => $this->auditChanges($before, $after)],
-        );
-
-        return redirect()
-            ->route('admin.settings.registration')
-            ->with('status', __('Registration settings saved.'));
-    }
 
     public function mail(MailSettings $mailSettings, MailTemplateSettings $mailTemplates): View
     {
@@ -563,43 +360,6 @@ class SettingsController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>  $before
-     * @param  array<string, mixed>  $after
-     * @return array<string, array{old: mixed, new: mixed}>
-     */
-    private function auditChanges(array $before, array $after): array
-    {
-        $changes = [];
-
-        foreach ($after as $key => $newValue) {
-            $oldValue = $before[$key] ?? null;
-
-            if ($oldValue !== $newValue) {
-                $changes[$key] = ['old' => $oldValue, 'new' => $newValue];
-            }
-        }
-
-        return $changes;
-    }
-
-    /**
-     * @param  array<string, mixed>  $values
-     */
-    private function generalAuditValues(array $values): array
-    {
-        return [
-            'name' => $values['name'] ?? '',
-            'description' => $values['description'] ?? '',
-            'timezone' => $values['timezone'] ?? '',
-            'admin_email' => $values['admin_email'] ?? '',
-            'footer_text' => $values['footer_text'] ?? '',
-            'logo_configured' => ! empty($values['logo']),
-            'favicon_configured' => ! empty($values['favicon']),
-            'show_public_online' => (bool) ($values['show_public_online'] ?? true),
-        ];
-    }
-
-    /**
      * @param  array<string, mixed>  $values
      * @return array<string, string>
      */
@@ -617,6 +377,7 @@ class SettingsController extends Controller
 
     /**
      * @param  array<string, mixed>  $values
+     * @return array<string, string|int|bool>
      */
     private function mailAuditValues(array $values): array
     {

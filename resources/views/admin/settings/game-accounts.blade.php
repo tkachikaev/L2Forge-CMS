@@ -2,13 +2,22 @@
 @section('title', __('Game accounts'))
 @section('description', __('Creation limits and credential policies for the player account.'))
 @section('content')
+@include('admin.settings._system_tabs')
+
 <form class="settings-form" method="POST" action="{{ route('admin.settings.game-accounts.update') }}">
     @csrf
     @method('PUT')
     <section class="form-card settings-narrow-card">
         <div class="settings-card-heading"><div><h2>{{ __('Game account creation') }}</h2><p>{{ __('These rules apply to accounts created by players from the separate player account interface.') }}</p></div></div>
         <label class="settings-toggle-row" for="creation_enabled"><span><strong>{{ __('Allow players to create game accounts') }}</strong><small>{{ __('Existing linked accounts remain visible when creation is disabled.') }}</small></span><span class="switch-control"><input name="creation_enabled" type="hidden" value="0"><input id="creation_enabled" name="creation_enabled" type="checkbox" value="1" @checked(old('creation_enabled',$settings['enabled']))><span aria-hidden="true"></span></span></label>
-        <label class="settings-field"><span>{{ __('Maximum accounts per CMS user') }}</span><input type="number" name="max_accounts" min="1" max="50" value="{{ old('max_accounts',$settings['max_accounts']) }}" required><small>{{ __('The limit is counted across all configured LoginServers.') }} {{ __('Temporarily unavailable game accounts also count toward the limit.') }}</small></label>
+        <label class="settings-field">
+            <span>{{ __('Maximum accounts per CMS user') }}</span>
+            <input type="number" name="max_accounts" min="1" max="50" value="{{ old('max_accounts',$settings['max_accounts']) }}" required>
+            <small data-game-account-limit-help>
+                {{ __('The limit is counted across all configured LoginServers.') }}<br>
+                {{ __('Temporarily unavailable game accounts also count toward the limit.') }}
+            </small>
+        </label>
     </section>
 
     <section class="form-card settings-narrow-card">
@@ -24,6 +33,6 @@
             <label class="settings-toggle-row" for="{{ $field }}"><span><strong>{{ $label }}</strong></span><span class="switch-control"><input name="{{ $field }}" type="hidden" value="0"><input id="{{ $field }}" name="{{ $field }}" type="checkbox" value="1" @checked(old($field,$settings[$field]))><span aria-hidden="true"></span></span></label>
         @endforeach
     </section>
-    <div class="settings-actions settings-actions-narrow"><button class="button button-primary" type="submit">{{ __('Save settings') }}</button></div>
+    <div class="admin-actions-panel settings-actions settings-actions-narrow"><button class="button button-primary" type="submit">{{ __('Save settings') }}</button></div>
 </form>
 @endsection

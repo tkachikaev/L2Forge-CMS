@@ -64,6 +64,7 @@ class AuditLog extends Model
             'news.updated' => __('News changed'),
             'news.deleted' => __('News deleted'),
             'settings.general_updated' => __('General settings changed'),
+            'settings.admin_path_updated' => __('Administrator panel address changed'),
             'settings.registration_updated' => __('Registration settings changed'),
             'settings.game_accounts_updated' => __('Game account settings changed'),
             'settings.mail_updated' => __('Mail settings changed'),

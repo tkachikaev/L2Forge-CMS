@@ -94,7 +94,7 @@
             </div>
         </section>
 
-        <div class="settings-actions settings-actions-inside">
+        <div class="admin-actions-panel settings-actions settings-actions-inside">
             <button class="button button-primary" type="submit">{{ __('Save template') }}</button>
         </div>
     </form>

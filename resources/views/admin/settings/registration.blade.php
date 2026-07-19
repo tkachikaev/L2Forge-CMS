@@ -2,6 +2,8 @@
 @section('title', __('Registration'))
 @section('description', __('Registration for public website users.'))
 @section('content')
+@include('admin.settings._system_tabs')
+
 <form class="settings-form" method="POST" action="{{ route('admin.settings.registration.update') }}">
     @csrf
                     @method('PUT')
@@ -19,6 +21,6 @@
             <div class="notice notice-warning settings-inline-notice"><p><strong>{{ __('Mail is not verified yet.') }}</strong> {{ __('Save SMTP settings and send a test email before enabling verified registration.') }}</p><p><a wire:navigate href="{{ route('admin.settings.mail') }}">{{ __('Open mail settings') }} →</a></p></div>
         @endif
     </section>
-    <div class="settings-actions settings-actions-narrow"><button class="button button-primary" type="submit">{{ __('Save settings') }}</button></div>
+    <div class="admin-actions-panel settings-actions settings-actions-narrow"><button class="button button-primary" type="submit">{{ __('Save settings') }}</button></div>
 </form>
 @endsection

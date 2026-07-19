@@ -3,11 +3,8 @@
 namespace App\Support\Themes;
 
 use App\Services\CmsSettings;
-use App\Support\KaevCMS;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Arr;
 use RuntimeException;
-use Throwable;
 
 final class AccountThemeManager
 {
@@ -24,6 +21,7 @@ final class AccountThemeManager
         private readonly string $fallbackTheme,
         private readonly CmsSettings $settings,
         private readonly Filesystem $files,
+        private readonly ThemeValidator $validator,
     ) {
         $this->activeTheme = $fallbackTheme;
     }
@@ -71,105 +69,16 @@ final class AccountThemeManager
     /** @return array<string, mixed> */
     public function inspect(string $slug): array
     {
-        $result = [
-            'slug' => $slug,
-            'name' => $slug,
-            'version' => '—',
-            'author' => '—',
-            'description' => '',
-            'cms_min' => null,
-            'cms_max' => null,
-            'preview_url' => null,
-            'valid' => false,
-            'compatible' => false,
-            'active' => $slug === $this->activeTheme,
-            'errors' => [],
-            'manifest' => [],
-        ];
-
-        if (! preg_match('/\A[a-z0-9][a-z0-9_-]*\z/', $slug)) {
-            $result['errors'][] = __('Invalid theme directory name.');
-
-            return $result;
-        }
-
-        $root = realpath($this->themesPath);
-        $path = realpath($this->themesPath.DIRECTORY_SEPARATOR.$slug);
-
-        if ($root === false || $path === false || ! str_starts_with($path.DIRECTORY_SEPARATOR, $root.DIRECTORY_SEPARATOR)) {
-            $result['errors'][] = __('Theme directory not found.');
-
-            return $result;
-        }
-
-        $manifestPath = $path.DIRECTORY_SEPARATOR.'theme.json';
-
-        if (! $this->files->isFile($manifestPath)) {
-            $result['errors'][] = __('The theme.json file was not found.');
-
-            return $result;
-        }
-
-        try {
-            $manifest = json_decode($this->files->get($manifestPath), true, flags: JSON_THROW_ON_ERROR);
-        } catch (Throwable) {
-            $result['errors'][] = __('The theme.json file contains invalid JSON.');
-
-            return $result;
-        }
-
-        if (! is_array($manifest)) {
-            $result['errors'][] = __('The theme.json file must contain a JSON object.');
-
-            return $result;
-        }
-
-        $result['manifest'] = $manifest;
-        $result['name'] = (string) Arr::get($manifest, 'name', $slug);
-        $result['version'] = (string) Arr::get($manifest, 'version', '—');
-        $result['author'] = (string) Arr::get($manifest, 'author', '—');
-        $result['description'] = (string) Arr::get($manifest, 'description', '');
-        $result['cms_min'] = $this->nullableString(Arr::get($manifest, 'cms_min'));
-        $result['cms_max'] = $this->nullableString(Arr::get($manifest, 'cms_max'));
-
-        foreach (['name', 'slug', 'version', 'author'] as $requiredField) {
-            if (! is_string(Arr::get($manifest, $requiredField)) || trim((string) Arr::get($manifest, $requiredField)) === '') {
-                $result['errors'][] = __('The :field field is missing from theme.json.', ['field' => $requiredField]);
-            }
-        }
-
-        if (Arr::get($manifest, 'slug') !== $slug) {
-            $result['errors'][] = __('The slug field does not match the theme directory name.');
-        }
-
-        foreach (['views/layouts/app.blade.php', 'views/dashboard.blade.php'] as $requiredFile) {
-            if (! $this->files->isFile($path.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $requiredFile))) {
-                $result['errors'][] = __('Required file :file was not found.', ['file' => $requiredFile]);
-            }
-        }
-
-        $publicPath = realpath($this->publicThemesPath.DIRECTORY_SEPARATOR.$slug);
-        $publicRoot = realpath($this->publicThemesPath);
-        if ($publicRoot === false || $publicPath === false || ! str_starts_with($publicPath.DIRECTORY_SEPARATOR, $publicRoot.DIRECTORY_SEPARATOR)) {
-            $result['errors'][] = __('Account theme public assets were not found.');
-        } else {
-            foreach (['assets/css/app.css', 'assets/js/navigation.js'] as $requiredAsset) {
-                if (! $this->files->isFile($publicPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $requiredAsset))) {
-                    $result['errors'][] = __('Required file :file was not found.', ['file' => $requiredAsset]);
-                }
-            }
-        }
-
-        $result['valid'] = $result['errors'] === [];
-        $result['compatible'] = $result['valid'] && $this->isCompatible($result['cms_min'], $result['cms_max']);
-        $result['active'] = $slug === $this->activeTheme;
-        $result['preview_url'] = $this->previewUrl($slug, $manifest);
-
-        if ($result['valid'] && ! $result['compatible']) {
-            $result['errors'][] = __('The theme is incompatible with the current CMS version.');
-        }
-
-        return $result;
+        return $this->validator->inspect(
+            slug: $slug,
+            themesPath: $this->themesPath,
+            publicThemesPath: $this->publicThemesPath,
+            assetUrlPrefix: 'account-themes',
+            activeTheme: $this->activeTheme,
+            requiredFiles: ['views/layouts/app.blade.php', 'views/dashboard.blade.php'],
+            requiredPublicFiles: ['assets/css/app.css', 'assets/js/navigation.js'],
+            missingPublicAssetsMessage: __('Account theme public assets were not found.'),
+        );
     }
 
     public function activate(string $slug): void
@@ -229,49 +138,5 @@ final class AccountThemeManager
 
         view()->replaceNamespace('account-theme', $viewPaths);
         view()->share('activeAccountTheme', $this->manifest);
-    }
-
-    private function isCompatible(?string $minimum, ?string $maximum): bool
-    {
-        $cmsVersion = KaevCMS::version();
-
-        if ($minimum !== null && version_compare($cmsVersion, $minimum, '<')) {
-            return false;
-        }
-
-        if ($maximum !== null && version_compare($cmsVersion, $maximum, '>')) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /** @param array<string, mixed> $manifest */
-    private function previewUrl(string $slug, array $manifest): ?string
-    {
-        $preview = Arr::get($manifest, 'preview');
-
-        if (! is_string($preview) || ! preg_match('/\A[a-zA-Z0-9_\/.\-]+\z/', $preview)) {
-            return null;
-        }
-
-        $publicThemeRoot = $this->publicThemesPath.DIRECTORY_SEPARATOR.$slug;
-        $publicThemePath = realpath($publicThemeRoot);
-        $previewPath = realpath($publicThemeRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $preview));
-
-        if ($publicThemePath === false || $previewPath === false || ! str_starts_with($previewPath, $publicThemePath.DIRECTORY_SEPARATOR)) {
-            return null;
-        }
-
-        if (! $this->files->isFile($previewPath)) {
-            return null;
-        }
-
-        return asset('account-themes/'.$slug.'/'.ltrim($preview, '/'));
-    }
-
-    private function nullableString(mixed $value): ?string
-    {
-        return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }
 }

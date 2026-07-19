@@ -15,4 +15,13 @@ if ($LASTEXITCODE -ne 0) { throw "Composer validation failed with exit code $LAS
 composer quality
 if ($LASTEXITCODE -ne 0) { throw "Quality checks failed with exit code $LASTEXITCODE." }
 
-Write-Host 'Pint, PHPStan and PHPUnit completed successfully.' -ForegroundColor Green
+php artisan route:clear
+if ($LASTEXITCODE -ne 0) { throw "Route cache cleanup failed with exit code $LASTEXITCODE." }
+
+php artisan route:cache
+if ($LASTEXITCODE -ne 0) { throw "Route cache build failed with exit code $LASTEXITCODE." }
+
+php artisan route:clear
+if ($LASTEXITCODE -ne 0) { throw "Route cache cleanup failed with exit code $LASTEXITCODE." }
+
+Write-Host 'Pint, PHPStan, PHPUnit and route cache checks completed successfully.' -ForegroundColor Green

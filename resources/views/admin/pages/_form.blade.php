@@ -86,7 +86,7 @@
     </aside>
 </div>
 
-<div class="editor-actions">
+<div class="admin-actions-panel editor-actions">
     <a wire:navigate class="button button-secondary" href="{{ route('admin.pages.index') }}">{{ __('Cancel') }}</a>
     <button class="button button-secondary" type="submit" formaction="{{ route('admin.pages.preview') }}" formmethod="POST" formtarget="_blank" data-content-preview>{{ __('Preview') }}</button>
     <button class="button button-primary" type="submit">{{ $pageItem->exists ? __('Save changes') : __('Create page') }}</button>

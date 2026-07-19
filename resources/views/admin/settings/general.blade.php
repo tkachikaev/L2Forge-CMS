@@ -1,9 +1,11 @@
 @extends('admin.layouts.panel')
 
-@section('title', __('Main settings'))
-@section('description', __('General settings for the public website.'))
+@section('title', __('Site'))
+@section('description', __('Public website content, branding and time zone.'))
 
 @section('content')
+@include('admin.settings._system_tabs')
+
 <form class="settings-form" method="POST" action="{{ route('admin.settings.general.update') }}" enctype="multipart/form-data">
     @csrf
     @method('PUT')
@@ -143,7 +145,7 @@
         </aside>
     </div>
 
-    <div class="settings-actions">
+    <div class="admin-actions-panel settings-actions">
         <button class="button button-primary" type="submit">{{ __('Save settings') }}</button>
     </div>
 </form>

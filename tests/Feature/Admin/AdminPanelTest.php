@@ -42,7 +42,133 @@ class AdminPanelTest extends TestCase
         );
     }
 
-    public function test_settings_are_grouped_in_the_sidebar_without_global_tabs(): void
+    public function test_administrative_visual_system_uses_shared_light_theme_tokens_and_tabs(): void
+    {
+        $css = File::get(public_path('assets/admin/css/app.css'));
+
+        $this->assertStringContainsString('--admin-page-bg:', $css);
+        $this->assertStringContainsString('--admin-surface-muted:', $css);
+        $this->assertStringContainsString('--admin-primary:', $css);
+        $this->assertStringContainsString('--admin-shadow-card:', $css);
+        $this->assertStringContainsString('.admin-tabs {', $css);
+        $this->assertStringContainsString('.admin-tab.active {', $css);
+        $this->assertStringContainsString('.server-drawer-tab.active {', $css);
+
+        $admin = Admin::query()->create([
+            'name' => 'Visual Admin',
+            'email' => 'visual-admin@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings')
+            ->assertOk()
+            ->assertSee('class="admin-tabs settings-section-tabs"', false)
+            ->assertSee('class="admin-tab settings-section-tab active"', false);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings/mail')
+            ->assertOk()
+            ->assertSee('class="admin-tabs mail-template-tabs"', false)
+            ->assertSee('class="admin-tab mail-template-tab active"', false);
+    }
+
+    public function test_admin_catalogues_use_shared_enterprise_components(): void
+    {
+        $css = File::get(public_path('assets/admin/css/app.css'));
+
+        foreach ([
+            '.admin-overview {',
+            '.admin-card-row,',
+            '.admin-filter-bar {',
+            '.admin-subtabs {',
+            '.admin-table-wrap {',
+            '.admin-actions-panel {',
+        ] as $component) {
+            $this->assertStringContainsString($component, $css);
+        }
+
+        $this->assertStringContainsString('--admin-success-soft:', $css);
+        $this->assertStringContainsString('--admin-warning-soft:', $css);
+        $this->assertStringContainsString('--admin-danger-soft:', $css);
+
+        $this->assertStringContainsString(
+            'class="admin-card-row content-row"',
+            File::get(resource_path('views/admin/news/index.blade.php')),
+        );
+        $this->assertStringContainsString(
+            'class="admin-card-list-header user-row user-row-header"',
+            File::get(resource_path('views/admin/users/index.blade.php')),
+        );
+        $this->assertStringContainsString(
+            'class="admin-table audit-table"',
+            File::get(resource_path('views/admin/audit/index.blade.php')),
+        );
+        $this->assertStringContainsString(
+            "['admin-card-row', 'theme-card'",
+            File::get(resource_path('views/admin/themes/index.blade.php')),
+        );
+
+        $admin = Admin::query()->create([
+            'name' => 'Component Admin',
+            'email' => 'components@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/news')
+            ->assertOk()
+            ->assertSee('class="admin-overview content-toolbar"', false);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/users')
+            ->assertOk()
+            ->assertSee('class="admin-overview users-summary"', false)
+            ->assertSee('class="admin-filter-bar users-filters"', false);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/logs')
+            ->assertOk()
+            ->assertSee('class="admin-overview audit-summary"', false)
+            ->assertSee('class="admin-subtabs audit-tabs"', false);
+    }
+
+    public function test_settings_actions_and_help_text_use_separate_rows(): void
+    {
+        $css = File::get(public_path('assets/admin/css/app.css'));
+
+        $this->assertStringContainsString(
+            ".admin-path-settings-controls,\n.system-monitor-settings-controls {\n    display: grid;",
+            $css,
+        );
+        $this->assertStringContainsString(
+            ".admin-path-settings-controls > .button,\n.system-monitor-settings-controls > .button {",
+            $css,
+        );
+        $this->assertStringContainsString(".settings-field {\n    display: grid;", $css);
+        $this->assertStringContainsString(
+            '.settings-grid.two-columns {',
+            $css,
+        );
+
+        $admin = Admin::query()->create([
+            'name' => 'Settings Layout Admin',
+            'email' => 'settings-layout@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings/game-accounts')
+            ->assertOk()
+            ->assertSee('data-game-account-limit-help', false)
+            ->assertSee('Лимит считается суммарно по всем настроенным LoginServer.')
+            ->assertSee('Временно недоступные игровые аккаунты также учитываются в лимите.');
+    }
+
+    public function test_sidebar_has_one_settings_entry_and_settings_pages_use_local_tabs(): void
     {
         $admin = Admin::query()->create([
             'name' => 'English Admin',
@@ -58,29 +184,35 @@ class AdminPanelTest extends TestCase
             ->assertOk()
             ->assertSeeInOrder([
                 'Content',
-                'Site',
-                'Main settings',
-                'Languages',
+                'Appearance',
                 'Themes',
+                'Player account themes',
                 'Servers',
                 'Game servers',
                 'Login Servers',
-                'Game accounts',
                 'Users',
-                'Registration',
-                'System',
-                'Mail',
-                'Security',
-                'System information',
                 'Administrators',
+                'Mail',
+                'Settings',
                 'Audit log',
                 'Modules',
             ])
-            ->assertSee('data-admin-menu-group="site"', false)
+            ->assertSee('data-admin-menu-group="appearance"', false)
+            ->assertSee('data-admin-settings-link', false)
+            ->assertDontSee('data-admin-menu-group="system"', false)
             ->assertSee('admin-menu-group-summary', false)
             ->assertSee('assets/admin/js/navigation.js', false)
-            ->assertDontSee('Settings sections')
-            ->assertDontSee('settings-tabs', false);
+            ->assertSee('settings-section-tabs', false)
+            ->assertSee('Settings sections')
+            ->assertSeeInOrder([
+                'Site',
+                'Administrator panel',
+                'Registration',
+                'Game accounts',
+                'Languages',
+                'Security',
+                'System information',
+            ]);
 
         $document = new DOMDocument;
         $this->assertTrue($document->loadHTML(
@@ -91,7 +223,66 @@ class AdminPanelTest extends TestCase
         $xpath = new DOMXPath($document);
         $this->assertSame(
             1.0,
-            $xpath->evaluate('count(//details[@data-admin-menu-group="site" and @open])'),
+            $xpath->evaluate('count(//a[@data-admin-settings-link])'),
+        );
+        $this->assertSame(
+            1.0,
+            $xpath->evaluate('count(//a[@data-admin-settings-link and @data-current and contains(@href, "/admin/settings")])'),
+        );
+    }
+
+    public function test_nested_settings_pages_keep_the_single_settings_entry(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'Nested Settings Admin',
+            'email' => 'nested-settings@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')->get('/admin/settings/game-accounts');
+
+        $response
+            ->assertOk()
+            ->assertSee('data-admin-settings-link', false)
+            ->assertDontSee('data-admin-menu-group="system"', false);
+
+        $document = new DOMDocument;
+        $this->assertTrue($document->loadHTML(
+            $response->getContent(),
+            LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING,
+        ));
+
+        $xpath = new DOMXPath($document);
+        $this->assertSame(
+            1.0,
+            $xpath->evaluate('count(//a[@data-admin-settings-link and @data-current and contains(@href, "/admin/settings")])'),
+        );
+    }
+
+    public function test_settings_entry_is_not_current_for_separate_mail_settings(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'Mail Settings Admin',
+            'email' => 'mail-settings@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')->get('/admin/settings/mail');
+
+        $response->assertOk();
+
+        $document = new DOMDocument;
+        $this->assertTrue($document->loadHTML(
+            $response->getContent(),
+            LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING,
+        ));
+
+        $xpath = new DOMXPath($document);
+        $this->assertSame(
+            0.0,
+            $xpath->evaluate('count(//a[@data-admin-settings-link and @data-current])'),
         );
     }
 
@@ -113,7 +304,7 @@ class AdminPanelTest extends TestCase
             ->assertSee('livewire.js?id=', false)
             ->assertSee('data-navigate-once="true"', false);
 
-        $this->assertGreaterThanOrEqual(16, substr_count($response->getContent(), 'wire:navigate'));
+        $this->assertGreaterThanOrEqual(12, substr_count($response->getContent(), 'wire:navigate'));
     }
 
     public function test_admin_sidebar_is_persisted_across_livewire_navigation(): void
@@ -133,6 +324,8 @@ class AdminPanelTest extends TestCase
         $this->assertStringContainsString('data-admin-sidebar', $panel);
         $this->assertStringContainsString('wire:navigate.hover', $navigation);
         $this->assertStringContainsString('wire:current.exact="active"', $navigation);
+        $this->assertStringContainsString('data-admin-settings-link', $navigation);
+        $this->assertStringContainsString('data-current', $navigation);
         $this->assertStringNotContainsString("'active' => request()->routeIs", $navigation);
     }
 
@@ -145,6 +338,8 @@ class AdminPanelTest extends TestCase
         $this->assertIsString($styles);
         $this->assertStringContainsString('livewire:navigate', $navigation);
         $this->assertStringContainsString('livewire:navigated', $navigation);
+        $this->assertStringContainsString('synchronizeSettingsLink(sidebar)', $navigation);
+        $this->assertStringContainsString("['mail', 'game-server', 'login-server']", $navigation);
         $this->assertStringContainsString('admin-is-navigating', $navigation);
         $this->assertStringContainsString('scrollbar-gutter: stable', $styles);
         $this->assertStringContainsString('html.admin-is-navigating .admin-main', $styles);
@@ -165,6 +360,7 @@ class AdminPanelTest extends TestCase
         $this->assertStringContainsString('page-lifecycle.js', $layout);
 
         $scripts = [
+            'admin-panel.js',
             'custom-mail.js',
             'localization.js',
             'mail-delivery.js',

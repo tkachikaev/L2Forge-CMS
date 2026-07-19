@@ -66,7 +66,7 @@ class CreateAdminCommand extends Command
 
         $this->newLine();
         $this->info("Administrator created: {$admin->email}");
-        $this->line('Login page: '.url('/admin/login'));
+        $this->line('Login page: '.route('admin.login'));
 
         return self::SUCCESS;
     }

@@ -36,7 +36,7 @@
             <div class="form-group"><label for="from_name">{{ __('Sender name') }}</label><input id="from_name" name="from_name" type="text" maxlength="100" required value="{{ old('from_name',$settings['from_name']) }}" placeholder="{{ site_name() }}"></div>
             <div class="form-group"><label for="notification_email">{{ __('System notification email') }}</label><input id="notification_email" name="notification_email" type="email" maxlength="255" value="{{ old('notification_email',$settings['admin_email']) }}" placeholder="admin@example.com"><small>{{ __('Reserved for future administrator notifications. This is not the SMTP login.') }}</small></div>
         </section>
-        <div class="settings-actions settings-actions-inside"><button class="button button-primary" type="submit">{{ __('Save mail settings') }}</button></div>
+        <div class="admin-actions-panel settings-actions settings-actions-inside"><button class="button button-primary" type="submit">{{ __('Save mail settings') }}</button></div>
     </form>
     <aside>
         <form class="settings-form" method="POST" action="{{ route('admin.settings.mail.test') }}">@csrf<section class="form-card mail-test-card"><h2>{{ __('Test delivery') }}</h2><p>{{ __('The test uses saved settings. Run it again after any SMTP change.') }}</p><div class="form-group"><label for="test_email">{{ __('Test email address') }}</label><input id="test_email" name="test_email" type="email" maxlength="255" required value="{{ old('test_email',$settings['admin_email']) }}" placeholder="admin@example.com"></div><button class="button button-secondary" type="submit" @disabled(!$settings['configured'])>{{ __('Send test email') }}</button></section></form>

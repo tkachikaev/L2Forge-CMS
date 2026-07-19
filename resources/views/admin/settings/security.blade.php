@@ -4,6 +4,8 @@
 @section('description', __('Administrator sign-in protection and security log retention.'))
 
 @section('content')
+@include('admin.settings._system_tabs')
+
 <div class="notice notice-warning security-settings-notice">
     <p><strong>{{ __('Protection cannot be disabled from the control panel.') }}</strong> {{ __('Only safe values within the allowed ranges can be saved.') }}</p>
 </div>
@@ -67,7 +69,7 @@
             </div>
         </section>
 
-        <div class="settings-actions">
+        <div class="admin-actions-panel settings-actions">
             <button class="button button-primary" type="submit">{{ __('Save security settings') }}</button>
         </div>
     </form>
@@ -148,13 +150,13 @@
     </div>
 
     @if($loginAttempts->isEmpty())
-        <div class="empty-state security-login-empty">
+        <div class="admin-empty-state empty-state security-login-empty">
             <div class="empty-state-mark" aria-hidden="true">L</div>
             <h3>{{ __('No sign-in attempts yet') }}</h3>
         </div>
     @else
-        <div class="audit-table-wrap security-login-table-wrap">
-            <table class="audit-table security-login-table">
+        <div class="admin-table-wrap audit-table-wrap security-login-table-wrap">
+            <table class="admin-table audit-table security-login-table">
                 <thead>
                     <tr>
                         <th>{{ __('Date and time') }}</th>

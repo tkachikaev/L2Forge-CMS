@@ -4,29 +4,29 @@
 @section('description', __('Create, format, edit and publish news for the public website.'))
 
 @section('content')
-<div class="content-toolbar">
-    <div class="content-stat"><span>{{ __('Total') }}</span><strong>{{ $totalCount }}</strong></div>
-    <div class="content-stat"><span>{{ __('Published') }}</span><strong>{{ $publishedCount }}</strong></div>
-    <div class="content-stat"><span>{{ __('Scheduled') }}</span><strong>{{ $scheduledCount }}</strong></div>
-    <div class="content-stat"><span>{{ __('Drafts') }}</span><strong>{{ $draftCount }}</strong></div>
+<div class="admin-overview content-toolbar">
+    <div class="admin-overview-stat content-stat"><span>{{ __('Total') }}</span><strong>{{ $totalCount }}</strong></div>
+    <div class="admin-overview-stat content-stat"><span>{{ __('Published') }}</span><strong>{{ $publishedCount }}</strong></div>
+    <div class="admin-overview-stat content-stat"><span>{{ __('Scheduled') }}</span><strong>{{ $scheduledCount }}</strong></div>
+    <div class="admin-overview-stat content-stat"><span>{{ __('Drafts') }}</span><strong>{{ $draftCount }}</strong></div>
     <a wire:navigate class="button button-primary" href="{{ route('admin.news.create') }}">{{ __('Create news') }}</a>
 </div>
 
 @if ($news->isEmpty())
-    <div class="empty-state">
+    <div class="admin-empty-state empty-state">
         <div class="empty-state-mark" aria-hidden="true">N</div>
         <h2>{{ __('No news yet') }}</h2>
         <p>{{ __('Create the first article, add an image and publish it on the website.') }}</p>
         <a wire:navigate class="button button-primary" href="{{ route('admin.news.create') }}">{{ __('Create first news') }}</a>
     </div>
 @else
-    <div class="content-list">
+    <div class="admin-card-list content-list">
         @foreach ($news as $item)
             @php
                 $itemTitle = $item->titleFor(app()->getLocale());
                 $itemExcerpt = $item->excerptFor(app()->getLocale());
             @endphp
-            <article class="content-row">
+            <article class="admin-card-row content-row">
                 <a wire:navigate class="content-row-preview" href="{{ route('admin.news.edit', $item) }}" aria-label="{{ __('Edit: :title', ['title' => $itemTitle]) }}">
                     @if ($item->coverUrl())
                         <img src="{{ $item->coverUrl() }}" alt="">
@@ -49,7 +49,7 @@
                     <time>{{ $item->published_at?->format('d.m.Y H:i') ?: __('Date not set') }}</time>
                 </div>
 
-                <div class="content-row-actions">
+                <div class="admin-row-actions content-row-actions">
                     <a wire:navigate class="button button-primary" href="{{ route('admin.news.edit', $item) }}">{{ __('Edit') }}</a>
                     <button class="button button-danger" type="button" data-news-delete-open data-news-delete-title="{{ $itemTitle }}" data-news-delete-url="{{ route('admin.news.destroy', $item) }}">{{ __('Delete') }}</button>
                 </div>

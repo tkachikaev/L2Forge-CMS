@@ -2,7 +2,7 @@
 @section('title', __('Account security'))
 @section('description', __('Password-independent protection for the current administrator account.'))
 @section('content')
-<div class="account-security-toolbar">
+<div class="admin-overview account-security-toolbar">
     <div>
         <span>{{ __('Current administrator') }}</span>
         <strong>{{ $administrator->name }}</strong>
