@@ -23,6 +23,23 @@ php artisan optimize:clear
 
 `doctor.ps1` выводит предупреждения, если production-конфигурация оставлена с отладкой, HTTP, небезопасными cookie или уровнем логирования `debug`.
 
+
+## Cloudflare и reverse proxy
+
+Если запросы приходят напрямую на nginx/Apache, оставьте список пустым:
+
+```env
+TRUSTED_PROXIES=
+```
+
+Если перед сайтом находится Cloudflare, балансировщик или другой reverse proxy, перечислите доверенные IP-адреса и CIDR-диапазоны через запятую:
+
+```env
+TRUSTED_PROXIES=127.0.0.1,10.0.0.0/8
+```
+
+KaevCMS принимает `X-Forwarded-For`, `X-Forwarded-Host`, `X-Forwarded-Port` и `X-Forwarded-Proto` только от этих адресов. Это позволяет журналу и ограничениям входа видеть реальный IP посетителя и корректно определять HTTPS. Значение `*` доверяет любому прокси и допустимо только когда веб-сервер невозможно открыть напрямую из интернета. После изменения выполните `php artisan optimize:clear`.
+
 ## Хеширование паролей
 
 По умолчанию используется режим наилучшего доступного алгоритма:
@@ -45,14 +62,15 @@ php -m | findstr /I sodium
 
 ## База CMS и расширения PHP
 
-Для SQLite:
+Для локальной разработки и тестов можно использовать SQLite:
 
 ```env
 DB_CONNECTION=sqlite
 DB_DATABASE=database/database.sqlite
+DB_BUSY_TIMEOUT=5000
 ```
 
-Требуется `pdo_sqlite`.
+`DB_BUSY_TIMEOUT=5000` позволяет кратковременно подождать освобождения файла вместо немедленной ошибки `database is locked`. WAL и `synchronous=NORMAL` автоматически не включаются. SQLite не рекомендуется для публичной production-установки KaevCMS. Требуется `pdo_sqlite`.
 
 Для MySQL/MariaDB:
 
@@ -65,7 +83,9 @@ DB_USERNAME=kaevcms
 DB_PASSWORD=change_me
 ```
 
-Требуется `pdo_mysql`. При `GAME_ADAPTER=mobius` расширение `pdo_mysql` требуется независимо от драйвера основной базы CMS.
+MySQL и MariaDB являются рекомендуемыми базами для публичной установки. Требуется `pdo_mysql`. При `GAME_ADAPTER=mobius` расширение `pdo_mysql` требуется независимо от драйвера основной базы CMS.
+
+PostgreSQL рассматривается как будущая поддерживаемая база, но пока не заявлена как проверенная production-конфигурация.
 
 ## Сессии, кэш и очередь
 

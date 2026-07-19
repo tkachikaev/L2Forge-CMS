@@ -1643,5 +1643,22 @@
     "Roles limit which control panel sections and actions are available to each account.": "Roles limit which control panel sections and actions are available to each account.",
     "Edit account details, role, password and status.": "Edit account details, role, password and status.",
     "Back to dashboard": "Back to dashboard",
-    "Administrator role changed": "Administrator role changed"
+    "Administrator role changed": "Administrator role changed",
+    "Trusted proxies": "Trusted proxies",
+    "Configuration warning": "Configuration warning",
+    "All proxies are trusted": "All proxies are trusted",
+    "Some TRUSTED_PROXIES entries are invalid and were ignored.": "Some TRUSTED_PROXIES entries are invalid and were ignored.",
+    "Use TRUSTED_PROXIES=* only when the web server cannot be reached directly.": "Use TRUSTED_PROXIES=* only when the web server cannot be reached directly.",
+    "Trusted proxy addresses configured: :count": "Trusted proxy addresses configured: :count",
+    "This is normal unless the site is behind Cloudflare or another reverse proxy.": "This is normal unless the site is behind Cloudflare or another reverse proxy.",
+    "Testing database in production": "Testing database in production",
+    "SQLite is intended for local development and testing. Use MySQL or MariaDB for a public site.": "SQLite is intended for local development and testing. Use MySQL or MariaDB for a public site.",
+    "Lock wait": "Lock wait",
+    "Journal mode": "Journal mode",
+    "Write synchronization": "Write synchronization",
+    "SQLite is being used in production.": "SQLite is being used in production.",
+    "SQLite busy timeout: :value ms": "SQLite busy timeout: :value ms",
+    "SQLite journal mode: :value": "SQLite journal mode: :value",
+    "SQLite synchronous mode: :value": "SQLite synchronous mode: :value",
+    "Trusted proxies: :value": "Trusted proxies: :value"
 }

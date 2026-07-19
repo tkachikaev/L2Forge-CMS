@@ -170,6 +170,8 @@ $sessionSecureCookie = ConvertTo-EnvBoolean (Get-EnvValue -Path $envPath -Name '
 $logLevel = (Get-EnvValue -Path $envPath -Name 'LOG_LEVEL' -Default 'debug').ToLowerInvariant()
 $hashDriver = (Get-EnvValue -Path $envPath -Name 'HASH_DRIVER' -Default 'auto').ToLowerInvariant()
 $hashVerify = ConvertTo-EnvBoolean (Get-EnvValue -Path $envPath -Name 'HASH_VERIFY' -Default 'true')
+$trustedProxies = Get-EnvValue -Path $envPath -Name 'TRUSTED_PROXIES' -Default ''
+$dbBusyTimeout = Get-EnvValue -Path $envPath -Name 'DB_BUSY_TIMEOUT' -Default '5000'
 
 $phpCommand = Get-Command php -ErrorAction SilentlyContinue
 Test-ItemStatus 'PHP command' ($null -ne $phpCommand) $(if ($phpCommand) { $phpCommand.Source } else { 'not found in PATH' })
@@ -284,6 +286,16 @@ if (Test-Path -LiteralPath $envPath -PathType Leaf) {
     if ($appEnvironment -eq 'production') {
         if (-not $appForceHttps) { Write-WarningStatus 'APP_FORCE_HTTPS' 'false in production; HTTPS is not forced by the CMS' }
         if ($logLevel -eq 'debug') { Write-WarningStatus 'LOG_LEVEL' 'debug in production may create excessive diagnostic output' }
+        if ($dbConnection -eq 'sqlite') { Write-WarningStatus 'CMS database' 'SQLite is intended for local development and testing; use MySQL or MariaDB for a public site' }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($trustedProxies)) {
+        Test-ItemStatus 'Trusted proxies' $true 'disabled; correct when requests reach the web server directly'
+    } elseif ($trustedProxies.Trim() -eq '*') {
+        Write-WarningStatus 'Trusted proxies' 'TRUSTED_PROXIES=* trusts forwarded headers from every proxy; use only when direct access to the web server is blocked'
+    } else {
+        $trustedProxyCount = @($trustedProxies -split '[,;\s]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count
+        Test-ItemStatus 'Trusted proxies' ($trustedProxyCount -gt 0) "$trustedProxyCount configured address(es); verify the IP/CIDR values in System information"
     }
 
     if ($null -ne $appUri -and $appUri.Scheme -eq 'https' -and -not $sessionSecureCookie) {
@@ -293,6 +305,10 @@ if (Test-Path -LiteralPath $envPath -PathType Leaf) {
 
 Test-ItemStatus 'Composer dependencies' (Test-Path -LiteralPath $autoloadPath -PathType Leaf) $(if (Test-Path -LiteralPath $autoloadPath -PathType Leaf) { 'installed' } else { 'run .\setup.ps1' })
 if ($dbConnection -eq 'sqlite') {
+    $busyTimeoutValue = 0
+    $busyTimeoutOk = [int]::TryParse($dbBusyTimeout, [ref]$busyTimeoutValue) -and $busyTimeoutValue -ge 0
+    Test-ItemStatus 'SQLite lock wait' $busyTimeoutOk $(if ($busyTimeoutOk) { "$busyTimeoutValue ms" } else { "invalid DB_BUSY_TIMEOUT=$dbBusyTimeout; use a non-negative integer such as 5000" })
+
     $configuredDatabasePath = Get-EnvValue -Path $envPath -Name 'DB_DATABASE' -Default 'database/database.sqlite'
     $databasePath = if ([System.IO.Path]::IsPathRooted($configuredDatabasePath)) {
         [System.IO.Path]::GetFullPath($configuredDatabasePath)

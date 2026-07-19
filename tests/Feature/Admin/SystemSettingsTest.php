@@ -46,6 +46,50 @@ class SystemSettingsTest extends TestCase
             ->assertDontSee('Мониторинг серверов');
     }
 
+    public function test_system_information_reports_sqlite_safety_and_proxy_configuration(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'Infrastructure Admin',
+            'email' => 'infrastructure@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        config()->set('infrastructure.trusted_proxies', '10.0.0.0/8, invalid-proxy');
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings/system')
+            ->assertOk()
+            ->assertSee('Доверенные прокси')
+            ->assertSee('Предупреждение конфигурации')
+            ->assertSee('Некоторые значения TRUSTED_PROXIES указаны неверно и были проигнорированы.')
+            ->assertSee('Ожидание блокировки')
+            ->assertSee('5000 ms')
+            ->assertSee('Режим журнала')
+            ->assertSee('Синхронизация записи')
+            ->assertSee('Доверенные прокси: CONFIGURED')
+            ->assertDontSee('10.0.0.0/8');
+    }
+
+    public function test_system_information_warns_when_sqlite_is_used_in_production(): void
+    {
+        $admin = Admin::query()->create([
+            'name' => 'Production Database Admin',
+            'email' => 'production-database@example.com',
+            'password' => Hash::make('CorrectPassword123'),
+            'is_active' => true,
+        ]);
+
+        $this->app->instance('env', 'production');
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/settings/system')
+            ->assertOk()
+            ->assertSee('SQLite используется в рабочем режиме.')
+            ->assertSee('Для публичного сайта используйте MySQL или MariaDB.')
+            ->assertSee('Тестовая база в рабочем режиме');
+    }
+
     public function test_system_information_explains_bcrypt_only_when_argon2id_is_unavailable(): void
     {
         $admin = Admin::query()->create([

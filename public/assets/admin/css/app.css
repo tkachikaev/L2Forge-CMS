@@ -3558,3 +3558,5 @@ a.admin-data-card:hover {
 @media (max-width: 560px) {
     .administrator-page-statuses { align-items: flex-end; flex-direction: column; }
 }
+
+.system-database-warning { margin-top: 16px; }

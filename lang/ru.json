@@ -1643,5 +1643,22 @@
     "Roles limit which control panel sections and actions are available to each account.": "Роли определяют, какие разделы и действия панели управления доступны каждой учётной записи.",
     "Edit account details, role, password and status.": "Изменение данных, роли, пароля и статуса учётной записи.",
     "Back to dashboard": "Назад на главную",
-    "Administrator role changed": "Роль администратора изменена"
+    "Administrator role changed": "Роль администратора изменена",
+    "Trusted proxies": "Доверенные прокси",
+    "Configuration warning": "Предупреждение конфигурации",
+    "All proxies are trusted": "Доверие ко всем прокси",
+    "Some TRUSTED_PROXIES entries are invalid and were ignored.": "Некоторые значения TRUSTED_PROXIES указаны неверно и были проигнорированы.",
+    "Use TRUSTED_PROXIES=* only when the web server cannot be reached directly.": "Используйте TRUSTED_PROXIES=* только когда веб-сервер недоступен напрямую из интернета.",
+    "Trusted proxy addresses configured: :count": "Настроено доверенных адресов прокси: :count",
+    "This is normal unless the site is behind Cloudflare or another reverse proxy.": "Это нормально, если сайт не работает через Cloudflare или другой обратный прокси.",
+    "Testing database in production": "Тестовая база в рабочем режиме",
+    "SQLite is intended for local development and testing. Use MySQL or MariaDB for a public site.": "SQLite предназначена для локальной разработки и тестирования. Для публичного сайта используйте MySQL или MariaDB.",
+    "Lock wait": "Ожидание блокировки",
+    "Journal mode": "Режим журнала",
+    "Write synchronization": "Синхронизация записи",
+    "SQLite is being used in production.": "SQLite используется в рабочем режиме.",
+    "SQLite busy timeout: :value ms": "Ожидание блокировки SQLite: :value мс",
+    "SQLite journal mode: :value": "Режим журнала SQLite: :value",
+    "SQLite synchronous mode: :value": "Режим синхронизации SQLite: :value",
+    "Trusted proxies: :value": "Доверенные прокси: :value"
 }

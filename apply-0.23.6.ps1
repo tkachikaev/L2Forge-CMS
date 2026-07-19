@@ -14,11 +14,11 @@ if (-not (Test-Path '.env')) {
 }
 
 if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete 0.23.4 patch with file replacement enabled.'
+    throw 'VERSION is missing. Re-extract the complete 0.23.6 patch with file replacement enabled.'
 }
 
 $cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
-if ($cmsVersion -ne '0.23.4') {
+if ($cmsVersion -ne '0.23.6') {
     throw "Unexpected patch version: $cmsVersion"
 }
 
@@ -27,18 +27,20 @@ $requiredFiles = @(
     'README.md',
     'VERSION',
     'update.ps1',
-    'app\Auth\AdminRole.php',
-    'tests\Feature\Admin\AdminRoleAccessTest.php'
+    'app\Http\Middleware\TrustProxies.php',
+    'bootstrap\app.php',
+    'tests\Feature\Infrastructure\TrustedProxyTest.php',
+    'tests\Unit\ApplicationBootstrapTest.php'
 )
 foreach ($requiredFile in $requiredFiles) {
     if (-not (Test-Path $requiredFile -PathType Leaf)) {
-        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.23.4 patch with file replacement enabled."
+        throw "Patch file is missing: $requiredFile. Re-extract the complete 0.23.6 patch with file replacement enabled."
     }
 }
 
 $currentApplyScript = "apply-$cmsVersion.ps1"
 $obsoleteApplyScripts = Get-ChildItem -LiteralPath $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction Stop |
-    Where-Object { $_.Name -ne 'apply-0.23.4.ps1' }
+    Where-Object { $_.Name -ne 'apply-0.23.6.ps1' }
 
 foreach ($obsoleteApplyScript in $obsoleteApplyScripts) {
     Remove-Item -LiteralPath $obsoleteApplyScript.FullName -Force -ErrorAction Stop

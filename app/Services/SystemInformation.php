@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Support\KaevCMS;
 use App\Support\PasswordHashing;
+use App\Support\TrustedProxyConfiguration;
 use Composer\Composer;
+use Illuminate\Database\Connection;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Str;
 use PDO;
@@ -23,8 +25,9 @@ final class SystemInformation
     public function collect(): array
     {
         $database = $this->databaseInformation();
+        $proxy = $this->proxyInformation();
         $extensions = $this->extensionInformation();
-        $components = $this->componentInformation($database);
+        $components = $this->componentInformation($database, $proxy);
 
         $information = [
             'cms' => [
@@ -51,6 +54,7 @@ final class SystemInformation
             ],
             'security' => $this->passwordHashInformation(),
             'database' => $database,
+            'proxy' => $proxy,
             'components' => $components,
             'extensions' => $extensions,
         ];
@@ -61,7 +65,20 @@ final class SystemInformation
     }
 
     /**
-     * @return array<string, string|bool|null>
+     * @return array{
+     *     connection: string,
+     *     driver: string,
+     *     driver_label: string,
+     *     version: string|null,
+     *     connected: bool,
+     *     path: string|null,
+     *     size: string|null,
+     *     error: string|null,
+     *     sqlite_busy_timeout: int|null,
+     *     sqlite_journal_mode: string|null,
+     *     sqlite_synchronous: string|null,
+     *     sqlite_production_warning: bool
+     * }
      */
     private function databaseInformation(): array
     {
@@ -70,6 +87,9 @@ final class SystemInformation
         $version = null;
         $connected = false;
         $error = null;
+        $sqliteBusyTimeout = null;
+        $sqliteJournalMode = null;
+        $sqliteSynchronous = null;
 
         try {
             $connection = $this->database->connection($connectionName);
@@ -81,6 +101,14 @@ final class SystemInformation
                 $version = is_scalar($serverVersion) ? (string) $serverVersion : null;
             } catch (Throwable) {
                 $version = null;
+            }
+
+            if ($driver === 'sqlite') {
+                $sqliteBusyTimeout = $this->sqlitePragmaInteger($connection, 'busy_timeout');
+                $sqliteJournalMode = $this->sqlitePragmaString($connection, 'journal_mode');
+                $sqliteSynchronous = $this->sqliteSynchronousLabel(
+                    $this->sqlitePragmaInteger($connection, 'synchronous'),
+                );
             }
         } catch (Throwable $exception) {
             $error = $exception::class;
@@ -111,24 +139,131 @@ final class SystemInformation
             'path' => $databasePath,
             'size' => $databaseSize,
             'error' => $error,
+            'sqlite_busy_timeout' => $sqliteBusyTimeout,
+            'sqlite_journal_mode' => $sqliteJournalMode,
+            'sqlite_synchronous' => $sqliteSynchronous,
+            'sqlite_production_warning' => $driver === 'sqlite' && app()->environment('production'),
         ];
     }
 
     /**
-     * @param  array<string, string|bool|null>  $database
+     * @return array{enabled: bool, trusts_all: bool, valid_count: int, invalid_count: int}
+     */
+    private function proxyInformation(): array
+    {
+        $configuration = TrustedProxyConfiguration::parse(
+            config('infrastructure.trusted_proxies'),
+        );
+
+        return [
+            'enabled' => $configuration['trusts_all'] || $configuration['valid'] !== [],
+            'trusts_all' => $configuration['trusts_all'],
+            'valid_count' => count($configuration['valid']),
+            'invalid_count' => count($configuration['invalid']),
+        ];
+    }
+
+    private function sqlitePragmaInteger(Connection $connection, string $pragma): ?int
+    {
+        $value = $this->sqlitePragmaValue($connection, $pragma);
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        return is_string($value) && is_numeric($value) ? (int) $value : null;
+    }
+
+    private function sqlitePragmaString(Connection $connection, string $pragma): ?string
+    {
+        $value = $this->sqlitePragmaValue($connection, $pragma);
+
+        return is_scalar($value) ? strtolower((string) $value) : null;
+    }
+
+    private function sqlitePragmaValue(Connection $connection, string $pragma): mixed
+    {
+        try {
+            $row = $connection->selectOne("PRAGMA {$pragma}");
+
+            if (! is_object($row)) {
+                return null;
+            }
+
+            $values = get_object_vars($row);
+
+            return $values === [] ? null : reset($values);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function sqliteSynchronousLabel(?int $value): ?string
+    {
+        return match ($value) {
+            0 => 'OFF',
+            1 => 'NORMAL',
+            2 => 'FULL',
+            3 => 'EXTRA',
+            default => null,
+        };
+    }
+
+    /**
+     * @param  array{
+     *     connection: string,
+     *     driver: string,
+     *     driver_label: string,
+     *     version: string|null,
+     *     connected: bool,
+     *     path: string|null,
+     *     size: string|null,
+     *     error: string|null,
+     *     sqlite_busy_timeout: int|null,
+     *     sqlite_journal_mode: string|null,
+     *     sqlite_synchronous: string|null,
+     *     sqlite_production_warning: bool
+     * }  $database
+     * @param  array{enabled: bool, trusts_all: bool, valid_count: int, invalid_count: int}  $proxy
      * @return array<int, array{label: string, state: string, status: string, details: string}>
      */
-    private function componentInformation(array $database): array
+    private function componentInformation(array $database, array $proxy): array
     {
         $components = [];
 
+        $databaseState = ! $database['connected']
+            ? 'danger'
+            : ($database['sqlite_production_warning'] ? 'warning' : 'success');
+
         $components[] = [
             'label' => __('Database'),
-            'state' => $database['connected'] ? 'success' : 'danger',
-            'status' => $database['connected'] ? __('Working') : __('Error'),
-            'details' => $database['connected']
-                ? trim((string) $database['driver_label'].' '.(string) ($database['version'] ?? ''))
-                : __('Could not establish a connection'),
+            'state' => $databaseState,
+            'status' => ! $database['connected']
+                ? __('Error')
+                : ($database['sqlite_production_warning'] ? __('Testing database in production') : __('Working')),
+            'details' => ! $database['connected']
+                ? __('Could not establish a connection')
+                : ($database['sqlite_production_warning']
+                    ? __('SQLite is intended for local development and testing. Use MySQL or MariaDB for a public site.')
+                    : trim((string) $database['driver_label'].' '.(string) ($database['version'] ?? ''))),
+        ];
+
+        $proxyState = $proxy['invalid_count'] > 0 || $proxy['trusts_all'] ? 'warning' : ($proxy['enabled'] ? 'success' : 'neutral');
+        $components[] = [
+            'label' => __('Trusted proxies'),
+            'state' => $proxyState,
+            'status' => match (true) {
+                $proxy['invalid_count'] > 0 => __('Configuration warning'),
+                $proxy['trusts_all'] => __('All proxies are trusted'),
+                $proxy['enabled'] => __('Configured'),
+                default => __('Not configured'),
+            },
+            'details' => match (true) {
+                $proxy['invalid_count'] > 0 => __('Some TRUSTED_PROXIES entries are invalid and were ignored.'),
+                $proxy['trusts_all'] => __('Use TRUSTED_PROXIES=* only when the web server cannot be reached directly.'),
+                $proxy['enabled'] => __('Trusted proxy addresses configured: :count', ['count' => $proxy['valid_count']]),
+                default => __('This is normal unless the site is behind Cloudflare or another reverse proxy.'),
+            },
         ];
 
         foreach ([
@@ -284,7 +419,8 @@ final class SystemInformation
     {
         return match ($driver) {
             'sqlite' => 'SQLite',
-            'mysql' => 'MySQL / MariaDB',
+            'mysql' => 'MySQL',
+            'mariadb' => 'MariaDB',
             'pgsql' => 'PostgreSQL',
             'sqlsrv' => 'Microsoft SQL Server',
             default => Str::headline($driver),
@@ -364,6 +500,7 @@ final class SystemInformation
         $environment = $information['environment'];
         $software = $information['software'];
         $security = $information['security'];
+        $proxy = $information['proxy'];
 
         return implode(PHP_EOL, [
             __('KaevCMS: :value', ['value' => $information['cms']['version']]),
@@ -376,6 +513,16 @@ final class SystemInformation
             __('Password hash: :value', ['value' => $security['label']]),
             __('Database: :value', ['value' => $database['driver_label'].($database['version'] ? ' '.$database['version'] : '')]),
             __('Database connection: :value', ['value' => $database['connected'] ? 'OK' : 'ERROR']),
+            ...($database['driver'] === 'sqlite' ? [
+                __('SQLite busy timeout: :value ms', ['value' => $database['sqlite_busy_timeout'] ?? __('Could not determine')]),
+                __('SQLite journal mode: :value', ['value' => $database['sqlite_journal_mode'] ?? __('Could not determine')]),
+                __('SQLite synchronous mode: :value', ['value' => $database['sqlite_synchronous'] ?? __('Could not determine')]),
+            ] : []),
+            __('Trusted proxies: :value', ['value' => match (true) {
+                $proxy['trusts_all'] => 'ALL',
+                $proxy['enabled'] => 'CONFIGURED',
+                default => 'DISABLED',
+            }]),
             'APP_ENV: '.$environment['name'],
             'APP_DEBUG: '.($environment['debug'] ? 'true' : 'false'),
             __('CMS timezone: :value', ['value' => $environment['cms_timezone']]),

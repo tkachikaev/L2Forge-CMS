@@ -58,6 +58,27 @@
             <div><dt>{{ __('Queues') }}</dt><dd><code>{{ $system['environment']['queue'] }}</code></dd></div>
             <div><dt>{{ __('Mail') }}</dt><dd><code>{{ $system['environment']['mail'] }}</code></dd></div>
             <div><dt>{{ __('Laravel logs') }}</dt><dd><code>{{ $system['environment']['logging'] }}</code></dd></div>
+            <div>
+                <dt>{{ __('Trusted proxies') }}</dt>
+                <dd>
+                    <span @class([
+                        'status-badge',
+                        'status-badge-warning' => $system['proxy']['trusts_all'] || $system['proxy']['invalid_count'] > 0,
+                        'status-badge-success' => $system['proxy']['enabled'] && ! $system['proxy']['trusts_all'] && $system['proxy']['invalid_count'] === 0,
+                        'status-badge-muted' => ! $system['proxy']['enabled'] && $system['proxy']['invalid_count'] === 0,
+                    ])>
+                        @if($system['proxy']['invalid_count'] > 0)
+                            {{ __('Configuration warning') }}
+                        @elseif($system['proxy']['trusts_all'])
+                            {{ __('All proxies are trusted') }}
+                        @elseif($system['proxy']['enabled'])
+                            {{ __('Configured') }}
+                        @else
+                            {{ __('Not configured') }}
+                        @endif
+                    </span>
+                </dd>
+            </div>
         </dl>
     </section>
 
@@ -74,7 +95,17 @@
             @if($system['database']['size'])
                 <div><dt>{{ __('Size') }}</dt><dd>{{ $system['database']['size'] }}</dd></div>
             @endif
+            @if($system['database']['driver'] === 'sqlite')
+                <div><dt>{{ __('Lock wait') }}</dt><dd><code>{{ $system['database']['sqlite_busy_timeout'] ?? __('Could not determine') }} ms</code></dd></div>
+                <div><dt>{{ __('Journal mode') }}</dt><dd><code>{{ $system['database']['sqlite_journal_mode'] ? strtoupper($system['database']['sqlite_journal_mode']) : __('Could not determine') }}</code></dd></div>
+                <div><dt>{{ __('Write synchronization') }}</dt><dd><code>{{ $system['database']['sqlite_synchronous'] ?? __('Could not determine') }}</code></dd></div>
+            @endif
         </dl>
+        @if($system['database']['sqlite_production_warning'])
+            <div class="notice notice-warning system-database-warning">
+                <p><strong>{{ __('SQLite is being used in production.') }}</strong> {{ __('SQLite is intended for local development and testing. Use MySQL or MariaDB for a public site.') }}</p>
+            </div>
+        @endif
     </section>
 </div>
 
