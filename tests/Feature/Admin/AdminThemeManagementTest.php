@@ -26,6 +26,7 @@ class AdminThemeManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Темы')
             ->assertSee('L2 Dark Classic')
+            ->assertSee('Kaev Aurelia')
             ->assertSee('Дизайн административной панели от темы не зависит.');
     }
 

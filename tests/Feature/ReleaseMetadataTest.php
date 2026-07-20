@@ -40,12 +40,15 @@ class ReleaseMetadataTest extends TestCase
 
         $applyScript = (string) file_get_contents($applyScripts[0]);
         $this->assertStringContainsString("\$toVersion = '{$version}'", $applyScript);
-        $this->assertStringContainsString("\$fromVersion = '0.23.10'", $applyScript);
+        $this->assertStringContainsString("\$fromVersion = '0.23.11'", $applyScript);
         $this->assertStringContainsString("'app\\Livewire\\Admin\\LoginServerManager.php'", $applyScript);
         $this->assertStringContainsString("'docs\\MAIL.md'", $applyScript);
         $this->assertStringContainsString("'docs\\PRODUCTION.md'", $applyScript);
         $this->assertStringContainsString("'scripts\\composer-audit-support.ps1'", $applyScript);
         $this->assertStringContainsString("'tests\\powershell\\composer-audit-policy.ps1'", $applyScript);
+        $this->assertStringContainsString("'themes\\kaev-aurelia\\theme.json'", $applyScript);
+        $this->assertStringContainsString("'account-themes\\kaev-aurelia\\theme.json'", $applyScript);
+        $this->assertStringContainsString("'tests\\Feature\\BundledAureliaThemesTest.php'", $applyScript);
         $this->assertStringNotContainsString('Remove-Item -LiteralPath $obsoleteApplyScript.FullName', $applyScript);
         $this->assertStringNotContainsString('update.ps1 failed with exit code $LASTEXITCODE', $applyScript);
     }
@@ -54,7 +57,7 @@ class ReleaseMetadataTest extends TestCase
     {
         $updateScript = $this->readReleaseFile('update.ps1');
 
-        $this->assertStringContainsString("\$expectedFromVersion = '0.23.10'", $updateScript);
+        $this->assertStringContainsString("\$expectedFromVersion = '0.23.11'", $updateScript);
         $this->assertStringContainsString('Get-KaevCmsInstalledVersion', $updateScript);
         $this->assertStringContainsString('-ExpectedToVersion $expectedToVersion', $updateScript);
         $this->assertStringContainsString('legacyApplySha256', $updateScript);

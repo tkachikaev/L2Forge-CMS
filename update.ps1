@@ -5,10 +5,10 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-$expectedFromVersion = '0.23.10'
-$expectedToVersion = '0.23.11'
-$legacyApplyScriptName = 'apply-0.23.10.ps1'
-$legacyApplySha256 = '4e8267051893681c5c4d7ba3cd00f82b3a7076e0dabb3b49db6ea8a8414d93d9'
+$expectedFromVersion = '0.23.11'
+$expectedToVersion = '0.23.12'
+$legacyApplyScriptName = 'apply-0.23.11.ps1'
+$legacyApplySha256 = '237184b9b849a91681d4ad25310fae49145fee8126d66ae665acbac724b850bc'
 
 $supportScript = Join-Path $PSScriptRoot 'scripts\release-update-support.ps1'
 if (-not (Test-Path -LiteralPath $supportScript -PathType Leaf)) {

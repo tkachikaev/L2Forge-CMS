@@ -5,8 +5,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-$fromVersion = '0.23.10'
-$toVersion = '0.23.11'
+$fromVersion = '0.23.11'
+$toVersion = '0.23.12'
 
 if (-not (Test-Path 'artisan')) {
     throw 'Run this script from the KaevCMS project root.'
@@ -74,7 +74,22 @@ $requiredFiles = @(
     'app\Livewire\Admin\LoginServerManager.php',
     'public\assets\admin\css\app.css',
     'resources\views\livewire\admin\login-server-manager.blade.php',
-    'tests\Feature\Admin\ReactiveServerManagementTest.php'
+    'tests\Feature\Admin\ReactiveServerManagementTest.php',
+    'tests\Feature\BundledAureliaThemesTest.php',
+    'themes\kaev-aurelia\theme.json',
+    'themes\kaev-aurelia\views\layouts\app.blade.php',
+    'themes\kaev-aurelia\views\home.blade.php',
+    'public\themes\kaev-aurelia\assets\css\app.css',
+    'public\themes\kaev-aurelia\assets\js\app.js',
+    'public\themes\kaev-aurelia\assets\images\preview.webp',
+    'account-themes\kaev-aurelia\theme.json',
+    'account-themes\kaev-aurelia\views\layouts\app.blade.php',
+    'account-themes\kaev-aurelia\views\dashboard.blade.php',
+    'public\account-themes\kaev-aurelia\assets\css\app.css',
+    'public\account-themes\kaev-aurelia\assets\js\navigation.js',
+    'public\account-themes\kaev-aurelia\assets\images\preview.webp',
+    'docs\THEMES.md',
+    'docs\ACCOUNT_THEMES.md'
 )
 foreach ($requiredFile in $requiredFiles) {
     if (-not (Test-Path $requiredFile -PathType Leaf)) {

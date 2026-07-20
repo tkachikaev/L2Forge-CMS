@@ -28,6 +28,7 @@ class AdminAccountThemeManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Шаблоны личного кабинета')
             ->assertSee('L2 Obsidian Luxury')
+            ->assertSee('Kaev Aurelia Account')
             ->assertSee('Дизайн личного кабинета не зависит от публичной темы сайта и административной панели.');
     }
 
