@@ -491,6 +491,45 @@ PHP);
             ->assertDontSee('wire:click="delete"', false);
     }
 
+    public function test_login_server_drawer_separates_network_settings_into_tabs(): void
+    {
+        $this->actingAs($this->createAdmin(), 'admin');
+
+        Livewire::test(LoginServerManager::class)
+            ->call('create')
+            ->assertSet('activeTab', 'general')
+            ->assertSee('Основное')
+            ->assertSee('Сетевые настройки')
+            ->assertSee('Подключение к базе данных')
+            ->assertDontSee('Дополнительные сетевые настройки')
+            ->call('setActiveTab', 'network')
+            ->assertSet('activeTab', 'network')
+            ->assertSee('Дополнительные сетевые настройки')
+            ->assertSee('Адрес службы')
+            ->assertSee('Порт службы')
+            ->assertDontSee('Подключение к базе данных');
+    }
+
+    public function test_login_server_validation_opens_the_network_tab_for_service_errors(): void
+    {
+        $this->actingAs($this->createAdmin(), 'admin');
+
+        Livewire::test(LoginServerManager::class)
+            ->call('create')
+            ->set('name', 'Primary Login')
+            ->set('driver', 'l2j_mobius')
+            ->set('databaseHost', '127.0.0.1')
+            ->set('databasePort', '3306')
+            ->set('databaseName', 'l2jmobiusinterlude')
+            ->set('databaseUsername', 'l2forge')
+            ->set('databasePassword', 'SecretLoginPassword')
+            ->set('databaseCharset', 'utf8mb4')
+            ->set('servicePort', '70000')
+            ->call('save')
+            ->assertHasErrors(['servicePort'])
+            ->assertSet('activeTab', 'network');
+    }
+
     public function test_server_drawers_close_on_backdrop_pointer_press_instead_of_click_release(): void
     {
         $this->actingAs($this->createAdmin(), 'admin');

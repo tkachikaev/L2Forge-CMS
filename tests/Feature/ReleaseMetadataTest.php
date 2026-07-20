@@ -40,7 +40,12 @@ class ReleaseMetadataTest extends TestCase
 
         $applyScript = (string) file_get_contents($applyScripts[0]);
         $this->assertStringContainsString("\$toVersion = '{$version}'", $applyScript);
-        $this->assertStringContainsString("\$fromVersion = '0.23.9'", $applyScript);
+        $this->assertStringContainsString("\$fromVersion = '0.23.10'", $applyScript);
+        $this->assertStringContainsString("'app\\Livewire\\Admin\\LoginServerManager.php'", $applyScript);
+        $this->assertStringContainsString("'docs\\MAIL.md'", $applyScript);
+        $this->assertStringContainsString("'docs\\PRODUCTION.md'", $applyScript);
+        $this->assertStringContainsString("'scripts\\composer-audit-support.ps1'", $applyScript);
+        $this->assertStringContainsString("'tests\\powershell\\composer-audit-policy.ps1'", $applyScript);
         $this->assertStringNotContainsString('Remove-Item -LiteralPath $obsoleteApplyScript.FullName', $applyScript);
         $this->assertStringNotContainsString('update.ps1 failed with exit code $LASTEXITCODE', $applyScript);
     }
@@ -49,7 +54,7 @@ class ReleaseMetadataTest extends TestCase
     {
         $updateScript = $this->readReleaseFile('update.ps1');
 
-        $this->assertStringContainsString("\$expectedFromVersion = '0.23.9'", $updateScript);
+        $this->assertStringContainsString("\$expectedFromVersion = '0.23.10'", $updateScript);
         $this->assertStringContainsString('Get-KaevCmsInstalledVersion', $updateScript);
         $this->assertStringContainsString('-ExpectedToVersion $expectedToVersion', $updateScript);
         $this->assertStringContainsString('legacyApplySha256', $updateScript);
@@ -112,12 +117,60 @@ class ReleaseMetadataTest extends TestCase
 
         $qualityScript = $this->readReleaseFile('quality.ps1');
         $this->assertStringContainsString('tests\\powershell\\update-workflow.ps1', $qualityScript);
-        $this->assertStringContainsString('composer audit --locked --no-interaction', $qualityScript);
+        $this->assertStringContainsString('tests\\powershell\\composer-audit-policy.ps1', $qualityScript);
+        $this->assertStringContainsString('$env:COMPOSER_DISABLE_NETWORK = \'1\'', $qualityScript);
+        $this->assertStringContainsString('Remove-Item Env:COMPOSER_DISABLE_NETWORK', $qualityScript);
+        $this->assertStringContainsString('finally {', $qualityScript);
+        $this->assertStringNotContainsString('Invoke-KaevCmsComposerSecurityAudit', $qualityScript);
         $this->assertStringContainsString('php artisan route:cache', $qualityScript);
         $this->assertSame(2, substr_count($qualityScript, 'php artisan route:clear'));
 
+        $securityAuditScript = $this->readReleaseFile('security-audit.ps1');
+        $this->assertStringContainsString('scripts\\composer-audit-support.ps1', $securityAuditScript);
+        $this->assertStringContainsString('Invoke-KaevCmsComposerSecurityAudit', $securityAuditScript);
+        $this->assertStringContainsString('npm audit --audit-level=high', $securityAuditScript);
+
+        $composerAuditSupport = $this->readReleaseFile('scripts/composer-audit-support.ps1');
+        $this->assertStringContainsString(
+            '$composerExecutable audit --locked --no-interaction',
+            $composerAuditSupport,
+        );
+        $this->assertStringContainsString('Test-KaevCmsComposerAuditNetworkFailure', $composerAuditSupport);
+        $this->assertStringContainsString('PSNativeCommandUseErrorActionPreference', $composerAuditSupport);
+        $this->assertStringContainsString('Remove-Item Env:COMPOSER_DISABLE_NETWORK', $composerAuditSupport);
+        $this->assertStringContainsString('System.Management.Automation.ErrorRecord', $composerAuditSupport);
+        $this->assertStringContainsString('Dependency security has not been verified', $composerAuditSupport);
+        $this->assertStringContainsString('throw "Composer security audit failed with exit code $auditExitCode."', $composerAuditSupport);
+
+        $composerAuditPolicyTest = $this->readReleaseFile('tests/powershell/composer-audit-policy.ps1');
+        $this->assertStringContainsString('curl error 28', $composerAuditPolicyTest);
+        $this->assertStringContainsString('security vulnerability advisory', $composerAuditPolicyTest);
+        $this->assertStringContainsString('No security vulnerability advisories found.', $composerAuditPolicyTest);
+        $this->assertStringContainsString('Network disabled, request canceled.', $composerAuditPolicyTest);
+        $this->assertStringContainsString('NativeCommandError', $composerAuditPolicyTest);
+
         $browserQualityScript = $this->readReleaseFile('browser-quality.ps1');
-        $this->assertStringContainsString('npm audit --audit-level=high', $browserQualityScript);
+        $this->assertStringContainsString('node --test tests/browser/support/navigation.test.mjs', $browserQualityScript);
+        $this->assertStringContainsString('npm run test:browser', $browserQualityScript);
+        $this->assertStringNotContainsString('npm ci', $browserQualityScript);
+        $this->assertStringNotContainsString('npm audit', $browserQualityScript);
+        $this->assertStringNotContainsString('playwright install', $browserQualityScript);
+
+        $browserSetupScript = $this->readReleaseFile('browser-setup.ps1');
+        $this->assertStringContainsString('npm ci', $browserSetupScript);
+        $this->assertStringContainsString('playwright install chromium', $browserSetupScript);
+
+        $browserRunner = $this->readReleaseFile('tests/browser/run.mjs');
+        $this->assertStringContainsString('findAvailablePort', $browserRunner);
+        $this->assertStringContainsString('`--port=${browserPort}`', $browserRunner);
+
+        $browserNavigation = $this->readReleaseFile('tests/browser/support/navigation.mjs');
+        $this->assertStringContainsString('net::ERR_NO_BUFFER_SPACE', $browserNavigation);
+        $this->assertStringContainsString('attempt <= 3', $browserNavigation);
+
+        $browserNavigationTest = $this->readReleaseFile('tests/browser/support/navigation.test.mjs');
+        $this->assertStringContainsString('ERR_NO_BUFFER_SPACE', $browserNavigationTest);
+        $this->assertStringContainsString('does not retry application or unrelated browser failures', $browserNavigationTest);
 
         $workflow = $this->readReleaseFile('.github/workflows/quality.yml');
         $this->assertStringContainsString('composer audit --locked --no-interaction', $workflow);

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { gotoWithLocalNetworkRetry } from '../support/navigation.mjs';
 
 const email = process.env.PLAYWRIGHT_ADMIN_EMAIL || 'browser-admin@example.test';
 const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD || 'BrowserPassword123!';
@@ -11,7 +12,7 @@ const openMenuGroup = async (page, group) => {
 };
 
 const signIn = async (page) => {
-    await page.goto('/admin/login');
+    await gotoWithLocalNetworkRetry(page, '/admin/login');
     await page.locator('#email').fill(email);
     await page.locator('#password').fill(password);
     await page.getByRole('button', { name: 'Войти в панель' }).click();
@@ -23,7 +24,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('news editor initializes again after SPA navigation', async ({ page }) => {
-    await page.goto('/admin/news/create');
+    await gotoWithLocalNetworkRetry(page, '/admin/news/create');
 
     const canvas = page.locator('#body-editor-ru');
     const source = page.locator('#body_ru');
@@ -51,7 +52,7 @@ test('news editor initializes again after SPA navigation', async ({ page }) => {
 });
 
 test('two-factor QR is rendered after leaving and returning', async ({ page }) => {
-    await page.goto('/admin/account/security');
+    await gotoWithLocalNetworkRetry(page, '/admin/account/security');
     await page.locator('#current_password').fill(password);
     await page.getByRole('button', { name: 'Включить 2FA' }).click();
 
@@ -87,7 +88,7 @@ test('persisted sidebar keeps group state during navigation and history changes'
 });
 
 test('settings use one sidebar entry and local tabs', async ({ page }) => {
-    await page.goto('/admin/settings');
+    await gotoWithLocalNetworkRetry(page, '/admin/settings');
 
     const settingsLink = page.locator('[data-admin-settings-link]');
     await expect(settingsLink).toHaveCount(1);
@@ -142,8 +143,42 @@ test('settings use one sidebar entry and local tabs', async ({ page }) => {
     await expect(page.locator('.mail-template-tabs .admin-tab.active')).toHaveCSS('background-color', 'rgb(37, 99, 235)');
 });
 
+test('login server settings keep network fields on a separate tab and footer fixed after connection test', async ({ page }) => {
+    await gotoWithLocalNetworkRetry(page, '/admin/settings/login-server');
+    await page.getByRole('button', { name: 'Настроить' }).first().click();
+
+    const dialog = page.getByRole('dialog', { name: /Browser LoginServer|Настройки подключения/ });
+    const footer = dialog.locator('.server-drawer-footer');
+    const saveButton = footer.getByRole('button', { name: 'Сохранить изменения' });
+
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('.server-drawer-tabs')).toHaveCSS('background-color', 'rgb(237, 242, 248)');
+    await expect(dialog.getByRole('tab', { name: 'Основное' })).toHaveAttribute('aria-selected', 'true');
+    await expect(dialog.getByText('Подключение к базе данных')).toBeVisible();
+    await expect(dialog.getByText('Дополнительные сетевые настройки')).toHaveCount(0);
+
+    await dialog.getByRole('tab', { name: 'Сетевые настройки' }).click();
+    await expect(dialog.getByRole('tab', { name: 'Сетевые настройки' })).toHaveAttribute('aria-selected', 'true');
+    await expect(dialog.getByRole('heading', { name: 'Дополнительные сетевые настройки' })).toBeVisible();
+    await expect(dialog.getByLabel('Адрес службы')).toBeVisible();
+    await expect(dialog.getByLabel('Порт службы')).toBeVisible();
+
+    await dialog.getByRole('tab', { name: 'Основное' }).click();
+    await dialog.locator('#live_login_driver').selectOption('rusacis');
+    await dialog.locator('#live_login_port').fill('1');
+    await footer.getByRole('button', { name: 'Проверить подключение' }).click();
+    await expect(dialog.locator('.database-test-report')).toBeVisible({ timeout: 10_000 });
+    await expect(saveButton).toBeVisible();
+
+    const dialogBox = await dialog.boundingBox();
+    const saveButtonBox = await saveButton.boundingBox();
+    expect(dialogBox).not.toBeNull();
+    expect(saveButtonBox).not.toBeNull();
+    expect(saveButtonBox.y + saveButtonBox.height).toBeLessThanOrEqual(dialogBox.y + dialogBox.height);
+});
+
 test('game server settings keep fields separated by tabs', async ({ page }) => {
-    await page.goto('/admin/settings/game-server');
+    await gotoWithLocalNetworkRetry(page, '/admin/settings/game-server');
     await page.getByRole('button', { name: 'Настроить' }).first().click();
 
     const dialog = page.getByRole('dialog', { name: /L2Server|Игровой сервер|Настройки игрового сервера/ });
@@ -163,7 +198,7 @@ test('game server settings keep fields separated by tabs', async ({ page }) => {
 });
 
 test('admin catalogues share enterprise surfaces', async ({ page }) => {
-    await page.goto('/admin/news');
+    await gotoWithLocalNetworkRetry(page, '/admin/news');
     const newsOverview = page.locator('.admin-overview').first();
     await expect(newsOverview).toBeVisible();
     await expect(newsOverview).toHaveCSS('border-radius', '12px');
@@ -185,7 +220,7 @@ test('admin catalogues share enterprise surfaces', async ({ page }) => {
 });
 
 test('administrator role selector explains the selected access level', async ({ page }) => {
-    await page.goto('/admin/administrators');
+    await gotoWithLocalNetworkRetry(page, '/admin/administrators');
     await expect(page.locator('.administrator-role-badge.role-owner').first()).toContainText('Владелец');
 
     await page.getByRole('link', { name: 'Создать администратора' }).click();
@@ -203,7 +238,7 @@ test('administrator role selector explains the selected access level', async ({ 
 });
 
 test('dashboard shows administrator runtime diagnostics', async ({ page }) => {
-    await page.goto('/admin');
+    await gotoWithLocalNetworkRetry(page, '/admin');
 
     const runtimeCard = page.locator('.dashboard-runtime-card');
     await expect(runtimeCard).toBeVisible();
@@ -216,7 +251,7 @@ test('dashboard shows administrator runtime diagnostics', async ({ page }) => {
 });
 
 test('queue management opens from dashboard diagnostics', async ({ page }) => {
-    await page.goto('/admin');
+    await gotoWithLocalNetworkRetry(page, '/admin');
     await page.locator('.dashboard-runtime-card').getByRole('link', { name: 'Подробнее об очередях' }).click();
 
     await expect(page).toHaveURL(/\/admin\/settings\/system\/queue$/);
@@ -227,7 +262,7 @@ test('queue management opens from dashboard diagnostics', async ({ page }) => {
 });
 
 test('system information reports APP_KEY encryption health without exposing secrets', async ({ page }) => {
-    await page.goto('/admin/settings/system');
+    await gotoWithLocalNetworkRetry(page, '/admin/settings/system');
 
     const encryptionCard = page.getByRole('heading', { name: 'Шифрование APP_KEY' }).locator('..');
     await expect(encryptionCard).toBeVisible();
@@ -237,7 +272,7 @@ test('system information reports APP_KEY encryption health without exposing secr
 });
 
 test('removed legacy dashboard endpoint returns not found', async ({ page }) => {
-    const response = await page.goto('/admin/dashboard');
+    const response = await gotoWithLocalNetworkRetry(page, '/admin/dashboard');
 
     expect(response).not.toBeNull();
     expect(response.status()).toBe(404);

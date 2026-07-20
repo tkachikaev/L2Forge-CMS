@@ -8,6 +8,7 @@ use App\Models\LoginServer;
 use App\Services\Servers\LoginServerAdministration;
 use App\Services\Servers\ServerDriverRegistry;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -15,6 +16,8 @@ use Livewire\Component;
 class LoginServerManager extends Component
 {
     public bool $drawerOpen = false;
+
+    public string $activeTab = 'general';
 
     #[Locked]
     public ?int $editingId = null;
@@ -67,6 +70,7 @@ class LoginServerManager extends Component
         $this->ensureCanManage();
         $this->resetValidation();
         $this->resetForm();
+        $this->activeTab = 'general';
         $this->drawerOpen = true;
     }
 
@@ -91,7 +95,17 @@ class LoginServerManager extends Component
         $this->status = null;
         $this->showChecks = false;
         $this->confirmingDeleteId = null;
+        $this->activeTab = 'general';
         $this->drawerOpen = true;
+    }
+
+    public function setActiveTab(string $tab): void
+    {
+        $this->ensureCanManage();
+
+        if (in_array($tab, ['general', 'network'], true)) {
+            $this->activeTab = $tab;
+        }
     }
 
     public function closeDrawer(): void
@@ -116,7 +130,13 @@ class LoginServerManager extends Component
     public function testConnection(): void
     {
         $this->ensureCanManage();
-        $validated = $this->validate($this->rules(), [], $this->attributes());
+        try {
+            $validated = $this->validate($this->rules(), [], $this->attributes());
+        } catch (ValidationException $exception) {
+            $this->activateTabForErrors(array_keys($exception->errors()));
+
+            throw $exception;
+        }
         $values = $this->connectionValues($validated);
         $server = $this->editingId !== null
             ? LoginServer::query()->findOrFail($this->editingId)
@@ -135,7 +155,13 @@ class LoginServerManager extends Component
     public function save(): void
     {
         $this->ensureCanManage();
-        $validated = $this->validate($this->rules(), [], $this->attributes());
+        try {
+            $validated = $this->validate($this->rules(), [], $this->attributes());
+        } catch (ValidationException $exception) {
+            $this->activateTabForErrors(array_keys($exception->errors()));
+
+            throw $exception;
+        }
         $values = $this->connectionValues($validated);
         $server = $this->editingId !== null
             ? LoginServer::query()->findOrFail($this->editingId)
@@ -296,9 +322,24 @@ class LoginServerManager extends Component
         $this->databaseCharset = 'utf8mb4';
         $this->serviceHost = '';
         $this->servicePort = '2106';
+        $this->activeTab = 'general';
         $this->connectionReport = null;
         $this->status = null;
         $this->showChecks = false;
+    }
+
+    /** @param list<int|string> $errors */
+    private function activateTabForErrors(array $errors): void
+    {
+        foreach ($errors as $error) {
+            if (in_array((string) $error, ['serviceHost', 'servicePort'], true)) {
+                $this->activeTab = 'network';
+
+                return;
+            }
+        }
+
+        $this->activeTab = 'general';
     }
 
     private function nullableString(mixed $value): ?string

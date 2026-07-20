@@ -196,14 +196,22 @@ Laravel Scheduler нужен для автоматической очистки 
 
 ## Проверка зависимостей
 
-Основная проверка проекта включает audit зафиксированных зависимостей:
+Обычные проверки проекта выполняются без сети:
 
 ```powershell
 .\quality.ps1
 .\browser-quality.ps1
 ```
 
-`quality.ps1` выполняет `composer audit --locked --no-interaction`. `browser-quality.ps1` после чистой установки npm-пакетов выполняет `npm audit --audit-level=high`. Найденные high/critical advisories останавливают проверку и релиз.
+`quality.ps1` принудительно отключает сеть Composer и запускает Pint, PHPStan, PHPUnit и проверку route cache. `browser-quality.ps1` использует уже установленные npm-зависимости и Chromium. Для первой подготовки выполните `.\browser-setup.ps1` при доступном интернете.
+
+Актуальные базы уязвимостей проверяются отдельной явной командой:
+
+```powershell
+.\security-audit.ps1
+```
+
+Она выполняет `composer audit --locked --no-interaction` и `npm audit --audit-level=high`; любой сетевой сбой или найденный advisory считается ошибкой. GitHub Actions также сохраняет строгие audit-проверки.
 
 ## Проверка APP_KEY
 

@@ -2,12 +2,36 @@ import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
 import process from 'node:process';
 
 const root = resolve(import.meta.dirname, '../..');
 const runtimeDirectory = resolve(root, 'storage/framework/testing/browser');
 const databasePath = resolve(runtimeDirectory, `kaevcms-browser-${process.pid}.sqlite`);
-const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8765';
+const findAvailablePort = async () => new Promise((resolvePromise, rejectPromise) => {
+    const probe = createServer();
+    probe.unref();
+    probe.once('error', rejectPromise);
+    probe.listen(0, '127.0.0.1', () => {
+        const address = probe.address();
+        const port = typeof address === 'object' && address !== null ? address.port : null;
+        probe.close((error) => {
+            if (error) {
+                rejectPromise(error);
+                return;
+            }
+            if (port === null) {
+                rejectPromise(new Error('Could not allocate a local port for browser tests.'));
+                return;
+            }
+            resolvePromise(port);
+        });
+    });
+});
+const browserPort = process.env.PLAYWRIGHT_BASE_URL
+    ? Number(new URL(process.env.PLAYWRIGHT_BASE_URL).port || 80)
+    : await findAvailablePort();
+const baseUrl = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${browserPort}`;
 const adminEmail = 'browser-admin@example.test';
 const adminPassword = 'BrowserPassword123!';
 const playerEmail = 'browser-player@example.test';
@@ -93,7 +117,7 @@ try {
     run('php', ['artisan', 'migrate:fresh', '--force']);
     run('php', ['artisan', 'db:seed', '--class=Database\\Seeders\\BrowserTestSeeder', '--force']);
 
-    server = spawn('php', ['artisan', 'serve', '--host=127.0.0.1', '--port=8765'], {
+    server = spawn('php', ['artisan', 'serve', '--host=127.0.0.1', `--port=${browserPort}`], {
         cwd: root,
         env: environment,
         stdio: ['ignore', 'pipe', 'pipe'],

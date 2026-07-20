@@ -98,90 +98,121 @@
                 <button class="server-drawer-close" type="button" wire:click="closeDrawer" aria-label="{{ __('Close') }}">×</button>
             </header>
 
+            <nav class="server-drawer-tabs" role="tablist" aria-label="{{ __('Login server settings sections') }}">
+                <button
+                    @class(['server-drawer-tab', 'active' => $activeTab === 'general'])
+                    type="button"
+                    role="tab"
+                    aria-selected="{{ $activeTab === 'general' ? 'true' : 'false' }}"
+                    aria-controls="login-server-tab-general"
+                    wire:click="setActiveTab('general')"
+                >
+                    <span aria-hidden="true">●</span>{{ __('Basic settings') }}
+                </button>
+                <button
+                    @class(['server-drawer-tab', 'active' => $activeTab === 'network'])
+                    type="button"
+                    role="tab"
+                    aria-selected="{{ $activeTab === 'network' ? 'true' : 'false' }}"
+                    aria-controls="login-server-tab-network"
+                    wire:click="setActiveTab('network')"
+                >
+                    <span aria-hidden="true">↔</span>{{ __('Network settings') }}
+                </button>
+            </nav>
+
             <div class="server-drawer-body">
-                <section class="server-drawer-section">
-                    <div class="server-drawer-section-title">
-                        <h3>{{ __('General') }}</h3>
-                        <p>{{ __('Name and database driver.') }}</p>
-                    </div>
-                    <div class="server-form-grid">
-                        <div class="form-group">
-                            <label for="live_login_name">{{ __('Name') }}</label>
-                            <input id="live_login_name" type="text" maxlength="100" wire:model="name" required>
-                            @error('name')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                        <div class="form-group">
-                            <label for="live_login_driver">{{ __('LoginServer driver') }}</label>
-                            <select id="live_login_driver" wire:model="driver" required>
-                                @foreach($drivers as $key => $driverOption)
-                                    <option value="{{ $key }}">{{ $driverOption['label'] }}@if(!$driverOption['ready']) — {{ __('placeholder') }}@endif</option>
-                                @endforeach
-                            </select>
-                            @error('driver')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                    </div>
-                </section>
+                @if($activeTab === 'general')
+                    <div id="login-server-tab-general" role="tabpanel">
+                        <section class="server-drawer-section">
+                            <div class="server-drawer-section-title">
+                                <h3>{{ __('General') }}</h3>
+                                <p>{{ __('Name and database driver.') }}</p>
+                            </div>
+                            <div class="server-form-grid">
+                                <div class="form-group">
+                                    <label for="live_login_name">{{ __('Name') }}</label>
+                                    <input id="live_login_name" type="text" maxlength="100" wire:model="name" required>
+                                    @error('name')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                                <div class="form-group">
+                                    <label for="live_login_driver">{{ __('LoginServer driver') }}</label>
+                                    <select id="live_login_driver" wire:model="driver" required>
+                                        @foreach($drivers as $key => $driverOption)
+                                            <option value="{{ $key }}">{{ $driverOption['label'] }}@if(!$driverOption['ready']) — {{ __('placeholder') }}@endif</option>
+                                        @endforeach
+                                    </select>
+                                    @error('driver')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                            </div>
+                        </section>
 
-                <section class="server-drawer-section">
-                    <div class="server-drawer-section-title">
-                        <h3>{{ __('Database connection') }}</h3>
-                        <p>{{ __('Credentials are encrypted with APP_KEY before storage.') }}</p>
+                        <section class="server-drawer-section">
+                            <div class="server-drawer-section-title">
+                                <h3>{{ __('Database connection') }}</h3>
+                                <p>{{ __('Credentials are encrypted with APP_KEY before storage.') }}</p>
+                            </div>
+                            <div class="server-form-grid">
+                                <div class="form-group">
+                                    <label for="live_login_host">{{ __('Database host') }}</label>
+                                    <input id="live_login_host" type="text" maxlength="255" wire:model="databaseHost" placeholder="127.0.0.1">
+                                    @error('databaseHost')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                                <div class="form-group server-form-port">
+                                    <label for="live_login_port">{{ __('Database port') }}</label>
+                                    <input id="live_login_port" type="number" min="1" max="65535" wire:model="databasePort">
+                                    @error('databasePort')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                                <div class="form-group">
+                                    <label for="live_login_database">{{ __('Database name') }}</label>
+                                    <input id="live_login_database" type="text" maxlength="64" wire:model="databaseName">
+                                    @error('databaseName')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                                <div class="form-group">
+                                    <label for="live_login_username">{{ __('Database username') }}</label>
+                                    <input id="live_login_username" type="text" maxlength="128" autocomplete="off" wire:model="databaseUsername">
+                                    @error('databaseUsername')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                                <div class="form-group">
+                                    <label for="live_login_password">{{ __('Database password') }}</label>
+                                    <input id="live_login_password" type="password" maxlength="1024" autocomplete="new-password" wire:model="databasePassword">
+                                    <small>{{ $editingId !== null ? __('Leave empty to keep the saved database password.') : __('The password is encrypted with APP_KEY before it is stored.') }}</small>
+                                    @error('databasePassword')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                                <div class="form-group server-form-charset">
+                                    <label for="live_login_charset">{{ __('Database charset') }}</label>
+                                    <select id="live_login_charset" wire:model="databaseCharset">
+                                        @foreach(['utf8mb4', 'utf8', 'latin1', 'cp1251'] as $charset)
+                                            <option value="{{ $charset }}">{{ $charset }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('databaseCharset')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                            </div>
+                        </section>
                     </div>
-                    <div class="server-form-grid">
-                        <div class="form-group">
-                            <label for="live_login_host">{{ __('Database host') }}</label>
-                            <input id="live_login_host" type="text" maxlength="255" wire:model="databaseHost" placeholder="127.0.0.1">
-                            @error('databaseHost')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                        <div class="form-group server-form-port">
-                            <label for="live_login_port">{{ __('Database port') }}</label>
-                            <input id="live_login_port" type="number" min="1" max="65535" wire:model="databasePort">
-                            @error('databasePort')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                        <div class="form-group">
-                            <label for="live_login_database">{{ __('Database name') }}</label>
-                            <input id="live_login_database" type="text" maxlength="64" wire:model="databaseName">
-                            @error('databaseName')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                        <div class="form-group">
-                            <label for="live_login_username">{{ __('Database username') }}</label>
-                            <input id="live_login_username" type="text" maxlength="128" autocomplete="off" wire:model="databaseUsername">
-                            @error('databaseUsername')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                        <div class="form-group">
-                            <label for="live_login_password">{{ __('Database password') }}</label>
-                            <input id="live_login_password" type="password" maxlength="1024" autocomplete="new-password" wire:model="databasePassword">
-                            <small>{{ $editingId !== null ? __('Leave empty to keep the saved database password.') : __('The password is encrypted with APP_KEY before it is stored.') }}</small>
-                            @error('databasePassword')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                        <div class="form-group server-form-charset">
-                            <label for="live_login_charset">{{ __('Database charset') }}</label>
-                            <select id="live_login_charset" wire:model="databaseCharset">
-                                @foreach(['utf8mb4', 'utf8', 'latin1', 'cp1251'] as $charset)
-                                    <option value="{{ $charset }}">{{ $charset }}</option>
-                                @endforeach
-                            </select>
-                            @error('databaseCharset')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
+                @else
+                    <div id="login-server-tab-network" role="tabpanel">
+                        <section class="server-drawer-section">
+                            <div class="server-drawer-section-title">
+                                <h3>{{ __('Additional network settings') }}</h3>
+                                <p>{{ __('Used to check whether the LoginServer process is actually listening. Leave the host empty to use the database host.') }}</p>
+                            </div>
+                            <div class="server-form-grid">
+                                <div class="form-group">
+                                    <label for="live_login_service_host">{{ __('Service host') }}</label>
+                                    <input id="live_login_service_host" type="text" maxlength="255" wire:model="serviceHost" placeholder="{{ $databaseHost }}">
+                                    @error('serviceHost')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                                <div class="form-group server-form-port">
+                                    <label for="live_login_service_port">{{ __('Service port') }}</label>
+                                    <input id="live_login_service_port" type="number" min="1" max="65535" wire:model="servicePort">
+                                    @error('servicePort')<small class="field-error">{{ $message }}</small>@enderror
+                                </div>
+                            </div>
+                        </section>
                     </div>
-                </section>
-
-                <details class="server-advanced-settings">
-                    <summary>{{ __('Additional network settings') }}</summary>
-                    <p>{{ __('Used to check whether the LoginServer process is actually listening. Leave the host empty to use the database host.') }}</p>
-                    <div class="server-form-grid">
-                        <div class="form-group">
-                            <label for="live_login_service_host">{{ __('Service host') }}</label>
-                            <input id="live_login_service_host" type="text" maxlength="255" wire:model="serviceHost" placeholder="{{ $databaseHost }}">
-                            @error('serviceHost')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                        <div class="form-group server-form-port">
-                            <label for="live_login_service_port">{{ __('Service port') }}</label>
-                            <input id="live_login_service_port" type="number" min="1" max="65535" wire:model="servicePort">
-                            @error('servicePort')<small class="field-error">{{ $message }}</small>@enderror
-                        </div>
-                    </div>
-                </details>
+                @endif
 
                 @include('livewire.admin._database-report', ['report' => $connectionReport])
             </div>

@@ -1776,6 +1776,8 @@
     ":saved saved, :invalid unavailable": ":saved saved, :invalid unavailable",
     "Encryption check unavailable": "Encryption check unavailable",
     "Encrypted values could not be inspected because the CMS database is unavailable.": "Encrypted values could not be inspected because the CMS database is unavailable.",
+    "Login server settings sections": "Login server settings sections",
+    "Network settings": "Network settings",
     "Race": "Race",
     "PvP": "PvP",
     "PK": "PK"

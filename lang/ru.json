@@ -1776,6 +1776,8 @@
     ":saved saved, :invalid unavailable": "Сохранено: :saved, недоступно: :invalid",
     "Encryption check unavailable": "Проверка шифрования недоступна",
     "Encrypted values could not be inspected because the CMS database is unavailable.": "Не удалось проверить зашифрованные значения, потому что база данных CMS недоступна.",
+    "Login server settings sections": "Разделы настроек LoginServer",
+    "Network settings": "Сетевые настройки",
     "Race": "Раса",
     "PvP": "PvP",
     "PK": "PK"

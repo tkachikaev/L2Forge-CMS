@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { gotoWithLocalNetworkRetry } from '../support/navigation.mjs';
 
 const email = process.env.PLAYWRIGHT_PLAYER_EMAIL || 'browser-player@example.test';
 const password = process.env.PLAYWRIGHT_PLAYER_PASSWORD || 'BrowserPlayerPassword123!';
 
 const signIn = async (page) => {
-    await page.goto('/login');
+    await gotoWithLocalNetworkRetry(page, '/login');
     await page.locator('#login').fill(email);
     await page.locator('#password').fill(password);
     await page.locator('form').getByRole('button').click();
