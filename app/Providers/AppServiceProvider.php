@@ -11,6 +11,7 @@ use App\Services\AuditLogger;
 use App\Services\GameAccountSettings;
 use App\Services\GameServerSettings;
 use App\Services\Html\SafeHtmlSanitizer;
+use App\Services\Infrastructure\RuntimeDiagnostics;
 use App\Services\Localization\LanguageManager;
 use App\Services\Localization\LocalizedContentResolver;
 use App\Services\Mail\MailDeliveryDispatcher;
@@ -30,6 +31,8 @@ use App\Services\Settings\SettingsImageStorage;
 use App\Services\SiteSettings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -46,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(AuditLogger::class);
         $this->app->singleton(GameAccountSettings::class);
         $this->app->singleton(GameServerSettings::class);
+        $this->app->singleton(RuntimeDiagnostics::class);
         $this->app->singleton(SafeHtmlSanitizer::class);
         $this->app->singleton(MailSettings::class);
         $this->app->singleton(MailDeliveryMonitor::class);
@@ -72,10 +76,18 @@ class AppServiceProvider extends ServiceProvider
         LanguageManager $languages,
         SecuritySettings $securitySettings,
         AdminPathSettings $adminPathSettings,
+        RuntimeDiagnostics $runtimeDiagnostics,
     ): void {
         Livewire::addPersistentMiddleware([
             RequireAdminAuthentication::class,
         ]);
+
+        Queue::before(static function (JobProcessing $event) use ($runtimeDiagnostics): void {
+            $runtimeDiagnostics->recordQueueWorker(
+                $event->connectionName,
+                $event->job->getQueue(),
+            );
+        });
 
         $this->configureRateLimiters($securitySettings);
 

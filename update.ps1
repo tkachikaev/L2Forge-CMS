@@ -5,70 +5,49 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-if (-not (Test-Path 'VERSION')) {
-    throw 'VERSION is missing. Re-extract the complete KaevCMS release or patch.'
+$expectedFromVersion = '0.23.7'
+$expectedToVersion = '0.23.8'
+$legacyApplyScriptName = 'apply-0.23.7.ps1'
+$legacyApplySha256 = '154d611facec2affba2cc033bfa3da257c28d9e724314768da59639583b007cb'
+
+$supportScript = Join-Path $PSScriptRoot 'scripts\release-update-support.ps1'
+if (-not (Test-Path -LiteralPath $supportScript -PathType Leaf)) {
+    throw 'Release update support script is missing. Re-extract the complete release or patch.'
 }
+. $supportScript
 
-$cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
-if ($cmsVersion -notmatch '^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$') {
-    throw "VERSION contains an invalid release number: $cmsVersion"
-}
-
-Write-Host "KaevCMS $cmsVersion update"
-Write-Host "Project: $PSScriptRoot"
-Write-Host ''
-
-function Remove-ObsoleteReleaseArtifacts {
+function Write-UpdateStage {
     param(
-        [Parameter(Mandatory = $true)][string]$CurrentVersion
+        [Parameter(Mandatory = $true)][string]$Message,
+        [ValidateSet('INFO', 'WARN', 'ERROR')][string]$Level = 'INFO'
     )
 
-    $currentApplyScript = "apply-$CurrentVersion.ps1"
-    $obsoleteApplyScripts = Get-ChildItem -LiteralPath $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction Stop |
-        Where-Object { $_.Name -ne $currentApplyScript }
+    $line = "[{0}] [{1}] {2}" -f (Get-Date).ToString('s'), $Level, $Message
+    Add-Content -LiteralPath $script:updateLogPath -Value $line -Encoding UTF8
 
-    foreach ($obsoleteApplyScript in $obsoleteApplyScripts) {
-        Remove-Item -LiteralPath $obsoleteApplyScript.FullName -Force -ErrorAction Stop
-
-        if (Test-Path -LiteralPath $obsoleteApplyScript.FullName) {
-            throw "Unable to remove obsolete apply script: $($obsoleteApplyScript.Name)"
-        }
-
-        Write-Host "Removed obsolete apply script: $($obsoleteApplyScript.Name)"
-    }
-
-    $obsoletePaths = @(
-        'preview',
-        'resources\views\admin\settings\placeholder.blade.php',
-        'app\Http\Controllers\Admin\SettingsController.php'
-    )
-
-    foreach ($obsoletePath in $obsoletePaths) {
-        $fullPath = Join-Path $PSScriptRoot $obsoletePath
-        if (-not (Test-Path -LiteralPath $fullPath)) {
-            continue
-        }
-
-        Remove-Item -LiteralPath $fullPath -Recurse -Force -ErrorAction Stop
-
-        if (Test-Path -LiteralPath $fullPath) {
-            throw "Unable to remove obsolete release artifact: $obsoletePath"
-        }
-
-        Write-Host "Removed obsolete release artifact: $obsoletePath"
+    if ($Level -eq 'WARN') {
+        Write-Host $Message -ForegroundColor Yellow
+    } elseif ($Level -eq 'ERROR') {
+        Write-Host $Message -ForegroundColor Red
+    } else {
+        Write-Host $Message
     }
 }
 
-Remove-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion
-
-function Write-Utf8NoBom {
+function Invoke-Checked {
     param(
-        [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][string]$Content
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][scriptblock]$Command
     )
 
-    $utf8 = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText((Resolve-Path $Path), $Content, $utf8)
+    Write-UpdateStage -Message "Starting: $Label"
+    $global:LASTEXITCODE = 0
+    & $Command
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "$Label failed with exit code $exitCode."
+    }
+    Write-UpdateStage -Message "Completed: $Label"
 }
 
 function Get-EnvValue {
@@ -103,26 +82,6 @@ function Get-EnvValue {
     return $value
 }
 
-function Set-EnvValue {
-    param(
-        [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][string]$Name,
-        [Parameter(Mandatory = $true)][string]$Value
-    )
-
-    $content = [System.IO.File]::ReadAllText((Resolve-Path $Path))
-    $pattern = '(?m)^\s*' + [regex]::Escape($Name) + '\s*=.*$'
-    $replacement = "$Name=$Value"
-
-    if ([regex]::IsMatch($content, $pattern)) {
-        $content = [regex]::Replace($content, $pattern, $replacement)
-    } else {
-        $content = $content.TrimEnd([char[]]"`r`n") + [Environment]::NewLine + $replacement + [Environment]::NewLine
-    }
-
-    Write-Utf8NoBom -Path $Path -Content $content
-}
-
 function Get-PasswordAlgorithmName {
     param([string]$Driver)
 
@@ -147,8 +106,7 @@ function Test-PasswordHashDriver {
         return $false
     }
 
-    $result = ([string]$output).Trim()
-    return $result -eq '1'
+    return ([string]$output).Trim() -eq '1'
 }
 
 function Resolve-PasswordHashDriver {
@@ -169,24 +127,69 @@ function Resolve-PasswordHashDriver {
     return $null
 }
 
-if (-not (Test-Path '.env')) {
-    throw '.env is missing. Run .\setup.ps1 first.'
+function Get-ObsoleteReleaseArtifacts {
+    param([Parameter(Mandatory = $true)][string]$CurrentVersion)
+
+    $currentApplyScript = "apply-$CurrentVersion.ps1"
+    $paths = @(
+        'preview',
+        'resources\views\admin\settings\placeholder.blade.php',
+        'app\Http\Controllers\Admin\SettingsController.php',
+        'resources\views\account',
+        'resources\views\livewire\account',
+        'public\assets\account'
+    )
+
+    $obsoleteApplyScripts = Get-ChildItem -LiteralPath $PSScriptRoot -Filter 'apply-*.ps1' -File -ErrorAction Stop |
+        Where-Object { $_.Name -ne $currentApplyScript }
+
+    foreach ($obsoleteApplyScript in $obsoleteApplyScripts) {
+        $paths += $obsoleteApplyScript.Name
+    }
+
+    return @($paths | Select-Object -Unique)
 }
 
+function Remove-ObsoleteReleaseArtifacts {
+    param([Parameter(Mandatory = $true)][string]$CurrentVersion)
+
+    foreach ($obsoletePath in (Get-ObsoleteReleaseArtifacts -CurrentVersion $CurrentVersion)) {
+        $fullPath = Join-Path $PSScriptRoot $obsoletePath
+        if (Test-Path -LiteralPath $fullPath) {
+            Remove-Item -LiteralPath $fullPath -Recurse -Force -ErrorAction Stop
+            Write-UpdateStage -Message "Removed obsolete release artifact: $obsoletePath"
+        }
+    }
+}
+
+if (-not (Test-Path 'VERSION' -PathType Leaf)) {
+    throw 'VERSION is missing. Re-extract the complete KaevCMS release or patch.'
+}
+
+$cmsVersion = (Get-Content 'VERSION' -Raw).Trim()
+if (-not (Test-KaevCmsVersion -Version $cmsVersion)) {
+    throw "VERSION contains an invalid release number: $cmsVersion"
+}
+if ($cmsVersion -ne $expectedToVersion) {
+    throw "This updater expects KaevCMS $expectedToVersion, but VERSION contains $cmsVersion."
+}
+
+if (-not (Test-Path '.env' -PathType Leaf)) {
+    throw '.env is missing. Run .\setup.ps1 for a new installation.'
+}
 if (-not (Get-Command php -ErrorAction SilentlyContinue)) {
     throw 'PHP was not found in PATH.'
 }
-
 if (-not (Get-Command composer -ErrorAction SilentlyContinue)) {
     throw 'Composer was not found in PATH.'
 }
-
-if (-not (Test-Path 'composer.lock')) {
-    throw 'composer.lock is missing. Re-extract the complete KaevCMS release or patch. Update will not install unpinned dependency versions.'
+if (-not (Test-Path 'composer.lock' -PathType Leaf)) {
+    throw 'composer.lock is missing. Update will not install unpinned dependency versions.'
 }
 
 $directories = @(
     'bootstrap\cache',
+    'storage\app\kaevcms',
     'storage\framework\cache\data',
     'storage\framework\sessions',
     'storage\framework\views',
@@ -197,49 +200,48 @@ $directories = @(
     'public\uploads\settings\logo',
     'public\uploads\settings\favicon'
 )
-
 foreach ($directory in $directories) {
     New-Item -Path $directory -ItemType Directory -Force | Out-Null
 }
 
-$envContent = [System.IO.File]::ReadAllText((Resolve-Path '.env'))
-$updatedEnvContent = $envContent
+$script:updateLogPath = Join-Path $PSScriptRoot ('storage\logs\update-{0}-{1}.log' -f $cmsVersion, (Get-Date -Format 'yyyyMMdd-HHmmss'))
+Write-UpdateStage -Message "KaevCMS $expectedFromVersion -> $cmsVersion update"
+Write-UpdateStage -Message "Project: $PSScriptRoot"
 
-$legacyBrandDefaults = @(
-    @{ Pattern = '(?m)^APP_NAME=(?:"L2Forge CMS"|L2Forge CMS|"?L2CMS"?)[ \t]*\r?$'; Replacement = 'APP_NAME="KaevCMS"' },
-    @{ Pattern = '(?m)^SITE_NAME=(?:"L2Forge CMS"|L2Forge CMS)[ \t]*\r?$'; Replacement = 'SITE_NAME="KaevCMS"' },
-    @{ Pattern = '(?m)^SITE_NAME_RU=(?:"L2Forge CMS"|L2Forge CMS)[ \t]*\r?$'; Replacement = 'SITE_NAME_RU="KaevCMS"' },
-    @{ Pattern = '(?m)^SITE_NAME_EN=(?:"L2Forge CMS"|L2Forge CMS)[ \t]*\r?$'; Replacement = 'SITE_NAME_EN="KaevCMS"' },
-    @{ Pattern = '(?m)^SITE_FOOTER_TEXT=(?:"© 2026 L2Forge-CMS"|© 2026 L2Forge-CMS|"© 2026 L2Forge CMS"|© 2026 L2Forge CMS)[ \t]*\r?$'; Replacement = 'SITE_FOOTER_TEXT="© 2026 KaevCMS"' },
-    @{ Pattern = '(?m)^SITE_FOOTER_TEXT_RU=(?:"© 2026 L2Forge-CMS"|© 2026 L2Forge-CMS|"© 2026 L2Forge CMS"|© 2026 L2Forge CMS)[ \t]*\r?$'; Replacement = 'SITE_FOOTER_TEXT_RU="© 2026 KaevCMS"' },
-    @{ Pattern = '(?m)^SITE_FOOTER_TEXT_EN=(?:"© 2026 L2Forge-CMS"|© 2026 L2Forge-CMS|"© 2026 L2Forge CMS"|© 2026 L2Forge CMS)[ \t]*\r?$'; Replacement = 'SITE_FOOTER_TEXT_EN="© 2026 KaevCMS"' },
-    @{ Pattern = '(?m)^MAIL_FROM_NAME=(?:"L2Forge CMS"|L2Forge CMS)[ \t]*\r?$'; Replacement = 'MAIL_FROM_NAME="KaevCMS"' }
-)
+$installed = Get-KaevCmsInstalledVersion `
+    -ProjectRoot $PSScriptRoot `
+    -ExpectedFromVersion $expectedFromVersion `
+    -ExpectedToVersion $expectedToVersion `
+    -LegacyApplyScriptName $legacyApplyScriptName `
+    -LegacyApplySha256 $legacyApplySha256
 
-foreach ($legacyBrandDefault in $legacyBrandDefaults) {
-    $updatedEnvContent = [regex]::Replace(
-        $updatedEnvContent,
-        $legacyBrandDefault.Pattern,
-        $legacyBrandDefault.Replacement
-    )
+if ($installed.Version -eq $cmsVersion) {
+    Write-UpdateStage -Message "KaevCMS $cmsVersion is already recorded as installed. Running final cleanup only."
+    Remove-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion
+    Remove-KaevCmsPendingUpdateMarker -ProjectRoot $PSScriptRoot
+    Remove-KaevCmsUpdateBackups -ProjectRoot $PSScriptRoot -TargetVersion $cmsVersion
+    return
 }
-
-$updatedEnvContent = [regex]::Replace(
-    $updatedEnvContent,
-    '(?m)^QUEUE_CONNECTION=database[ 	]*\r?$',
-    'QUEUE_CONNECTION=sync'
-)
-
-if (-not [regex]::IsMatch($updatedEnvContent, '(?m)^\s*SESSION_COOKIE\s*=')) {
-    $updatedEnvContent = $updatedEnvContent.TrimEnd([char[]]"`r`n") +
-        [Environment]::NewLine +
-        'SESSION_COOKIE=l2forge_session' +
-        [Environment]::NewLine
+if ($installed.Version -ne $expectedFromVersion) {
+    throw "This patch requires KaevCMS $expectedFromVersion. Installed version: $($installed.Version)."
 }
+Write-UpdateStage -Message "Verified installed version $($installed.Version) using $($installed.Source)."
 
-if ($updatedEnvContent -ne $envContent) {
-    Write-Utf8NoBom -Path '.env' -Content $updatedEnvContent
-    Write-Host 'Updated legacy default values in .env.'
+Write-KaevCmsPendingUpdateMarker `
+    -ProjectRoot $PSScriptRoot `
+    -FromVersion $expectedFromVersion `
+    -ToVersion $cmsVersion
+
+$obsoleteArtifacts = Get-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion
+$backup = Move-KaevCmsArtifactsToBackup `
+    -ProjectRoot $PSScriptRoot `
+    -TargetVersion $cmsVersion `
+    -RelativePaths $obsoleteArtifacts
+foreach ($movedPath in $backup.Paths) {
+    Write-UpdateStage -Message "Moved obsolete release artifact to update backup: $movedPath"
+}
+if ($backup.Paths.Count -gt 0) {
+    Write-UpdateStage -Message "Obsolete artifacts are preserved until successful completion: $($backup.Root)"
 }
 
 $hashDriver = (Get-EnvValue -Path '.env' -Name 'HASH_DRIVER' -Default 'auto').ToLowerInvariant()
@@ -247,39 +249,79 @@ $knownHashDrivers = @('auto', 'bcrypt', 'argon', 'argon2id')
 if ($knownHashDrivers -notcontains $hashDriver) {
     throw "Unsupported HASH_DRIVER: $hashDriver. Use auto, bcrypt, argon or argon2id."
 }
-
 $effectiveHashDriver = Resolve-PasswordHashDriver -Driver $hashDriver
 if ([string]::IsNullOrWhiteSpace($effectiveHashDriver)) {
-    if ($hashDriver -eq 'argon' -or $hashDriver -eq 'argon2id') {
-        throw "HASH_DRIVER=$hashDriver is not supported by this PHP executable. Argon2 support is compiled into PHP or supplied by its sodium implementation; it is not a Composer package. Check: php -r `"print_r(password_algos());`", php --ini, and php -m | findstr /I sodium."
+    throw "No supported password hashing algorithm is available for HASH_DRIVER=$hashDriver."
+}
+Write-UpdateStage -Message "Password hashing: $effectiveHashDriver (requested: $hashDriver)"
+
+$maintenanceActivated = $false
+$updateError = $null
+
+try {
+    Write-UpdateStage -Message 'Clearing Laravel bootstrap cache files before Composer package discovery.'
+    Clear-KaevCmsBootstrapCache -ProjectRoot $PSScriptRoot
+
+    $global:LASTEXITCODE = 0
+    $maintenanceStatus = (& php artisan kaevcms:maintenance-status --no-ansi 2>&1 | Out-String).Trim()
+    $maintenanceExitCode = $LASTEXITCODE
+    if ($maintenanceExitCode -ne 0 -or $maintenanceStatus -notin @('up', 'down')) {
+        throw "Unable to determine the current maintenance mode state. Output: $maintenanceStatus"
     }
 
-    throw "No supported password hashing algorithm is available in this PHP executable."
+    if ($maintenanceStatus -eq 'up') {
+        Invoke-Checked 'Enabling maintenance mode' { php artisan down --retry=60 }
+        $maintenanceActivated = $true
+    } else {
+        Write-UpdateStage -Message 'Application was already in maintenance mode; it will remain there.'
+    }
+
+    Invoke-Checked 'Installing pinned PHP dependencies without Laravel scripts' {
+        composer install --no-interaction --prefer-dist --no-scripts
+    }
+
+    Invoke-Checked 'Rebuilding optimized autoload and discovering packages' {
+        composer dump-autoload --optimize --no-interaction
+    }
+    Invoke-Checked 'Clearing Laravel runtime caches' { php artisan optimize:clear }
+    Invoke-Checked 'Running database migrations' { php artisan migrate --force }
+    Invoke-Checked 'Refreshing server monitoring snapshot' { php artisan kaevcms:servers-monitor --force }
+
+    if (-not $SkipTests) {
+        Invoke-Checked 'Running automated tests' { php artisan test }
+    } else {
+        Write-UpdateStage -Message 'Automated tests were skipped by explicit request.' -Level WARN
+    }
+
+    Invoke-Checked 'Recording installed release version' {
+        php artisan kaevcms:release-version --mark=$cmsVersion
+    }
+
+    Remove-KaevCmsPendingUpdateMarker -ProjectRoot $PSScriptRoot
+    Remove-KaevCmsUpdateBackups -ProjectRoot $PSScriptRoot -TargetVersion $cmsVersion
+    Remove-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion
+    Write-UpdateStage -Message "KaevCMS $cmsVersion update completed successfully."
+} catch {
+    $updateError = $_
+    Write-UpdateStage -Message $_.Exception.Message -Level ERROR
+    Write-UpdateStage -Message 'The verified source marker and update backups were kept so the updater can be resumed safely.' -Level WARN
+} finally {
+    if ($maintenanceActivated) {
+        $global:LASTEXITCODE = 0
+        php artisan up
+        $upExitCode = $LASTEXITCODE
+        if ($upExitCode -ne 0) {
+            $message = "Unable to disable maintenance mode; artisan up exited with code $upExitCode."
+            Write-UpdateStage -Message $message -Level ERROR
+            if ($null -eq $updateError) {
+                $updateError = $message
+            }
+        } else {
+            Write-UpdateStage -Message 'Maintenance mode disabled.'
+        }
+    }
 }
 
-if ($hashDriver -eq 'auto' -and $effectiveHashDriver -eq 'bcrypt') {
-    Write-Host '[WARN] Argon2id is unavailable in this PHP executable; HASH_DRIVER=auto selected bcrypt. Use a PHP build whose password_algos() contains argon2id to use Argon2id.' -ForegroundColor Yellow
+if ($null -ne $updateError) {
+    throw $updateError
 }
-
-Write-Host "Password hashing: $effectiveHashDriver (requested: $hashDriver)"
-
-# Composer must rebuild the autoloader before Laravel boots. This is important for
-# patches that add application classes while an optimized autoloader already exists.
-composer install --no-interaction --prefer-dist
-if ($LASTEXITCODE -ne 0) { throw "composer install failed with exit code $LASTEXITCODE." }
-
-php artisan optimize:clear
-if ($LASTEXITCODE -ne 0) { throw "artisan optimize:clear failed with exit code $LASTEXITCODE." }
-
-php artisan migrate --force
-if ($LASTEXITCODE -ne 0) { throw "artisan migrate failed with exit code $LASTEXITCODE." }
-
-php artisan kaevcms:servers-monitor --force
-if ($LASTEXITCODE -ne 0) { throw "server monitoring refresh failed with exit code $LASTEXITCODE." }
-
-if (-not $SkipTests) {
-    php artisan test
-    if ($LASTEXITCODE -ne 0) { throw "artisan test failed with exit code $LASTEXITCODE." }
-}
-
-Write-Host "KaevCMS $cmsVersion update completed successfully." -ForegroundColor Green

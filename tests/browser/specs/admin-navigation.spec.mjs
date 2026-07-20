@@ -204,3 +204,16 @@ test('administrator role selector explains the selected access level', async ({ 
     await roleSelect.selectOption('editor');
     await expect(roleDescription).toContainText('Работает только с новостями');
 });
+
+test('dashboard shows administrator runtime diagnostics', async ({ page }) => {
+    await page.goto('/admin');
+
+    const runtimeCard = page.locator('.dashboard-runtime-card');
+    await expect(runtimeCard).toBeVisible();
+    await expect(runtimeCard.getByText('Системные процессы')).toBeVisible();
+    await expect(runtimeCard.getByText('Планировщик Laravel')).toBeVisible();
+    await expect(runtimeCard.getByText('Обработка очереди')).toBeVisible();
+    await expect(runtimeCard.getByText('Ожидающие задания')).toBeVisible();
+    await expect(runtimeCard.getByText('Ошибки очереди')).toBeVisible();
+    await expect(runtimeCard.getByText('Очередь почты')).toHaveCount(0);
+});

@@ -8,6 +8,9 @@
 /public/uploads/*
 !/public/uploads/.gitignore
 /storage/*.key
+/storage/app/kaevcms/installed-version.json
+/storage/app/kaevcms/installed-version.json.tmp.*
+/storage/app/kaevcms/installed-version.json.bak.*
 /vendor
 .env
 .env.backup

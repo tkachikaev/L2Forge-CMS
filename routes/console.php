@@ -19,6 +19,9 @@ Artisan::command('cms:about', function () {
     $this->info('KaevCMS — open-source CMS for Lineage II servers.');
 })->purpose('Legacy alias for kaevcms:about');
 
+Schedule::command('kaevcms:scheduler-heartbeat')
+    ->everyMinute();
+
 Schedule::command('kaevcms:servers-monitor')
     ->everyMinute()
     ->withoutOverlapping();

@@ -327,6 +327,8 @@ if (-not $SkipTests) {
     Invoke-Checked 'Running automated tests' { php artisan test }
 }
 
+Invoke-Checked 'Recording installed release version' { php artisan kaevcms:release-version --mark=$cmsVersion }
+
 Write-Host ''
 Write-Host 'Setup completed successfully.' -ForegroundColor Green
 Write-Host 'Create the first administrator with: php artisan kaevcms:admin-create'

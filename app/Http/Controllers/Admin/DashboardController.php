@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Auth\AdminPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Services\Infrastructure\RuntimeDiagnostics;
 use App\Services\Mail\MailDeliveryMonitor;
 use App\Services\MailSettings;
 use App\Services\Servers\ServerMonitorCoordinator;
@@ -22,13 +23,19 @@ class DashboardController extends Controller
         ServerMonitorCoordinator $monitorCoordinator,
         MailSettings $mailSettings,
         MailDeliveryMonitor $mailDeliveries,
+        RuntimeDiagnostics $runtimeDiagnostics,
     ): View {
+        $admin = Auth::guard('admin')->user();
+
         return view('admin.dashboard', [
-            'admin' => Auth::guard('admin')->user(),
+            'admin' => $admin,
             'monitor' => $statuses->get(),
             'monitorRefreshDue' => $monitorCoordinator->isDue(),
             'mailSettings' => $mailSettings->values(),
             'mailDelivery' => $mailDeliveries->overview(),
+            'runtime' => $admin instanceof Admin && $admin->hasPermission(AdminPermission::SystemView)
+                ? $runtimeDiagnostics->overview()
+                : null,
         ]);
     }
 

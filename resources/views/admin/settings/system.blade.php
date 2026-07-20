@@ -112,6 +112,50 @@
 <section class="form-card system-components-card">
     <div class="system-section-heading">
         <div>
+            <h2>{{ __('System operations') }}</h2>
+            <p>{{ __('Scheduler, queues and jobs that require administrator attention.') }}</p>
+        </div>
+    </div>
+
+    <div class="dashboard-runtime-statuses system-runtime-statuses">
+        @foreach([
+            __('Laravel scheduler') => $system['runtime']['scheduler'],
+            __('Queue processing') => $system['runtime']['queue'],
+        ] as $label => $status)
+            <article class="dashboard-runtime-status">
+                <span class="system-status-dot {{ $status['state'] }}" aria-hidden="true"></span>
+                <div>
+                    <strong>{{ $label }}</strong>
+                    <small>{{ $status['details'] }}</small>
+                </div>
+                <span class="status-badge status-badge-{{ $status['state'] === 'success' ? 'success' : ($status['state'] === 'danger' ? 'danger' : 'warning') }}">{{ $status['status'] }}</span>
+            </article>
+        @endforeach
+    </div>
+
+    <div class="dashboard-runtime-metrics system-runtime-metrics">
+        <div><span>{{ __('Pending jobs') }}</span><strong>{{ $system['runtime']['jobs']['pending'] }}</strong></div>
+        <div><span>{{ __('Failed jobs') }}</span><strong>{{ $system['runtime']['jobs']['failed'] }}</strong></div>
+        <div>
+            <span>{{ __('Oldest pending job') }}</span>
+            <strong class="dashboard-runtime-time">{{ $system['runtime']['jobs']['oldest_pending_at'] ? $system['runtime']['jobs']['oldest_pending_at']->diffForHumans() : '—' }}</strong>
+        </div>
+    </div>
+
+    @if($system['runtime']['warnings'] !== [])
+        <div class="dashboard-runtime-warnings">
+            @foreach($system['runtime']['warnings'] as $warning)
+                <p>{{ $warning }}</p>
+            @endforeach
+        </div>
+    @else
+        <p class="dashboard-runtime-ok">{{ __('No Scheduler or queue problems detected.') }}</p>
+    @endif
+</section>
+
+<section class="form-card system-components-card">
+    <div class="system-section-heading">
+        <div>
             <h2>{{ __('Component status') }}</h2>
             <p>{{ __('Checks run again whenever this page is opened.') }}</p>
         </div>

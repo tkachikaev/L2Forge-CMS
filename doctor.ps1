@@ -428,6 +428,23 @@ if ($phpCommand -and $missingLanguageFiles.Count -eq 0) {
 }
 
 if ((Test-Path -LiteralPath $autoloadPath -PathType Leaf) -and (Test-Path -LiteralPath $envPath -PathType Leaf)) {
+    $installedVersionOutput = (& php artisan kaevcms:release-version --no-ansi 2>&1 | Out-String).Trim()
+    $installedVersionOk = $LASTEXITCODE -eq 0 -and $installedVersionOutput -eq $cmsVersion
+    Test-ItemStatus 'Installed release version' $installedVersionOk $(
+        if ($installedVersionOk) { $installedVersionOutput }
+        elseif ([string]::IsNullOrWhiteSpace($installedVersionOutput)) { 'not recorded; rerun setup or the current apply script' }
+        else { "expected $cmsVersion, reported: $installedVersionOutput" }
+    )
+
+    $scheduleOutput = (& php artisan schedule:list --no-ansi 2>&1 | Out-String)
+    $scheduleCommandOk = $LASTEXITCODE -eq 0
+    Test-ItemStatus 'Laravel schedule list' $scheduleCommandOk $(if ($scheduleCommandOk) { 'loaded successfully' } else { 'php artisan schedule:list failed' })
+
+    if ($scheduleCommandOk) {
+        Test-ItemStatus 'Scheduler heartbeat task' ($scheduleOutput -match 'kaevcms:scheduler-heartbeat') $(if ($scheduleOutput -match 'kaevcms:scheduler-heartbeat') { 'registered every minute' } else { 'missing from Laravel schedule' })
+        Test-ItemStatus 'Database mail queue task' ($scheduleOutput -match 'queue:work database') $(if ($scheduleOutput -match 'queue:work database') { 'registered in Laravel schedule' } else { 'missing from Laravel schedule' })
+    }
+
     Write-Host ''
     Write-Host 'Laravel check:'
     php artisan about --only=environment,cache,drivers

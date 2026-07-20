@@ -30,7 +30,7 @@ class ReleaseMetadataTest extends TestCase
 
         $updateScript = $this->readReleaseFile('update.ps1');
         $this->assertStringContainsString("\$cmsVersion = (Get-Content 'VERSION' -Raw).Trim()", $updateScript);
-        $this->assertStringContainsString('Write-Host "KaevCMS $cmsVersion update"', $updateScript);
+        $this->assertStringContainsString('Write-UpdateStage -Message "KaevCMS $expectedFromVersion -> $cmsVersion update"', $updateScript);
 
         $applyScripts = glob(base_path('apply-*.ps1')) ?: [];
         sort($applyScripts);
@@ -39,31 +39,73 @@ class ReleaseMetadataTest extends TestCase
         $this->assertSame("apply-{$version}.ps1", basename($applyScripts[0]));
 
         $applyScript = (string) file_get_contents($applyScripts[0]);
-        $this->assertStringContainsString("if (\$cmsVersion -ne '{$version}')", $applyScript);
-        $this->assertStringContainsString("Where-Object { \$_.Name -ne 'apply-{$version}.ps1' }", $applyScript);
+        $this->assertStringContainsString("\$toVersion = '{$version}'", $applyScript);
+        $this->assertStringContainsString("\$fromVersion = '0.23.7'", $applyScript);
+        $this->assertStringNotContainsString('Remove-Item -LiteralPath $obsoleteApplyScript.FullName', $applyScript);
+        $this->assertStringNotContainsString('update.ps1 failed with exit code $LASTEXITCODE', $applyScript);
     }
 
-    public function test_update_script_cleans_obsolete_release_artifacts_before_tests(): void
+    public function test_update_script_verifies_source_preserves_env_and_stages_cleanup_before_tests(): void
     {
         $updateScript = $this->readReleaseFile('update.ps1');
 
-        $this->assertStringContainsString('function Remove-ObsoleteReleaseArtifacts', $updateScript);
-        $this->assertStringContainsString("Get-ChildItem -LiteralPath \$PSScriptRoot -Filter 'apply-*.ps1'", $updateScript);
-        $this->assertStringContainsString("'preview'", $updateScript);
-        $this->assertStringContainsString("'resources\\views\\admin\\settings\\placeholder.blade.php'", $updateScript);
-        $this->assertStringContainsString("'app\\Http\\Controllers\\Admin\\SettingsController.php'", $updateScript);
-        $this->assertStringContainsString('Remove-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion', $updateScript);
+        $this->assertStringContainsString("\$expectedFromVersion = '0.23.7'", $updateScript);
+        $this->assertStringContainsString('Get-KaevCmsInstalledVersion', $updateScript);
+        $this->assertStringContainsString('-ExpectedToVersion $expectedToVersion', $updateScript);
+        $this->assertStringContainsString('legacyApplySha256', $updateScript);
+        $this->assertStringContainsString('Write-KaevCmsPendingUpdateMarker', $updateScript);
+        $this->assertStringContainsString('Move-KaevCmsArtifactsToBackup', $updateScript);
+        $this->assertStringContainsString('Remove-KaevCmsUpdateBackups', $updateScript);
+        $this->assertStringNotContainsString('QUEUE_CONNECTION=sync', $updateScript);
+        $this->assertStringNotContainsString('SESSION_COOKIE=l2forge_session', $updateScript);
+        $this->assertStringNotContainsString('function Set-EnvValue', $updateScript);
+        $this->assertStringContainsString('Clear-KaevCmsBootstrapCache -ProjectRoot $PSScriptRoot', $updateScript);
+        $this->assertStringContainsString('composer install --no-interaction --prefer-dist --no-scripts', $updateScript);
+        $this->assertStringContainsString('php artisan kaevcms:maintenance-status --no-ansi', $updateScript);
+        $this->assertStringContainsString('php artisan down --retry=60', $updateScript);
+        $this->assertStringContainsString('finally {', $updateScript);
+        $this->assertStringContainsString('php artisan up', $updateScript);
+        $this->assertStringContainsString('php artisan kaevcms:release-version --mark=$cmsVersion', $updateScript);
+        $this->assertStringContainsString("'resources\\views\\account'", $updateScript);
+        $this->assertStringContainsString("'resources\\views\\livewire\\account'", $updateScript);
+        $this->assertStringContainsString("'public\\assets\\account'", $updateScript);
+
+        $cachePosition = strpos($updateScript, 'Clear-KaevCmsBootstrapCache -ProjectRoot $PSScriptRoot');
+        $maintenancePosition = strpos($updateScript, 'php artisan down --retry=60');
+        $composerPosition = strpos($updateScript, 'composer install --no-interaction --prefer-dist --no-scripts');
+        $stagePosition = strpos($updateScript, 'Move-KaevCmsArtifactsToBackup');
+        $testPosition = strpos($updateScript, 'php artisan test');
+        $markPosition = strpos($updateScript, 'php artisan kaevcms:release-version --mark=$cmsVersion');
+        $backupCleanupPosition = strpos($updateScript, 'Remove-KaevCmsUpdateBackups', $markPosition ?: 0);
+        $finalCleanupPosition = strpos($updateScript, 'Remove-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion', $testPosition ?: 0);
+
+        $this->assertNotFalse($cachePosition);
+        $this->assertNotFalse($maintenancePosition);
+        $this->assertNotFalse($composerPosition);
+        $this->assertNotFalse($stagePosition);
+        $this->assertNotFalse($testPosition);
+        $this->assertNotFalse($markPosition);
+        $this->assertNotFalse($backupCleanupPosition);
+        $this->assertNotFalse($finalCleanupPosition);
+        $this->assertLessThan($composerPosition, $cachePosition);
+        $this->assertLessThan($composerPosition, $maintenancePosition);
+        $this->assertLessThan($testPosition, $stagePosition);
+        $this->assertLessThan($markPosition, $testPosition);
+        $this->assertLessThan($backupCleanupPosition, $markPosition);
+        $this->assertLessThan($finalCleanupPosition, $testPosition);
+
+        $phpunit = $this->readReleaseFile('phpunit.xml');
+        $this->assertStringContainsString('<env name="APP_MAINTENANCE_DRIVER" value="cache" force="true"/>', $phpunit);
+        $this->assertStringContainsString('<env name="APP_MAINTENANCE_STORE" value="array" force="true"/>', $phpunit);
+        $this->assertStringNotContainsString('<env name="APP_MAINTENANCE_DRIVER" value="file"/>', $phpunit);
+
+        $doctorScript = $this->readReleaseFile('doctor.ps1');
+        $this->assertStringContainsString('php artisan kaevcms:release-version --no-ansi', $doctorScript);
 
         $qualityScript = $this->readReleaseFile('quality.ps1');
+        $this->assertStringContainsString('tests\\powershell\\update-workflow.ps1', $qualityScript);
         $this->assertStringContainsString('php artisan route:cache', $qualityScript);
         $this->assertSame(2, substr_count($qualityScript, 'php artisan route:clear'));
-
-        $cleanupPosition = strpos($updateScript, 'Remove-ObsoleteReleaseArtifacts -CurrentVersion $cmsVersion');
-        $testPosition = strpos($updateScript, 'php artisan test');
-
-        $this->assertNotFalse($cleanupPosition);
-        $this->assertNotFalse($testPosition);
-        $this->assertLessThan($testPosition, $cleanupPosition);
     }
 
     public function test_obsolete_preview_and_settings_placeholder_are_not_shipped(): void

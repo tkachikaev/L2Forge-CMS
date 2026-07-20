@@ -6,6 +6,7 @@ return [
     'themes_path' => base_path('themes'),
     'account_theme' => env('CMS_ACCOUNT_THEME', 'luxury'),
     'account_themes_path' => base_path('account-themes'),
+    'installed_version_marker' => storage_path('app/kaevcms/installed-version.json'),
 
     'news' => [
         'uploads_path' => env('NEWS_UPLOADS_PATH', public_path('uploads')),

@@ -7,6 +7,7 @@ use App\Notifications\ResetPasswordNotification;
 use App\Services\Mail\MailDeliveryMonitor;
 use App\Services\MailSettings;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Notifications\Notification;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Illuminate\Support\Facades\Password;
 use Throwable;
 
-class SendUserMailNotification implements ShouldQueue
+class SendUserMailNotification implements ShouldBeEncrypted, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 

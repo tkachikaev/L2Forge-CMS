@@ -1,7 +1,7 @@
 @extends('admin.layouts.panel')
 
 @section('title', __('Dashboard'))
-@section('description', __('Compact overview of players and server availability.'))
+@section('description', __('Server availability, mail delivery and system operations.'))
 
 @section('content')
 @php
@@ -26,6 +26,7 @@
     $canRefreshMonitor = $adminUser->hasPermission(\App\Auth\AdminPermission::DashboardRefresh);
     $canViewServers = $adminUser->hasPermission(\App\Auth\AdminPermission::ServersView);
     $canViewMail = $adminUser->hasPermission(\App\Auth\AdminPermission::MailView);
+    $canViewSystem = $adminUser->hasPermission(\App\Auth\AdminPermission::SystemView);
 @endphp
 
 <div
@@ -145,6 +146,53 @@
         @endif
         </div>
     </div>
+    @endif
+
+    @if($canViewSystem && $runtime !== null)
+        <section class="admin-data-card dashboard-runtime-card">
+            <header>
+                <div>
+                    <h2>{{ __('System operations') }}</h2>
+                    <p>{{ __('Scheduler, queues and jobs that require administrator attention.') }}</p>
+                </div>
+                <a wire:navigate href="{{ route('admin.settings.system') }}">{{ __('System information') }}</a>
+            </header>
+
+            <div class="dashboard-runtime-statuses">
+                @foreach([
+                    __('Laravel scheduler') => $runtime['scheduler'],
+                    __('Queue processing') => $runtime['queue'],
+                ] as $label => $status)
+                    <article class="dashboard-runtime-status">
+                        <span class="system-status-dot {{ $status['state'] }}" aria-hidden="true"></span>
+                        <div>
+                            <strong>{{ $label }}</strong>
+                            <small>{{ $status['details'] }}</small>
+                        </div>
+                        <span class="status-badge status-badge-{{ $status['state'] === 'success' ? 'success' : ($status['state'] === 'danger' ? 'danger' : 'warning') }}">{{ $status['status'] }}</span>
+                    </article>
+                @endforeach
+            </div>
+
+            <div class="dashboard-runtime-metrics">
+                <div><span>{{ __('Pending jobs') }}</span><strong>{{ $runtime['jobs']['pending'] }}</strong></div>
+                <div><span>{{ __('Failed jobs') }}</span><strong>{{ $runtime['jobs']['failed'] }}</strong></div>
+                <div>
+                    <span>{{ __('Oldest pending job') }}</span>
+                    <strong class="dashboard-runtime-time">{{ $runtime['jobs']['oldest_pending_at'] ? $runtime['jobs']['oldest_pending_at']->diffForHumans() : '—' }}</strong>
+                </div>
+            </div>
+
+            @if($runtime['warnings'] !== [])
+                <div class="dashboard-runtime-warnings">
+                    @foreach($runtime['warnings'] as $warning)
+                        <p>{{ $warning }}</p>
+                    @endforeach
+                </div>
+            @else
+                <p class="dashboard-runtime-ok">{{ __('No Scheduler or queue problems detected.') }}</p>
+            @endif
+        </section>
     @endif
 </div>
 @endsection

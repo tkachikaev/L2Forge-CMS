@@ -14,14 +14,17 @@ use App\Services\Mail\MailDeliveryMonitor;
 use App\Services\MailSettings;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\BackgroundQueue;
 use Illuminate\Queue\DatabaseQueue;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class MailDeliveryModeTest extends TestCase
@@ -415,6 +418,39 @@ class MailDeliveryModeTest extends TestCase
             'id' => $deliveryId,
             'status' => MailDelivery::STATUS_SENT,
         ]);
+    }
+
+    public function test_sensitive_mail_job_payload_is_encrypted_in_database_and_failed_queue_storage(): void
+    {
+        $user = $this->createUser();
+        $token = Password::broker('users')->createToken($user);
+        $job = new SendUserMailNotification(
+            $user,
+            new ResetPasswordNotification($token),
+            null,
+        );
+
+        $this->assertInstanceOf(ShouldBeEncrypted::class, $job);
+
+        dispatch($job)->onConnection('database')->onQueue('mail');
+
+        $payload = (string) DB::table('jobs')->value('payload');
+        $this->assertNotSame('', $payload);
+        $this->assertStringNotContainsString($token, $payload);
+        $this->assertStringNotContainsString($user->email, $payload);
+
+        DB::table('failed_jobs')->insert([
+            'uuid' => (string) Str::uuid(),
+            'connection' => 'database',
+            'queue' => 'mail',
+            'payload' => $payload,
+            'exception' => 'test failure',
+            'failed_at' => now(),
+        ]);
+
+        $failedPayload = (string) DB::table('failed_jobs')->value('payload');
+        $this->assertStringNotContainsString($token, $failedPayload);
+        $this->assertStringNotContainsString($user->email, $failedPayload);
     }
 
     public function test_mail_job_marks_delivery_failed_only_from_final_failed_callback(): void

@@ -9,6 +9,8 @@ if (-not (Test-Path 'vendor\autoload.php')) {
     throw 'Dependencies are not installed. Run composer install first.'
 }
 
+& "$PSScriptRoot\tests\powershell\update-workflow.ps1"
+
 composer validate --strict --no-check-publish
 if ($LASTEXITCODE -ne 0) { throw "Composer validation failed with exit code $LASTEXITCODE." }
 
@@ -24,4 +26,4 @@ if ($LASTEXITCODE -ne 0) { throw "Route cache build failed with exit code $LASTE
 php artisan route:clear
 if ($LASTEXITCODE -ne 0) { throw "Route cache cleanup failed with exit code $LASTEXITCODE." }
 
-Write-Host 'Pint, PHPStan, PHPUnit and route cache checks completed successfully.' -ForegroundColor Green
+Write-Host 'PowerShell updater, Pint, PHPStan, PHPUnit and route cache checks completed successfully.' -ForegroundColor Green

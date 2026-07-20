@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Infrastructure\RuntimeDiagnostics;
 use App\Support\KaevCMS;
 use App\Support\PasswordHashing;
 use App\Support\TrustedProxyConfiguration;
@@ -17,6 +18,7 @@ final class SystemInformation
     public function __construct(
         private readonly DatabaseManager $database,
         private readonly MailSettings $mailSettings,
+        private readonly RuntimeDiagnostics $runtimeDiagnostics,
     ) {}
 
     /**
@@ -27,7 +29,8 @@ final class SystemInformation
         $database = $this->databaseInformation();
         $proxy = $this->proxyInformation();
         $extensions = $this->extensionInformation();
-        $components = $this->componentInformation($database, $proxy);
+        $runtime = $this->runtimeDiagnostics->overview();
+        $components = $this->componentInformation($database, $proxy, $runtime);
 
         $information = [
             'cms' => [
@@ -55,6 +58,7 @@ final class SystemInformation
             'security' => $this->passwordHashInformation(),
             'database' => $database,
             'proxy' => $proxy,
+            'runtime' => $runtime,
             'components' => $components,
             'extensions' => $extensions,
         ];
@@ -225,9 +229,13 @@ final class SystemInformation
      *     sqlite_production_warning: bool
      * }  $database
      * @param  array{enabled: bool, trusts_all: bool, valid_count: int, invalid_count: int}  $proxy
+     * @param  array{
+     *     queue: array{state: string, status: string, details: string},
+     *     scheduler: array{state: string, status: string, details: string}
+     * }  $runtime
      * @return array<int, array{label: string, state: string, status: string, details: string}>
      */
-    private function componentInformation(array $database, array $proxy): array
+    private function componentInformation(array $database, array $proxy, array $runtime): array
     {
         $components = [];
 
@@ -303,22 +311,18 @@ final class SystemInformation
             ];
         }
 
-        $queue = (string) config('queue.default');
-        $workerless = in_array($queue, ['sync', 'background', 'deferred'], true);
         $components[] = [
             'label' => __('Queues'),
-            'state' => $workerless ? 'success' : 'neutral',
-            'status' => $queue === 'sync' ? __('Synchronous mode') : __('Driver: :driver', ['driver' => $queue]),
-            'details' => $workerless
-                ? __('A separate queue worker is not required')
-                : __('A queue worker must be running for background processing'),
+            'state' => $runtime['queue']['state'],
+            'status' => $runtime['queue']['status'],
+            'details' => $runtime['queue']['details'],
         ];
 
         $components[] = [
             'label' => __('Laravel scheduler'),
-            'state' => 'neutral',
-            'status' => __('Not checked automatically'),
-            'details' => __('Production requires a system task that runs php artisan schedule:run'),
+            'state' => $runtime['scheduler']['state'],
+            'status' => $runtime['scheduler']['status'],
+            'details' => $runtime['scheduler']['details'],
         ];
 
         return $components;
@@ -529,6 +533,9 @@ final class SystemInformation
             __('Cache: :value', ['value' => $environment['cache']]),
             __('Session: :value', ['value' => $environment['session']]),
             __('Queue: :value', ['value' => $environment['queue']]),
+            __('Scheduler status: :value', ['value' => $information['runtime']['scheduler']['status']]),
+            __('Pending jobs: :value', ['value' => $information['runtime']['jobs']['pending']]),
+            __('Failed jobs: :value', ['value' => $information['runtime']['jobs']['failed']]),
             __('Mail: :value', ['value' => $environment['mail']]),
             __('Logging: :value', ['value' => $environment['logging']]),
         ]);
