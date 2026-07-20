@@ -3,7 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $key
+ * @property Carbon $last_seen_at
+ * @property array<string, mixed>|null $metadata
+ */
 final class SystemHeartbeat extends Model
 {
     public $incrementing = false;

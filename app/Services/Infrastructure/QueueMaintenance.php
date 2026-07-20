@@ -5,8 +5,8 @@ namespace App\Services\Infrastructure;
 use App\Models\MailDelivery;
 use App\Models\SystemHeartbeat;
 use Illuminate\Database\Connection;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
@@ -15,7 +15,10 @@ final class QueueMaintenance
 {
     private const BATCH_SIZE = 1000;
 
-    public function __construct(private readonly DatabaseManager $database, private readonly RuntimeDiagnostics $runtimeDiagnostics) {}
+    public function __construct(
+        private readonly DatabaseManager $database,
+        private readonly RuntimeDiagnostics $runtimeDiagnostics,
+    ) {}
 
     /**
      * @return array{

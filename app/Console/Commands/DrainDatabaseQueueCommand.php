@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Infrastructure\QueueWorkerRunner;
 use Illuminate\Console\Command;
 use Illuminate\Database\DatabaseManager;
-use App\Services\Infrastructure\QueueWorkerRunner;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -29,7 +29,7 @@ final class DrainDatabaseQueueCommand extends Command
             $table = (string) config('queue.connections.database.table', 'jobs');
             $connection = $database->connection($connectionName !== '' ? $connectionName : $defaultConnection);
 
-            if (! $connection->getSchemaBuilder()->hasTable($table)) {
+            if ($connection->getSchemaBuilder()->hasTable($table) === false) {
                 $this->warn(__('Queue table is not available.'));
 
                 return self::SUCCESS;
@@ -104,9 +104,11 @@ final class DrainDatabaseQueueCommand extends Command
 
     private function validQueueName(string $queue): bool
     {
-        return $queue !== ''
-            && ! str_contains($queue, ',')
-            && Str::length($queue) <= 190
+        if ($queue === '' || str_contains($queue, ',')) {
+            return false;
+        }
+
+        return Str::length($queue) <= 190
             && preg_match('/^[A-Za-z0-9._:-]+$/', $queue) === 1;
     }
 }
