@@ -16,7 +16,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\TrustProxies as LaravelTrustProxies;
 
-return Application::configure(basePath: dirname(__DIR__))
+$application = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -47,3 +47,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'current_password',
         ]);
     })->create();
+
+$publicPathConfig = __DIR__.'/kaevcms-public-path.php';
+if (is_file($publicPathConfig)) {
+    $configuredPublicPath = require $publicPathConfig;
+    if (is_string($configuredPublicPath) && $configuredPublicPath !== '') {
+        $application->usePublicPath($configuredPublicPath);
+    }
+}
+
+return $application;

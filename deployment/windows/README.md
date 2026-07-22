@@ -10,6 +10,9 @@ All Windows PowerShell tooling is stored in this directory and runs directly fro
 .\deployment\windows\browser-setup.ps1
 .\deployment\windows\browser-quality.ps1
 .\deployment\windows\security-audit.ps1
+.\deployment\windows\build-shared-hosting-package.ps1
 ```
 
 For an update, extract the patch over the project and run the current apply script from this directory.
+
+`build-shared-hosting-package.ps1` создаёт безопасный hosting ZIP с закрытым ядром и отдельной публичной папкой для панелей без настройки Document Root.

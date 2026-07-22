@@ -40,10 +40,14 @@ class ReleaseMetadataTest extends TestCase
 
         $applyScript = (string) file_get_contents($applyScripts[0]);
         $this->assertStringContainsString("\$toVersion = '{$version}'", $applyScript);
-        $this->assertStringContainsString("\$fromVersion = '0.31.9'", $applyScript);
+        $this->assertStringContainsString("\$fromVersion = '0.31.10'", $applyScript);
         $this->assertStringContainsString('public\install\index.php', $applyScript);
         $this->assertStringContainsString('deployment\hosting\web-installer\installer.php', $applyScript);
         $this->assertStringContainsString('deployment\hosting\web-installer\tests\installer-regression.php', $applyScript);
+        $this->assertStringContainsString('deployment\hosting\build-shared-hosting-package.php', $applyScript);
+        $this->assertStringContainsString('deployment\hosting\shared-hosting\tests\layout-regression.php', $applyScript);
+        $this->assertStringContainsString('deployment\hosting\shared-hosting\tests\package-builder-regression.php', $applyScript);
+        $this->assertStringContainsString('deployment\windows\build-shared-hosting-package.ps1', $applyScript);
         $this->assertStringContainsString('deployment\windows\tests\update-workflow.ps1', $applyScript);
         $this->assertStringContainsString('deployment\windows\support\release-update-support.ps1', $applyScript);
         $this->assertStringNotContainsString('Remove-Item -LiteralPath $obsoleteApplyScript.FullName', $applyScript);
@@ -72,10 +76,10 @@ class ReleaseMetadataTest extends TestCase
     {
         $updateScript = $this->readReleaseFile('deployment/windows/update.ps1');
 
-        $this->assertStringContainsString("\$expectedFromVersion = '0.31.9'", $updateScript);
-        $this->assertStringContainsString("\$expectedToVersion = '0.31.10'", $updateScript);
-        $this->assertStringContainsString("\$legacyApplyScriptName = 'deployment\windows\apply-0.31.9.ps1'", $updateScript);
-        $this->assertStringContainsString("\$legacyApplySha256 = '0ae65d1a439a9639a8d3e5af360c486bfa1889edd6a49966480b2651fd94a70e'", $updateScript);
+        $this->assertStringContainsString("\$expectedFromVersion = '0.31.10'", $updateScript);
+        $this->assertStringContainsString("\$expectedToVersion = '0.31.11'", $updateScript);
+        $this->assertStringContainsString("\$legacyApplyScriptName = 'deployment\windows\apply-0.31.10.ps1'", $updateScript);
+        $this->assertStringContainsString("\$legacyApplySha256 = 'b4b573a7dc973a3fbee949d72fc86f9063bc93826bdebc3a480aa4012441e76b'", $updateScript);
         $this->assertStringContainsString('Get-KaevCmsInstalledVersion', $updateScript);
         $this->assertStringContainsString('-ExpectedToVersion $expectedToVersion', $updateScript);
         $this->assertStringContainsString('legacyApplySha256', $updateScript);
@@ -162,6 +166,8 @@ class ReleaseMetadataTest extends TestCase
         $qualityScript = $this->readReleaseFile('deployment/windows/quality.ps1');
         $this->assertStringContainsString('tests\\update-workflow.ps1', $qualityScript);
         $this->assertStringContainsString('tests\\composer-audit-policy.ps1', $qualityScript);
+        $this->assertStringContainsString('deployment/hosting/shared-hosting/tests/layout-regression.php', $qualityScript);
+        $this->assertStringContainsString('deployment/hosting/shared-hosting/tests/package-builder-regression.php', $qualityScript);
         $this->assertStringContainsString('$env:COMPOSER_DISABLE_NETWORK = \'1\'', $qualityScript);
         $this->assertStringContainsString('Remove-Item Env:COMPOSER_DISABLE_NETWORK', $qualityScript);
         $this->assertStringContainsString('finally {', $qualityScript);

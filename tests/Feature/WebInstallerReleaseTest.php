@@ -6,21 +6,46 @@ use Tests\TestCase;
 
 class WebInstallerReleaseTest extends TestCase
 {
-    public function test_web_installer_and_hosting_files_are_shipped(): void
+    public function test_web_installer_and_safe_hosting_layouts_are_shipped(): void
     {
-        $this->assertFileExists(public_path('install/index.php'));
-        $this->assertFileExists(public_path('.htaccess'));
-        $this->assertFileExists(base_path('deployment/hosting/web-installer/installer.php'));
-        $this->assertFileExists(base_path('deployment/hosting/README.md'));
-        $this->assertFileExists(base_path('deployment/hosting/web-installer/tests/installer-regression.php'));
+        foreach ([
+            'public/install/index.php',
+            'public/.htaccess',
+            'deployment/hosting/README.md',
+            'deployment/hosting/web-installer/installer.php',
+            'deployment/hosting/web-installer/tests/installer-regression.php',
+            'deployment/hosting/build-shared-hosting-package.php',
+            'deployment/hosting/shared-hosting/README.md',
+            'deployment/hosting/shared-hosting/public/index.php',
+            'deployment/hosting/shared-hosting/public/install/index.php',
+            'deployment/hosting/shared-hosting/public/.htaccess',
+            'deployment/hosting/shared-hosting/public/kaevcms-path.php.template',
+            'deployment/hosting/shared-hosting/tests/layout-regression.php',
+            'deployment/hosting/shared-hosting/tests/package-builder-regression.php',
+        ] as $relative) {
+            $this->assertFileExists(base_path($relative));
+        }
 
         $entry = file_get_contents(public_path('index.php'));
+        $installEntry = file_get_contents(public_path('install/index.php'));
         $installer = file_get_contents(base_path('deployment/hosting/web-installer/installer.php'));
+        $bootstrap = file_get_contents(base_path('bootstrap/app.php'));
+        $builder = file_get_contents(base_path('deployment/hosting/build-shared-hosting-package.php'));
+        $splitEntry = file_get_contents(base_path('deployment/hosting/shared-hosting/public/index.php'));
 
         $this->assertNotFalse($entry);
+        $this->assertNotFalse($installEntry);
         $this->assertNotFalse($installer);
+        $this->assertNotFalse($bootstrap);
+        $this->assertNotFalse($builder);
+        $this->assertNotFalse($splitEntry);
+
         $this->assertStringContainsString("if (! is_file(\$projectRoot.'/.env'))", $entry);
         $this->assertStringContainsString("header('Location: '.\$basePath.'/install/'", $entry);
+        $this->assertStringContainsString("define('KAEVCMS_INSTALL_ENTRY', true)", $installEntry);
+        $this->assertStringContainsString("defined('KAEVCMS_INSTALL_ENTRY')", $installer);
+        $this->assertStringContainsString('installerDeploymentSafety', $installer);
+        $this->assertStringContainsString('domain points to the project root', $installer);
         $this->assertStringContainsString('storage/app/installed.lock', $installer);
         $this->assertStringContainsString('session_set_cookie_params([', $installer);
         $this->assertStringContainsString("'httponly' => true", $installer);
@@ -42,6 +67,13 @@ class WebInstallerReleaseTest extends TestCase
         $this->assertStringNotContainsString('passthru(', $installer);
         $this->assertStringNotContainsString('proc_open(', $installer);
         $this->assertStringNotContainsString('system(', $installer);
+
+        $this->assertStringContainsString("__DIR__.'/kaevcms-public-path.php'", $bootstrap);
+        $this->assertStringContainsString('$application->usePublicPath($configuredPublicPath)', $bootstrap);
+        $this->assertStringContainsString('vendor/autoload.php is missing', $builder);
+        $this->assertStringContainsString("'public', 'storage', 'tests'", $builder);
+        $this->assertStringContainsString('Symbolic links are not allowed', $builder);
+        $this->assertStringContainsString('$application->usePublicPath(__DIR__)', $splitEntry);
     }
 
     public function test_windows_scripts_are_kept_in_one_deployment_directory(): void
@@ -54,17 +86,25 @@ class WebInstallerReleaseTest extends TestCase
             'browser-setup.ps1',
             'browser-quality.ps1',
             'security-audit.ps1',
+            'build-shared-hosting-package.ps1',
             'update.ps1',
-            'apply-0.31.10.ps1',
+            'apply-0.31.11.ps1',
         ] as $script) {
             $this->assertFileExists(base_path('deployment/windows/'.$script));
             $this->assertFileDoesNotExist(base_path($script));
         }
 
         $quality = file_get_contents(base_path('deployment/windows/quality.ps1'));
+        $packageBuilder = file_get_contents(base_path('deployment/windows/build-shared-hosting-package.ps1'));
         $this->assertNotFalse($quality);
+        $this->assertNotFalse($packageBuilder);
         $this->assertStringContainsString("Join-Path \$PSScriptRoot '..\\..'", $quality);
         $this->assertStringContainsString('tests\\update-workflow.ps1', $quality);
         $this->assertStringContainsString('deployment/hosting/web-installer/tests/installer-regression.php', $quality);
+        $this->assertStringContainsString('deployment/hosting/shared-hosting/tests/layout-regression.php', $quality);
+        $this->assertStringContainsString('deployment/hosting/shared-hosting/tests/package-builder-regression.php', $quality);
+        $this->assertStringContainsString('System.IO.Compression.ZipFile', $packageBuilder);
+        $this->assertStringContainsString('--no-zip', $packageBuilder);
+        $this->assertStringContainsString('Get-FileHash', $packageBuilder);
     }
 }

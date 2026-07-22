@@ -6,8 +6,8 @@ $ErrorActionPreference = 'Stop'
 $ProjectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 Set-Location -LiteralPath $ProjectRoot
 
-$fromVersion = '0.31.9'
-$toVersion = '0.31.10'
+$fromVersion = '0.31.10'
+$toVersion = '0.31.11'
 
 if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'artisan') -PathType Leaf)) {
     throw 'The KaevCMS project root could not be found.'
@@ -37,8 +37,18 @@ $requiredFiles = @(
     'deployment\hosting\README.md',
     'docs\WEB_INSTALLER.md',
     'docs\ROADMAP.md',
+    'docs\PRODUCTION.md',
+    'docs\ARCHITECTURE.md',
     'deployment\hosting\web-installer\installer.php',
     'deployment\hosting\web-installer\tests\installer-regression.php',
+    'deployment\hosting\build-shared-hosting-package.php',
+    'deployment\hosting\shared-hosting\README.md',
+    'deployment\hosting\shared-hosting\public\index.php',
+    'deployment\hosting\shared-hosting\public\install\index.php',
+    'deployment\hosting\shared-hosting\public\.htaccess',
+    'deployment\hosting\shared-hosting\public\kaevcms-path.php.template',
+    'deployment\hosting\shared-hosting\tests\layout-regression.php',
+    'deployment\hosting\shared-hosting\tests\package-builder-regression.php',
     'deployment\windows\README.md',
     'deployment\windows\update.ps1',
     'deployment\windows\support\release-update-support.ps1',
@@ -47,11 +57,13 @@ $requiredFiles = @(
     'deployment\windows\tests\composer-audit-policy.ps1',
     'deployment\windows\quality.ps1',
     'deployment\windows\browser-quality.ps1',
+    'deployment\windows\build-shared-hosting-package.ps1',
     'deployment\windows\browser-setup.ps1',
     'deployment\windows\security-audit.ps1',
     'deployment\windows\doctor.ps1',
     'deployment\windows\setup.ps1',
     'deployment\windows\serve.ps1',
+    'bootstrap\app.php',
     'tests\Feature\WebInstallerReleaseTest.php',
     'tests\Feature\ReleaseMetadataTest.php',
     'tests\Feature\Account\GameAccountCabinetTest.php',
@@ -77,4 +89,5 @@ Write-Host "KaevCMS $toVersion is ready." -ForegroundColor Green
 Write-Host 'Windows setup: .\deployment\windows\setup.ps1'
 Write-Host 'Windows quality: .\deployment\windows\quality.ps1'
 Write-Host 'Web installer: /install/'
+Write-Host 'Shared hosting package: .\deployment\windows\build-shared-hosting-package.ps1'
 Write-Host 'Composer/npm dependencies and database migrations were not changed.'

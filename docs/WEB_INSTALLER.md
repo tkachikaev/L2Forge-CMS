@@ -1,41 +1,58 @@
 # Web Installer
 
-KaevCMS 0.31.10 includes the hardened browser installer for ordinary PHP/MySQL hosting.
+KaevCMS 0.31.11 supports two safe hosting layouts.
 
-## Start
+## Standard layout
 
-- Upload the project with `vendor/` already present.
-- Set the website Document Root to `public/`.
-- Enable HTTPS before entering real database or owner passwords.
-- Open the site. When `.env` is missing, `public/index.php` redirects to `/install/`.
+```text
+Document Root -> KaevCMS/public
+```
 
-## Steps
+Upload the project with `vendor/`, enable HTTPS, and open the domain. The public entry redirects to `/install/` when `.env` is missing.
+
+## Shared-hosting split layout
+
+When a hosting panel cannot change Document Root, build a split package on Windows:
+
+```text
+.\deployment\windows\build-shared-hosting-package.ps1
+```
+
+The builder excludes local `.env*` files, SQLite data, logs, sessions, caches, and installation/update locks, then recreates clean writable runtime directories.
+
+The generated archive contains sibling directories:
+
+```text
+kaevcms-core/   private Laravel application
+public_html/    public website files only
+```
+
+The domain must point only to `public_html`. The generated `kaevcms-path.php` connects the public entry to the private core, while `bootstrap/kaevcms-public-path.php` makes Laravel CLI and web operations use the actual public directory.
+
+The internal installer cannot be opened directly through `deployment/hosting/web-installer/installer.php`. Both supported public entries define an explicit installer-entry marker. The requirements page also rejects installations reached through `/public/install/`, because that URL indicates that the project root is exposed above the public directory.
+
+## Installation steps
 
 1. Welcome and language selection.
-2. PHP 8.3+, required extensions, required files and writable directories.
-3. Website name/URL and MySQL verification. The probe checks connection plus CREATE, INSERT, ALTER, UPDATE, DELETE and DROP permissions using a random temporary table.
-4. Owner name, email and password.
-5. Atomic `.env` creation, stable `APP_KEY`, migrations, seeding, owner creation and release marking.
-6. Completion with links to the website and `/admin`.
+2. PHP 8.3+, extensions, safe deployment layout, required files, and writable directories.
+3. Website URL and MySQL verification, including CREATE, INSERT, ALTER, UPDATE, DELETE, and DROP through a random temporary table.
+4. Owner name, email, and password.
+5. Atomic `.env` creation, stable `APP_KEY`, migrations, seeding, owner creation, and release marking.
+6. Completion with links to the website and administration panel.
 
-The installer does not execute Composer, npm or shell commands. The database password is stored only in the server-side installer session and `.env`; it is never rendered back into HTML. POST requests use a redirect-after-submit flow so browser refresh does not repeat installation actions.
+## Security and recovery
 
-## Security
+- Installer session cookies use `HttpOnly`, `SameSite=Lax`, strict cookie-only sessions, and `Secure` over HTTPS.
+- Responses use no-cache, anti-frame, MIME-sniffing, referrer, permissions, and Content Security Policy headers.
+- A non-blocking filesystem lock prevents concurrent installation.
+- Unexpected details are written to `storage/logs/installer.log` with a short reference code.
+- `.env` values are quoted and escaped; an interrupted retry preserves the existing `APP_KEY`.
+- `storage/app/installed.lock` blocks reinstallation; `storage/app/installing.lock` allows safe recovery from an incomplete installation.
 
-- Installer session cookie uses `HttpOnly`, `SameSite=Lax`, strict cookie-only sessions and `Secure` on HTTPS.
-- Responses use no-cache, anti-frame, MIME-sniffing, referrer, permissions and Content Security Policy headers.
-- A non-blocking filesystem lock prevents two browser windows from installing at the same time.
-- Unexpected PDO, migration and filesystem details are written to `storage/logs/installer.log` with a short reference code; the browser receives a generic message and database passwords are redacted.
-- `.env` values are always quoted and escaped. An interrupted retry preserves the existing `APP_KEY`.
-
-## Reinstallation and recovery
-
-A successful installation creates `storage/app/installed.lock`. While installation is incomplete, `storage/app/installing.lock` allows a safe retry after `.env`, migrations or the owner account have already been created. Existing owner data is reused only during this explicit incomplete state, preventing duplicate administrators and allowing the final lock to be recreated.
-
-A pre-existing `.env` without the temporary state file blocks the installer. Windows setup and update scripts refresh the same installed lock file.
-
-Standalone installer regressions run through:
+Standalone regressions:
 
 ```text
 php deployment/hosting/web-installer/tests/installer-regression.php
+php deployment/hosting/shared-hosting/tests/layout-regression.php
+php deployment/hosting/shared-hosting/tests/package-builder-regression.php
 ```

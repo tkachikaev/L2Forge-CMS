@@ -36,7 +36,16 @@ if (! defined('KAEVCMS_INSTALLER_FUNCTIONS_ONLY')) {
 
 function runWebInstaller(): void
 {
-    $root = dirname(__DIR__, 3);
+    if (! defined('KAEVCMS_INSTALL_ENTRY')) {
+        http_response_code(404);
+        echo 'Not Found';
+        return;
+    }
+
+    $root = defined('KAEVCMS_PROJECT_ROOT')
+        ? rtrim((string) constant('KAEVCMS_PROJECT_ROOT'), '/\\')
+        : dirname(__DIR__, 3);
+    $publicRoot = installerPublicRoot($root);
     $lockPath = $root.'/storage/app/installed.lock';
     $installingPath = $root.'/storage/app/installing.lock';
     $envPath = $root.'/.env';
@@ -104,7 +113,7 @@ function runWebInstaller(): void
             }
 
             if ($action === 'install') {
-                $requirements = requirementChecks($root);
+                $requirements = requirementChecks($root, $publicRoot, $text);
                 if (hasFailedRequirements($requirements)) {
                     throw new InstallerValidationException($text['requirements_failed']);
                 }
@@ -122,6 +131,7 @@ function runWebInstaller(): void
                 $siteUrl = $state['site']['url'];
                 $installedOwnerEmail = performInstallation(
                     root: $root,
+                    publicRoot: $publicRoot,
                     envExamplePath: $envExamplePath,
                     envPath: $envPath,
                     lockPath: $lockPath,
@@ -164,7 +174,7 @@ function runWebInstaller(): void
 
     $body = match ($step) {
         'welcome' => welcomeBody($text, $state),
-        'requirements' => requirementsBody($text, requirementChecks($root), $state),
+        'requirements' => requirementsBody($text, requirementChecks($root, $publicRoot, $text), $state),
         'database' => databaseBody($text, $state),
         'administrator' => administratorBody($text, $state),
         'complete' => completeBody($text, $state),
@@ -202,6 +212,10 @@ function installerTranslations(string $language): array
         'recheck' => 'Проверить снова',
         'next' => 'Далее',
         'requirements_failed' => 'Требования хостинга ещё не выполнены.',
+        'safe_web_root' => 'Безопасная публичная папка',
+        'safe_web_root_standard' => 'Домен направлен на public — стандартный безопасный режим.',
+        'safe_web_root_split' => 'Ядро и публичная папка разделены — безопасный shared-hosting режим.',
+        'safe_web_root_unsafe' => 'Домен направлен на корень проекта. Используйте Document Root public/ или подготовленный split-пакет.',
         'database_title' => 'Сайт и база данных',
         'database_text' => 'Данные выдаёт панель управления хостингом. Пароль базы не выводится на страницу и не записывается в журналы.',
         'site_name' => 'Название сайта',
@@ -265,6 +279,10 @@ function installerTranslations(string $language): array
         'recheck' => 'Check again',
         'next' => 'Next',
         'requirements_failed' => 'Hosting requirements are not satisfied yet.',
+        'safe_web_root' => 'Safe public directory',
+        'safe_web_root_standard' => 'The domain points to public — standard secure mode.',
+        'safe_web_root_split' => 'The core and public directory are separated — secure shared-hosting mode.',
+        'safe_web_root_unsafe' => 'The domain points to the project root. Use Document Root public/ or the generated split package.',
         'database_title' => 'Website and database',
         'database_text' => 'These values are provided by your hosting control panel. The database password is never rendered or written to logs.',
         'site_name' => 'Website name',
@@ -313,14 +331,67 @@ function installerTranslations(string $language): array
     return $language === 'en' ? $en : $ru;
 }
 
-/** @return list<array{label:string,ok:bool,details:string}> */
-function requirementChecks(string $root): array
+function installerPublicRoot(string $root): string
 {
+    if (defined('KAEVCMS_PUBLIC_PATH')) {
+        $configured = rtrim((string) constant('KAEVCMS_PUBLIC_PATH'), '/\\');
+        if ($configured !== '') {
+            return $configured;
+        }
+    }
+
+    return $root.'/public';
+}
+
+/** @return array{ok:bool,mode:string,details:string} */
+function installerDeploymentSafety(?string $script = null, ?bool $sharedHosting = null): array
+{
+    $sharedHosting ??= defined('KAEVCMS_SHARED_HOSTING') && constant('KAEVCMS_SHARED_HOSTING') === true;
+    if ($sharedHosting) {
+        return ['ok' => true, 'mode' => 'split', 'details' => 'split core/public layout'];
+    }
+
+    $paths = $script !== null
+        ? [$script]
+        : [
+            (string) ($_SERVER['SCRIPT_NAME'] ?? '/install/index.php'),
+            (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: ''),
+        ];
+    foreach ($paths as $path) {
+        $normalized = str_replace('\\', '/', $path);
+        if (preg_match('#(?:^|/)public/install(?:/index\.php)?/?$#', ltrim($normalized, '/')) === 1) {
+            return [
+                'ok' => false,
+                'mode' => 'unsafe',
+                'details' => 'domain points to the project root; use Document Root public/ or the shared-hosting split package',
+            ];
+        }
+    }
+
+    return ['ok' => true, 'mode' => 'standard', 'details' => 'public directory is the web root'];
+}
+
+/** @return list<array{label:string,ok:bool,details:string}> */
+function requirementChecks(string $root, ?string $publicRoot = null, array $text = []): array
+{
+    $publicRoot ??= installerPublicRoot($root);
+    $deploymentSafety = installerDeploymentSafety();
     $checks = [[
         'label' => 'PHP 8.3+',
         'ok' => version_compare(PHP_VERSION, '8.3.0', '>='),
         'details' => PHP_VERSION,
     ]];
+
+    $safetyKey = match ($deploymentSafety['mode']) {
+        'split' => 'safe_web_root_split',
+        'unsafe' => 'safe_web_root_unsafe',
+        default => 'safe_web_root_standard',
+    };
+    $checks[] = [
+        'label' => (string) ($text['safe_web_root'] ?? 'Safe public directory'),
+        'ok' => $deploymentSafety['ok'],
+        'details' => (string) ($text[$safetyKey] ?? $deploymentSafety['details']),
+    ];
 
     foreach (['pdo', 'pdo_mysql', 'mbstring', 'fileinfo', 'dom', 'openssl', 'tokenizer', 'ctype', 'json', 'session'] as $extension) {
         $checks[] = [
@@ -346,7 +417,7 @@ function requirementChecks(string $root): array
         'details' => is_file($root.'/VERSION') ? trim((string) file_get_contents($root.'/VERSION')) : 'missing',
     ];
 
-    foreach (['storage', 'storage/app', 'storage/framework', 'storage/framework/cache', 'storage/framework/sessions', 'storage/framework/views', 'storage/logs', 'bootstrap/cache', 'public/uploads'] as $relative) {
+    foreach (['storage', 'storage/app', 'storage/framework', 'storage/framework/cache', 'storage/framework/sessions', 'storage/framework/views', 'storage/logs', 'bootstrap/cache'] as $relative) {
         $path = $root.'/'.$relative;
         $checks[] = [
             'label' => $relative,
@@ -354,6 +425,13 @@ function requirementChecks(string $root): array
             'details' => is_dir($path) && is_writable($path) ? 'writable' : 'not writable',
         ];
     }
+
+    $uploadsPath = $publicRoot.'/uploads';
+    $checks[] = [
+        'label' => 'public/uploads',
+        'ok' => ensureWritableDirectory($uploadsPath),
+        'details' => is_dir($uploadsPath) && is_writable($uploadsPath) ? 'writable' : 'not writable',
+    ];
 
     $checks[] = [
         'label' => '.env',
@@ -522,7 +600,7 @@ function validateAdministratorInput(array $input, array $text): array
  * @param array{url:string,name:string} $site
  * @param array{name:string,email:string,password:string} $administrator
  */
-function performInstallation(string $root, string $envExamplePath, string $envPath, string $lockPath, string $installingPath, array $database, array $site, array $administrator, string $language, string $version, string $installToken): string
+function performInstallation(string $root, string $publicRoot, string $envExamplePath, string $envPath, string $lockPath, string $installingPath, array $database, array $site, array $administrator, string $language, string $version, string $installToken): string
 {
     if (! is_file($envExamplePath)) {
         throw new InstallerOperationException('.env.example is missing.');
@@ -555,14 +633,20 @@ function performInstallation(string $root, string $envExamplePath, string $envPa
         $env = buildEnvironmentContent($envExamplePath, $envPath, $values);
         writeFileAtomically($envPath, $env, 0600);
 
-        foreach (['storage/app', 'storage/framework/cache/data', 'storage/framework/sessions', 'storage/framework/views', 'storage/logs', 'bootstrap/cache', 'public/uploads/account-avatars', 'public/uploads/game-assets/items/common', 'public/uploads/game-assets/items/servers', 'public/uploads/game-assets/characters/common', 'public/uploads/game-assets/characters/servers'] as $directory) {
+        foreach (['storage/app', 'storage/framework/cache/data', 'storage/framework/sessions', 'storage/framework/views', 'storage/logs', 'bootstrap/cache'] as $directory) {
             if (! ensureWritableDirectory($root.'/'.$directory)) {
                 throw new InstallerOperationException('Required directory is not writable: '.$directory);
+            }
+        }
+        foreach (['uploads/account-avatars', 'uploads/game-assets/items/common', 'uploads/game-assets/items/servers', 'uploads/game-assets/characters/common', 'uploads/game-assets/characters/servers'] as $directory) {
+            if (! ensureWritableDirectory($publicRoot.'/'.$directory)) {
+                throw new InstallerOperationException('Required public directory is not writable: '.$directory);
             }
         }
 
         require_once $root.'/vendor/autoload.php';
         $app = require $root.'/bootstrap/app.php';
+        $app->usePublicPath($publicRoot);
         $kernel = $app->make(ConsoleKernel::class);
         $kernel->bootstrap();
 

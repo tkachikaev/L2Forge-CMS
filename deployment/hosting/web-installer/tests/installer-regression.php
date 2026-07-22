@@ -84,6 +84,15 @@ try {
     releaseInstallationLock($firstLock);
     assertInstaller($busyDetected, 'A concurrent installer process must not acquire the same lock.');
 
+    $unsafeLayout = installerDeploymentSafety('/public/install/index.php', false);
+    $unsafeDirectoryLayout = installerDeploymentSafety('/public/install/', false);
+    assertInstaller($unsafeLayout['ok'] === false, 'The installer must block an exposed project root above /public/.');
+    assertInstaller($unsafeDirectoryLayout['ok'] === false, 'The installer must also recognize the directory-style /public/install/ URL.');
+    $standardLayout = installerDeploymentSafety('/install/index.php', false);
+    assertInstaller($standardLayout['ok'] === true, 'The standard public Document Root layout must remain valid.');
+    $splitLayout = installerDeploymentSafety('/install/index.php', true);
+    assertInstaller($splitLayout['ok'] === true, 'The shared-hosting split layout must remain valid.');
+
     $generic = publicInstallerError(new RuntimeException('raw SQL and /private/path'), $text, 'ABC12345');
     assertInstaller(! str_contains($generic, 'raw SQL'), 'Unexpected internal errors must not be exposed to the browser.');
     assertInstaller(str_contains($generic, 'ABC12345'), 'Generic errors must include a support reference code.');

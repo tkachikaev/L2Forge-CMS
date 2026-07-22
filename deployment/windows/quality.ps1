@@ -33,6 +33,12 @@ try {
     php deployment/hosting/web-installer/tests/installer-regression.php
     if ($LASTEXITCODE -ne 0) { throw "Web installer regression checks failed with exit code $LASTEXITCODE." }
 
+    php deployment/hosting/shared-hosting/tests/layout-regression.php
+    if ($LASTEXITCODE -ne 0) { throw "Shared-hosting layout regression checks failed with exit code $LASTEXITCODE." }
+
+    php deployment/hosting/shared-hosting/tests/package-builder-regression.php
+    if ($LASTEXITCODE -ne 0) { throw "Shared-hosting package builder regression checks failed with exit code $LASTEXITCODE." }
+
     composer validate --strict --no-check-publish
     if ($LASTEXITCODE -ne 0) { throw "Composer validation failed with exit code $LASTEXITCODE." }
 
@@ -48,7 +54,7 @@ try {
     php artisan route:clear
     if ($LASTEXITCODE -ne 0) { throw "Route cache cleanup failed with exit code $LASTEXITCODE." }
 
-    Write-Host 'Offline quality checks completed successfully: PowerShell updater, audit policy, Web Installer regressions, Composer validation, Pint, PHPStan, PHPUnit and route cache.' -ForegroundColor Green
+    Write-Host 'Offline quality checks completed successfully: PowerShell updater, audit policy, Web Installer and shared-hosting layout/package regressions, Composer validation, Pint, PHPStan, PHPUnit and route cache.' -ForegroundColor Green
     Write-Host 'Run .\deployment\windows\security-audit.ps1 separately when internet access is available.' -ForegroundColor DarkGray
 } finally {
     if ($hadComposerNetworkSetting) {
