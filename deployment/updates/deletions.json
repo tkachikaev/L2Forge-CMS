@@ -4,5 +4,8 @@
     ],
     "0.32.2": [
         "core/deployment/windows/apply-0.32.1.ps1"
+    ],
+    "0.32.3": [
+        "core/deployment/windows/apply-0.32.2.ps1"
     ]
 }

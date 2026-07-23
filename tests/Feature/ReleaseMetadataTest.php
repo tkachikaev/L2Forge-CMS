@@ -40,7 +40,7 @@ class ReleaseMetadataTest extends TestCase
 
         $applyScript = (string) file_get_contents($applyScripts[0]);
         $this->assertStringContainsString("\$toVersion = '{$version}'", $applyScript);
-        $this->assertStringContainsString('$fromVersion = \'0.32.1\'', $applyScript);
+        $this->assertStringContainsString('$fromVersion = \'0.32.2\'', $applyScript);
         $this->assertStringContainsString('public\install\index.php', $applyScript);
         $this->assertStringContainsString('deployment\hosting\web-installer\installer.php', $applyScript);
         $this->assertStringContainsString('deployment\hosting\web-installer\tests\installer-regression.php', $applyScript);
@@ -83,10 +83,10 @@ class ReleaseMetadataTest extends TestCase
     {
         $updateScript = $this->readReleaseFile('deployment/windows/update.ps1');
 
-        $this->assertStringContainsString('$expectedFromVersion = \'0.32.1\'', $updateScript);
-        $this->assertStringContainsString('$expectedToVersion = \'0.32.2\'', $updateScript);
-        $this->assertStringContainsString('$legacyApplyScriptName = \'deployment\\windows\\apply-0.32.1.ps1\'', $updateScript);
-        $this->assertStringContainsString('$legacyApplySha256 = \'10218074e6c718751dcea3d4ab1dabb6af6b2fc4d0295877e1ef17c65ad81c92\'', $updateScript);
+        $this->assertStringContainsString('$expectedFromVersion = \'0.32.2\'', $updateScript);
+        $this->assertStringContainsString('$expectedToVersion = \'0.32.3\'', $updateScript);
+        $this->assertStringContainsString('$legacyApplyScriptName = \'deployment\\windows\\apply-0.32.2.ps1\'', $updateScript);
+        $this->assertStringContainsString('$legacyApplySha256 = \'89e13587ead946f3780619fe036dcffe012b13370cc49eb0558abc15b19141c8\'', $updateScript);
         $this->assertStringContainsString('Get-KaevCmsInstalledVersion', $updateScript);
         $this->assertStringContainsString('-ExpectedToVersion $expectedToVersion', $updateScript);
         $this->assertStringContainsString('legacyApplySha256', $updateScript);

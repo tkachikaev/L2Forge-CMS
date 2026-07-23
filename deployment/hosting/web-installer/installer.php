@@ -10,15 +10,30 @@ use Illuminate\Support\Facades\Hash;
 
 const KAEVCMS_INSTALL_SESSION = 'kaevcms_web_installer';
 
-final class InstallerValidationException extends RuntimeException {}
+final class InstallerValidationException extends RuntimeException
+{
+    // Marks validation errors that may be shown safely by the installer.
+}
 
-final class InstallerDatabaseConnectionException extends RuntimeException {}
+final class InstallerDatabaseConnectionException extends RuntimeException
+{
+    // Distinguishes database connection failures from validation errors.
+}
 
-final class InstallerDatabasePrivilegeException extends RuntimeException {}
+final class InstallerDatabasePrivilegeException extends RuntimeException
+{
+    // Distinguishes insufficient database privileges during installation.
+}
 
-final class InstallerBusyException extends RuntimeException {}
+final class InstallerBusyException extends RuntimeException
+{
+    // Marks an installation attempt blocked by the installer lock.
+}
 
-final class InstallerOperationException extends RuntimeException {}
+final class InstallerOperationException extends RuntimeException
+{
+    // Marks an expected failure of an installation operation.
+}
 
 if (! defined('KAEVCMS_INSTALLER_FUNCTIONS_ONLY')) {
     runWebInstaller();

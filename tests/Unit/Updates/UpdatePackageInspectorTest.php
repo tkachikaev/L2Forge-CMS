@@ -104,8 +104,7 @@ class UpdatePackageInspectorTest extends TestCase
         array $extraEntries = [],
         ?string $checksumOverride = null,
         bool $changeComposerLock = false,
-    ): string
-    {
+    ): string {
         $archive = tempnam(sys_get_temp_dir(), 'kaevcms-inspector-');
         $this->assertIsString($archive);
         $this->temporaryArchives[] = $archive;
