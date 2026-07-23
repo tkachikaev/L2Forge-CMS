@@ -131,10 +131,12 @@ function parsePackageOptions(array $arguments): array
     foreach ($arguments as $argument) {
         if ($argument === '--no-zip') {
             $options['no-zip'] = true;
+
             continue;
         }
         if (preg_match('/^--(output|core-dir|public-dir)=(.+)$/', $argument, $matches) === 1) {
             $options[$matches[1]] = $matches[2];
+
             continue;
         }
         failPackage('Unknown argument: '.$argument);
@@ -210,6 +212,7 @@ function copyPackageTree(string $source, string $destination, array $excluded, s
         $target = $destination.'/'.$item->getFilename();
         if ($item->isDir()) {
             copyPackageTree($item->getPathname(), $target, $excluded, $itemRelative);
+
             continue;
         }
         if (! copy($item->getPathname(), $target)) {
@@ -265,6 +268,7 @@ function removePackagePath(string $path): void
     }
     if (is_file($path) || is_link($path)) {
         @unlink($path);
+
         return;
     }
     $items = new FilesystemIterator($path, FilesystemIterator::SKIP_DOTS);
@@ -276,7 +280,7 @@ function removePackagePath(string $path): void
 
 function createPackageZip(string $sourceDirectory, string $zipPath): void
 {
-    $zip = new ZipArchive();
+    $zip = new ZipArchive;
     if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
         failPackage('Unable to create ZIP archive: '.$zipPath);
     }

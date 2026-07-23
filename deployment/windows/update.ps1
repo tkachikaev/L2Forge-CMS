@@ -6,10 +6,10 @@ $ErrorActionPreference = 'Stop'
 $ProjectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 Set-Location -LiteralPath $ProjectRoot
 
-$expectedFromVersion = '0.31.10'
-$expectedToVersion = '0.31.11'
-$legacyApplyScriptName = 'deployment\windows\apply-0.31.10.ps1'
-$legacyApplySha256 = 'b4b573a7dc973a3fbee949d72fc86f9063bc93826bdebc3a480aa4012441e76b'
+$expectedFromVersion = '0.32.1'
+$expectedToVersion = '0.32.2'
+$legacyApplyScriptName = 'deployment\windows\apply-0.32.1.ps1'
+$legacyApplySha256 = '10218074e6c718751dcea3d4ab1dabb6af6b2fc4d0295877e1ef17c65ad81c92'
 $previousComposerLockSha256 = '53bb4fc6ea6a488af1bdbf428afcd1086dcabca9613b54f11c06700abe100ab4'
 $currentComposerLockSha256 = '53bb4fc6ea6a488af1bdbf428afcd1086dcabca9613b54f11c06700abe100ab4'
 $supersededPendingTargets = @()
@@ -272,7 +272,7 @@ if ($supersededPendingTargets.Count -gt 0) {
         -SupersededToVersions $supersededPendingTargets
 }
 if ($pendingMarkerConverted) {
-    Write-UpdateStage -Message 'A pending marker from a superseded candidate was adopted for 0.31.11.' -Level WARN
+    Write-UpdateStage -Message 'A pending marker from a superseded candidate was adopted for 0.32.2.' -Level WARN
 }
 
 $installed = Get-KaevCmsInstalledVersion `

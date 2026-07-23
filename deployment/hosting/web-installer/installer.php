@@ -10,25 +10,15 @@ use Illuminate\Support\Facades\Hash;
 
 const KAEVCMS_INSTALL_SESSION = 'kaevcms_web_installer';
 
-final class InstallerValidationException extends RuntimeException
-{
-}
+final class InstallerValidationException extends RuntimeException {}
 
-final class InstallerDatabaseConnectionException extends RuntimeException
-{
-}
+final class InstallerDatabaseConnectionException extends RuntimeException {}
 
-final class InstallerDatabasePrivilegeException extends RuntimeException
-{
-}
+final class InstallerDatabasePrivilegeException extends RuntimeException {}
 
-final class InstallerBusyException extends RuntimeException
-{
-}
+final class InstallerBusyException extends RuntimeException {}
 
-final class InstallerOperationException extends RuntimeException
-{
-}
+final class InstallerOperationException extends RuntimeException {}
 
 if (! defined('KAEVCMS_INSTALLER_FUNCTIONS_ONLY')) {
     runWebInstaller();
@@ -39,6 +29,7 @@ function runWebInstaller(): void
     if (! defined('KAEVCMS_INSTALL_ENTRY')) {
         http_response_code(404);
         echo 'Not Found';
+
         return;
     }
 
@@ -84,6 +75,7 @@ function runWebInstaller(): void
     $isCompletionView = $step === 'complete' && isset($state['complete']);
     if (! $isCompletionView && installerIsLocked($lockPath, $installingPath, $envPath)) {
         renderPage($text['installed_title'], installedBody($text), $language, $version, 200);
+
         return;
     }
 
@@ -596,9 +588,9 @@ function validateAdministratorInput(array $input, array $text): array
 }
 
 /**
- * @param array{host:string,port:int,database:string,username:string,password:string} $database
- * @param array{url:string,name:string} $site
- * @param array{name:string,email:string,password:string} $administrator
+ * @param  array{host:string,port:int,database:string,username:string,password:string}  $database
+ * @param  array{url:string,name:string}  $site
+ * @param  array{name:string,email:string,password:string}  $administrator
  */
 function performInstallation(string $root, string $publicRoot, string $envExamplePath, string $envPath, string $lockPath, string $installingPath, array $database, array $site, array $administrator, string $language, string $version, string $installToken): string
 {
@@ -880,7 +872,7 @@ function existingInstallationDetected(string $envPath): bool
                 return false;
             }
             $pdo = openDatabaseConnection($database);
-            $statement = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'admins'");
+            $statement = $pdo->query('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = \'admins\'');
             if ((int) $statement->fetchColumn() < 1) {
                 return false;
             }
@@ -901,7 +893,7 @@ function existingInstallationDetected(string $envPath): bool
             }
 
             $pdo = new PDO('sqlite:'.$databasePath, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-            $statement = $pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'admins'");
+            $statement = $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = \'table\' AND name = \'admins\'');
             if ((int) $statement->fetchColumn() < 1) {
                 return false;
             }
@@ -935,8 +927,8 @@ function parseSimpleEnv(string $path): array
                 '\\"' => '"',
                 '\\\\' => '\\',
             ]);
-        } elseif (strlen($value) >= 2 && $value[0] === "'" && str_ends_with($value, "'")) {
-            $value = str_replace(["\\'", '\\\\'], ["'", '\\'], substr($value, 1, -1));
+        } elseif (strlen($value) >= 2 && $value[0] === '\'' && str_ends_with($value, '\'')) {
+            $value = str_replace(['\\\'', '\\\\'], ['\'', '\\'], substr($value, 1, -1));
         }
         $values[trim($key)] = $value;
     }
@@ -953,7 +945,7 @@ function sendInstallerSecurityHeaders(): void
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: no-referrer');
     header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
-    header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+    header('Content-Security-Policy: default-src \'none\'; style-src \'unsafe-inline\'; img-src \'self\' data:; form-action \'self\'; base-uri \'none\'; frame-ancestors \'none\'');
 }
 
 function startInstallerSession(): void

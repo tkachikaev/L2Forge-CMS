@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\RegistrationSettingsController as AdminRegistrati
 use App\Http\Controllers\Admin\RewardDeliveryController as AdminRewardDeliveryController;
 use App\Http\Controllers\Admin\SecuritySettingsController as AdminSecuritySettingsController;
 use App\Http\Controllers\Admin\SystemSettingsController as AdminSystemSettingsController;
+use App\Http\Controllers\Admin\SystemUpdateController as AdminSystemUpdateController;
 use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Localization\LocaleController;
@@ -223,6 +224,23 @@ Route::prefix('{adminPath}')->name('admin.')->middleware(['admin.path', 'admin.h
         Route::put('/settings/admin-panel/admin-path', [AdminAdminPathController::class, 'update'])
             ->name('settings.admin-panel.admin-path.update');
         Route::get('/settings/system', [AdminSystemSettingsController::class, 'system'])->name('settings.system');
+        Route::get('/settings/system/updates', [AdminSystemUpdateController::class, 'index'])
+            ->name('settings.system.updates.index');
+        Route::post('/settings/system/updates', [AdminSystemUpdateController::class, 'store'])
+            ->middleware('throttle:3,1')
+            ->name('settings.system.updates.store');
+        Route::get('/settings/system/updates/{systemUpdate}', [AdminSystemUpdateController::class, 'show'])
+            ->name('settings.system.updates.show');
+        Route::post('/settings/system/updates/{systemUpdate}/apply', [AdminSystemUpdateController::class, 'apply'])
+            ->middleware('throttle:2,10')
+            ->name('settings.system.updates.apply');
+        Route::post('/settings/system/updates/{systemUpdate}/recover', [AdminSystemUpdateController::class, 'recover'])
+            ->middleware('throttle:2,10')
+            ->name('settings.system.updates.recover');
+        Route::delete('/settings/system/updates/{systemUpdate}', [AdminSystemUpdateController::class, 'destroy'])
+            ->name('settings.system.updates.destroy');
+        Route::get('/settings/system/updates/{systemUpdate}/log', [AdminSystemUpdateController::class, 'log'])
+            ->name('settings.system.updates.log');
         Route::get('/settings/system/queue', [AdminQueueOperationsController::class, 'index'])
             ->name('settings.system.queue');
         Route::post('/settings/system/queue/restart', [AdminQueueOperationsController::class, 'restart'])

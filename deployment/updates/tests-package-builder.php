@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+$builder = file_get_contents(__DIR__.'/build-package.php');
+if (! is_string($builder)) {
+    throw new RuntimeException('Unable to read the web update package builder.');
+}
+
+foreach ([
+    'kaevcms-update.json',
+    '\'payload/\'.$logicalTarget',
+    '\'public/\'.substr($relative, 7)',
+    '\'core/\'.$relative',
+    '\'public/uploads/\'',
+    '\'storage/\'',
+    '\'vendor/\'',
+    'version_compare($minimum, $maximum',
+    '\'bootstrap/kaevcms-public-path.php\'',
+    '\'sha256\' => $hash',
+    'previous-root',
+    'cumulativeDeletions',
+    'readDeletionHistory',
+    'filterActiveDeletions',
+    'New deletions detected',
+] as $required) {
+    if (! str_contains($builder, $required)) {
+        throw new RuntimeException("Web update package builder is missing: {$required}");
+    }
+}
+
+$deletionHistoryPath = __DIR__.'/deletions.json';
+$deletionHistory = json_decode((string) file_get_contents($deletionHistoryPath), true);
+if (! is_array($deletionHistory)
+    || ($deletionHistory['0.32.1'] ?? null) !== ['core/deployment/windows/apply-0.32.0.ps1']
+    || ($deletionHistory['0.32.2'] ?? null) !== ['core/deployment/windows/apply-0.32.1.ps1']) {
+    throw new RuntimeException('Web update deletion history does not include the obsolete apply scripts.');
+}
+
+echo "Web update package builder regression checks completed successfully.\n";

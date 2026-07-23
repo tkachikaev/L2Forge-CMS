@@ -42,16 +42,16 @@ $builder = file_get_contents($hostingRoot.'/build-shared-hosting-package.php');
 $publicEntry = file_get_contents($hostingRoot.'/shared-hosting/public/index.php');
 $installEntry = file_get_contents($hostingRoot.'/shared-hosting/public/install/index.php');
 
-assertSharedLayout(is_string($bootstrap) && str_contains($bootstrap, "bootstrap/kaevcms-public-path.php") === false, 'Bootstrap override must be referenced by its local filename, not a fixed root path.');
-assertSharedLayout(is_string($bootstrap) && str_contains($bootstrap, "__DIR__.'/kaevcms-public-path.php'"), 'Laravel bootstrap must support the generated public-path override.');
-assertSharedLayout(is_string($builder) && str_contains($builder, "'public', 'storage', 'tests'"), 'The builder must keep the application core outside the public package and exclude tests.');
+assertSharedLayout(is_string($bootstrap) && str_contains($bootstrap, 'bootstrap/kaevcms-public-path.php') === false, 'Bootstrap override must be referenced by its local filename, not a fixed root path.');
+assertSharedLayout(is_string($bootstrap) && str_contains($bootstrap, '__DIR__.\'/kaevcms-public-path.php\''), 'Laravel bootstrap must support the generated public-path override.');
+assertSharedLayout(is_string($builder) && str_contains($builder, '\'public\', \'storage\', \'tests\''), 'The builder must keep the application core outside the public package and exclude tests.');
 assertSharedLayout(is_string($builder) && str_contains($builder, 'vendor/autoload.php is missing'), 'The builder must refuse packages without Composer dependencies.');
 assertSharedLayout(is_string($builder) && str_contains($builder, 'kaevcms-path.php.template'), 'The builder must generate the public core path from the shipped template.');
 assertSharedLayout(is_string($builder) && str_contains($builder, 'Symbolic links are not allowed'), 'The builder must reject symbolic links.');
 assertSharedLayout(is_string($publicEntry) && str_contains($publicEntry, '$application->usePublicPath(__DIR__)'), 'The shared web entry must bind Laravel to the real public directory.');
-assertSharedLayout(is_string($installEntry) && str_contains($installEntry, "define('KAEVCMS_SHARED_HOSTING', true)"), 'The shared installer entry must declare the split layout.');
+assertSharedLayout(is_string($installEntry) && str_contains($installEntry, 'define(\'KAEVCMS_SHARED_HOSTING\', true)'), 'The shared installer entry must declare the split layout.');
 
 $directInstaller = file_get_contents($hostingRoot.'/web-installer/installer.php');
-assertSharedLayout(is_string($directInstaller) && str_contains($directInstaller, "defined('KAEVCMS_INSTALL_ENTRY')"), 'Direct execution of the internal installer must be blocked.');
+assertSharedLayout(is_string($directInstaller) && str_contains($directInstaller, 'defined(\'KAEVCMS_INSTALL_ENTRY\')'), 'Direct execution of the internal installer must be blocked.');
 
 fwrite(STDOUT, "Shared-hosting layout regression checks passed.\n");

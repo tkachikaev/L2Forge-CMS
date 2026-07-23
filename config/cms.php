@@ -9,6 +9,12 @@ return [
     'installed_version_marker' => storage_path('app/kaevcms/installed-version.json'),
     'modules_path' => base_path('modules'),
 
+    'updates' => [
+        'maximum_upload_kilobytes' => 524288,
+        'maximum_archive_files' => 20000,
+        'maximum_uncompressed_bytes' => 1073741824,
+    ],
+
     'modules' => [
         'runtime_retry_seconds' => 60,
         'migration_lock_seconds' => 300,

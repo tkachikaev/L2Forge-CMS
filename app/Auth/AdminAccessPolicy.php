@@ -94,6 +94,12 @@ final class AdminAccessPolicy
                 : new AdminAccessDecision(AdminPermission::SettingsManage);
         }
 
+        if (str_starts_with($name, 'admin.settings.system.updates')) {
+            return $isRead
+                ? new AdminAccessDecision(AdminPermission::SystemView)
+                : new AdminAccessDecision(AdminPermission::SettingsManage);
+        }
+
         if (str_starts_with($name, 'admin.settings.system.queue')) {
             return $isRead
                 ? new AdminAccessDecision(AdminPermission::SystemView)

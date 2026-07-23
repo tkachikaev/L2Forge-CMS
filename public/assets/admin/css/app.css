@@ -3711,3 +3711,35 @@ a.admin-data-card:hover {
 .reward-queue-table form{margin:0}
 .promo-reward-name-preview{display:block;margin-top:5px;color:var(--admin-primary);font-weight:700}
 .content-row-meta small{color:var(--admin-text-muted);font-size:10px}
+
+/* Web updater 0.32.0 */
+.system-version-update-button { margin-top: 14px; width: fit-content; }
+.update-overview { align-items: center; }
+.update-upload-card, .update-confirm-card { display: grid; gap: 18px; }
+.update-upload-form, .update-confirm-form { display: grid; gap: 16px; max-width: 760px; }
+.update-upload-form > .button, .update-confirm-form > .button { width: fit-content; }
+.update-card-list { display: grid; gap: 12px; }
+.update-row { grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }
+.update-row > div { display: grid; gap: 4px; }
+.update-row small, .update-history-table td small { display: block; margin-top: 4px; color: var(--admin-text-muted); }
+.update-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.update-summary-card { min-width: 0; }
+.update-safety-list, .update-changelog { display: grid; gap: 10px; margin: 0; padding-left: 20px; color: var(--admin-text-muted); }
+.update-check-list { display: grid; gap: 10px; }
+.update-check { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--admin-border); border-radius: var(--admin-radius-control); background: var(--admin-success-soft); }
+.update-check.failed { background: var(--admin-danger-soft); }
+.update-check > span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: var(--admin-surface); font-weight: 900; }
+.update-check div { display: grid; gap: 3px; }
+.update-check small { color: var(--admin-text-muted); overflow-wrap: anywhere; }
+.update-confirm-checkbox { align-items: flex-start; }
+.update-discard-form { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--admin-border); }
+.update-log-preview { max-height: 420px; overflow: auto; margin-top: 16px; padding: 16px; border-radius: var(--admin-radius-control); background: #111827; color: #e5e7eb; white-space: pre-wrap; overflow-wrap: anywhere; }
+.update-history-table { min-width: 760px; }
+@media (max-width: 840px) {
+    .update-summary-grid { grid-template-columns: 1fr; }
+    .update-row { grid-template-columns: 1fr; align-items: start; }
+    .update-upload-form > .button, .update-confirm-form > .button { width: 100%; }
+}
+.update-emergency-access, .update-recovery-card { display: grid; gap: 12px; }
+.update-emergency-access a, .update-recovery-card .notice a { min-width: 0; overflow-wrap: anywhere; }
+.update-emergency-access code, .update-recovery-card .notice code { white-space: normal; word-break: break-all; }

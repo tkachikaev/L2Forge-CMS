@@ -29,7 +29,7 @@ class ReleaseMetadataTest extends TestCase
         $this->assertSame($version, $matches[1] ?? null);
 
         $updateScript = $this->readReleaseFile('deployment/windows/update.ps1');
-        $this->assertStringContainsString("\$cmsVersion = (Get-Content 'VERSION' -Raw).Trim()", $updateScript);
+        $this->assertStringContainsString('$cmsVersion = (Get-Content \'VERSION\' -Raw).Trim()', $updateScript);
         $this->assertStringContainsString('Write-UpdateStage -Message "KaevCMS $expectedFromVersion -> $cmsVersion update"', $updateScript);
 
         $applyScripts = glob(base_path('deployment/windows/apply-*.ps1')) ?: [];
@@ -40,7 +40,7 @@ class ReleaseMetadataTest extends TestCase
 
         $applyScript = (string) file_get_contents($applyScripts[0]);
         $this->assertStringContainsString("\$toVersion = '{$version}'", $applyScript);
-        $this->assertStringContainsString("\$fromVersion = '0.31.10'", $applyScript);
+        $this->assertStringContainsString('$fromVersion = \'0.32.1\'', $applyScript);
         $this->assertStringContainsString('public\install\index.php', $applyScript);
         $this->assertStringContainsString('deployment\hosting\web-installer\installer.php', $applyScript);
         $this->assertStringContainsString('deployment\hosting\web-installer\tests\installer-regression.php', $applyScript);
@@ -48,6 +48,13 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('deployment\hosting\shared-hosting\tests\layout-regression.php', $applyScript);
         $this->assertStringContainsString('deployment\hosting\shared-hosting\tests\package-builder-regression.php', $applyScript);
         $this->assertStringContainsString('deployment\windows\build-shared-hosting-package.ps1', $applyScript);
+        $this->assertStringContainsString('app\Services\Updates\SystemUpdateInstaller.php', $applyScript);
+        $this->assertStringContainsString('app\Services\Updates\SystemUpdateRecovery.php', $applyScript);
+        $this->assertStringContainsString('app\Services\Updates\UpdateLock.php', $applyScript);
+        $this->assertStringContainsString('deployment\updates\build-package.php', $applyScript);
+        $this->assertStringContainsString('database\migrations\2026_07_23_000000_create_system_updates_table.php', $applyScript);
+        $this->assertStringContainsString('database\migrations\2026_07_23_010000_add_execution_state_to_system_updates_table.php', $applyScript);
+        $this->assertStringContainsString('resources\views\admin\settings\_system_tabs.blade.php', $applyScript);
         $this->assertStringContainsString('deployment\windows\tests\update-workflow.ps1', $applyScript);
         $this->assertStringContainsString('deployment\windows\support\release-update-support.ps1', $applyScript);
         $this->assertStringNotContainsString('Remove-Item -LiteralPath $obsoleteApplyScript.FullName', $applyScript);
@@ -60,7 +67,7 @@ class ReleaseMetadataTest extends TestCase
 
         $browserQuality = $this->readReleaseFile('deployment/windows/browser-quality.ps1');
         $this->assertStringContainsString('node_modules\@playwright\test\package.json', $browserQuality);
-        $this->assertStringNotContainsString("require.resolve('@playwright/test')", $browserQuality);
+        $this->assertStringNotContainsString('require.resolve(\'@playwright/test\')', $browserQuality);
     }
 
     public function test_promo_code_reward_model_has_a_single_line_ending_at_eof(): void
@@ -76,10 +83,10 @@ class ReleaseMetadataTest extends TestCase
     {
         $updateScript = $this->readReleaseFile('deployment/windows/update.ps1');
 
-        $this->assertStringContainsString("\$expectedFromVersion = '0.31.10'", $updateScript);
-        $this->assertStringContainsString("\$expectedToVersion = '0.31.11'", $updateScript);
-        $this->assertStringContainsString("\$legacyApplyScriptName = 'deployment\windows\apply-0.31.10.ps1'", $updateScript);
-        $this->assertStringContainsString("\$legacyApplySha256 = 'b4b573a7dc973a3fbee949d72fc86f9063bc93826bdebc3a480aa4012441e76b'", $updateScript);
+        $this->assertStringContainsString('$expectedFromVersion = \'0.32.1\'', $updateScript);
+        $this->assertStringContainsString('$expectedToVersion = \'0.32.2\'', $updateScript);
+        $this->assertStringContainsString('$legacyApplyScriptName = \'deployment\\windows\\apply-0.32.1.ps1\'', $updateScript);
+        $this->assertStringContainsString('$legacyApplySha256 = \'10218074e6c718751dcea3d4ab1dabb6af6b2fc4d0295877e1ef17c65ad81c92\'', $updateScript);
         $this->assertStringContainsString('Get-KaevCmsInstalledVersion', $updateScript);
         $this->assertStringContainsString('-ExpectedToVersion $expectedToVersion', $updateScript);
         $this->assertStringContainsString('legacyApplySha256', $updateScript);
@@ -104,10 +111,10 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('php artisan up', $updateScript);
         $this->assertStringContainsString('php artisan kaevcms:release-version --mark=$cmsVersion', $updateScript);
         $this->assertStringContainsString('storage\app\installed.lock', $updateScript);
-        $this->assertStringContainsString("'resources\\views\\account'", $updateScript);
-        $this->assertStringContainsString("'resources\\views\\livewire\\account'", $updateScript);
-        $this->assertStringContainsString("'public\\assets\\account'", $updateScript);
-        $this->assertStringContainsString("'integrations\\reward-queue\\remove-legacy-bridge.sql'", $updateScript);
+        $this->assertStringContainsString('\'resources\\views\\account\'', $updateScript);
+        $this->assertStringContainsString('\'resources\\views\\livewire\\account\'', $updateScript);
+        $this->assertStringContainsString('\'public\\assets\\account\'', $updateScript);
+        $this->assertStringContainsString('\'integrations\\reward-queue\\remove-legacy-bridge.sql\'', $updateScript);
 
         $cachePosition = strpos($updateScript, 'Clear-KaevCmsBootstrapCache -ProjectRoot $ProjectRoot');
         $maintenancePosition = strpos($updateScript, 'php artisan down --retry=60');
@@ -146,9 +153,9 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('`amount` BIGINT UNSIGNED', $queueSql);
 
         $queueGateway = $this->readReleaseFile('app/Services/Rewards/DatabaseGameRewardQueueGateway.php');
-        $this->assertStringContainsString("private const TABLE = 'kaev_reward_queue'", $queueGateway);
+        $this->assertStringContainsString('private const TABLE = \'kaev_reward_queue\'', $queueGateway);
         $this->assertStringContainsString('reward_queue_payload_conflict', $queueGateway);
-        $this->assertStringNotContainsString("table('items')", $queueGateway);
+        $this->assertStringNotContainsString('table(\'items\')', $queueGateway);
 
         $this->assertDirectoryDoesNotExist(base_path('integrations/mobius-interlude/reward-bridge'));
         $this->assertFileDoesNotExist(app_path('Jobs/ProcessRewardDelivery.php'));
@@ -255,16 +262,16 @@ class ReleaseMetadataTest extends TestCase
 
         $migrationManager = $this->readReleaseFile('app/Support/Modules/ModuleMigrationManager.php');
         $this->assertStringContainsString('Cache::lock', $migrationManager);
-        $this->assertStringContainsString("hash_file('sha256'", $migrationManager);
+        $this->assertStringContainsString('hash_file(\'sha256\'', $migrationManager);
         $this->assertStringContainsString('rollbackCurrentRun', $migrationManager);
 
         $moduleManager = $this->readReleaseFile('app/Support/Modules/ModuleManager.php');
-        $this->assertStringContainsString("'migration_pending'", $moduleManager);
-        $this->assertStringContainsString("'migration_modified'", $moduleManager);
-        $this->assertStringContainsString("'migration_error'", $moduleManager);
+        $this->assertStringContainsString('\'migration_pending\'', $moduleManager);
+        $this->assertStringContainsString('\'migration_modified\'', $moduleManager);
+        $this->assertStringContainsString('\'migration_error\'', $moduleManager);
 
         $runtime = $this->readReleaseFile('app/Support/Modules/ModuleRuntime.php');
-        $this->assertStringContainsString("array_intersect(['route:cache', 'optimize'], \$arguments)", $runtime);
+        $this->assertStringContainsString('array_intersect([\'route:cache\', \'optimize\'], $arguments)', $runtime);
 
         $aureliaCss = $this->readReleaseFile('public/account-themes/kaev-aurelia/assets/css/app.css');
         $this->assertStringContainsString('display: grid; place-items: center;', $aureliaCss);
@@ -276,7 +283,7 @@ class ReleaseMetadataTest extends TestCase
 
         $aureliaNavigation = $this->readReleaseFile('account-themes/kaev-aurelia/views/partials/navigation.blade.php');
         $this->assertStringContainsString('wire:current="active"', $aureliaNavigation);
-        $this->assertStringNotContainsString("request()->routeIs('modules.'", $aureliaNavigation);
+        $this->assertStringNotContainsString('request()->routeIs(\'modules.\'', $aureliaNavigation);
 
         $aureliaInventory = $this->readReleaseFile('account-themes/kaev-aurelia/views/web-inventory/index.blade.php');
         $this->assertStringContainsString('account-surface reward-inventory-shell', $aureliaInventory);
@@ -316,7 +323,7 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('enqueue', $queueContract);
 
         $mobiusDriver = $this->readReleaseFile('app/Services/GameWorld/MobiusGameWorldDriver.php');
-        $this->assertStringNotContainsString("table('items')", $mobiusDriver);
+        $this->assertStringNotContainsString('table(\'items\')', $mobiusDriver);
         $this->assertStringNotContainsString('reward', strtolower($mobiusDriver));
         $this->assertStringContainsString('$profile->reputationColumn', $mobiusDriver);
         $this->assertFileExists(app_path('Services/GameWorld/MobiusGameSchemaInspector.php'));
@@ -327,8 +334,8 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('GameStatistics', $homeController);
         $this->assertStringNotContainsString('GameServerAdapter', $homeController);
         $this->assertStringNotContainsString('TheGreatPlayer', $homeController);
-        $this->assertStringNotContainsString("'message' => \$exception->getMessage()", $serverMonitor);
-        $this->assertStringNotContainsString("'message' => \$exception->getMessage()", $monitorCoordinator);
+        $this->assertStringNotContainsString('\'message\' => $exception->getMessage()', $serverMonitor);
+        $this->assertStringNotContainsString('\'message\' => $exception->getMessage()', $monitorCoordinator);
         $this->assertFileDoesNotExist(app_path('Contracts/GameServerAdapter.php'));
         $this->assertFileDoesNotExist(app_path('Services/GameServer/MobiusGameServerAdapter.php'));
         $this->assertFileDoesNotExist(app_path('Services/GameServer/MockGameServerAdapter.php'));
@@ -340,12 +347,12 @@ class ReleaseMetadataTest extends TestCase
         $this->assertFileDoesNotExist(app_path('Services/GameWorld/InterludeCharacterLabels.php'));
 
         $migration = $this->readReleaseFile('database/migrations/2026_07_21_000100_create_reward_inventory_tables.php');
-        $this->assertStringContainsString("Schema::create('reward_inventory_grants'", $migration);
-        $this->assertStringContainsString("Schema::create('reward_inventory_items'", $migration);
-        $this->assertStringContainsString("Schema::create('reward_deliveries'", $migration);
-        $this->assertStringContainsString("Schema::create('reward_delivery_items'", $migration);
-        $this->assertStringContainsString("\$table->timestamp('transferred_at')->nullable()", $migration);
-        $this->assertStringContainsString("\$table->timestamp('queued_at')->nullable()", $migration);
+        $this->assertStringContainsString('Schema::create(\'reward_inventory_grants\'', $migration);
+        $this->assertStringContainsString('Schema::create(\'reward_inventory_items\'', $migration);
+        $this->assertStringContainsString('Schema::create(\'reward_deliveries\'', $migration);
+        $this->assertStringContainsString('Schema::create(\'reward_delivery_items\'', $migration);
+        $this->assertStringContainsString('$table->timestamp(\'transferred_at\')->nullable()', $migration);
+        $this->assertStringContainsString('$table->timestamp(\'queued_at\')->nullable()', $migration);
 
         $environment = $this->readReleaseFile('.env.example');
         $this->assertStringContainsString('APP_ENV=production', $environment);
@@ -395,9 +402,9 @@ class ReleaseMetadataTest extends TestCase
 
         $activationService = $this->readReleaseFile('modules/promo-codes/src/Services/PromoCodeActivationService.php');
         $this->assertStringContainsString('lockForUpdate()', $activationService);
-        $this->assertStringContainsString("grantKey: 'promo-code.activation.'.\$activation->id", $activationService);
+        $this->assertStringContainsString('grantKey: \'promo-code.activation.\'.$activation->id', $activationService);
         $this->assertStringContainsString('RewardInventoryService', $activationService);
-        $this->assertStringNotContainsString("table('items')", $activationService);
+        $this->assertStringNotContainsString('table(\'items\')', $activationService);
 
         $promoCodeModel = $this->readReleaseFile('modules/promo-codes/src/Models/PromoCode.php');
         $this->assertStringContainsString('use SoftDeletes;', $promoCodeModel);
@@ -415,7 +422,7 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('lang_path($locale.\'/items.php\')', $itemCatalog);
         $this->assertStringContainsString('$servers[$serverId]', $itemCatalog);
         $this->assertStringContainsString('fallbackCandidates', $itemCatalog);
-        $this->assertStringContainsString("Lang::get('Game item'", $itemCatalog);
+        $this->assertStringContainsString('Lang::get(\'Game item\'', $itemCatalog);
 
         $rewardJournal = $this->readReleaseFile('resources/views/admin/rewards/index.blade.php');
         $this->assertStringContainsString('@section(\'title\', __(\'Reward queue\'))', $rewardJournal);
@@ -423,16 +430,16 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('ID {{ $item->item_id }}', $rewardJournal);
 
         $resolver = $this->readReleaseFile('app/Services/GameAssets/GameAssetUrlResolver.php');
-        $this->assertStringContainsString("'items'", $resolver);
-        $this->assertStringContainsString("'characters'", $resolver);
+        $this->assertStringContainsString('\'items\'', $resolver);
+        $this->assertStringContainsString('\'characters\'', $resolver);
         $this->assertStringContainsString('firstCharacterAvatar', $resolver);
         $this->assertStringContainsString('str_starts_with($key', $resolver);
-        $this->assertStringContainsString("'webp', 'png', 'jpg', 'jpeg'", $resolver);
+        $this->assertStringContainsString('\'webp\', \'png\', \'jpg\', \'jpeg\'', $resolver);
 
         $appearanceResolver = $this->readReleaseFile('app/Services/GameAssets/CharacterAppearanceResolver.php');
-        $this->assertStringContainsString("'race_key'", $appearanceResolver);
-        $this->assertStringContainsString("'gender_key'", $appearanceResolver);
-        $this->assertStringContainsString("'archetype'", $appearanceResolver);
+        $this->assertStringContainsString('\'race_key\'', $appearanceResolver);
+        $this->assertStringContainsString('\'gender_key\'', $appearanceResolver);
+        $this->assertStringContainsString('\'archetype\'', $appearanceResolver);
         $this->assertStringContainsString('fallback/neutral/default', $appearanceResolver);
 
         $avatarGuide = $this->readReleaseFile('docs/CHARACTER_AVATARS.md');
@@ -458,10 +465,10 @@ class ReleaseMetadataTest extends TestCase
         $this->assertFileExists(base_path('docs/ACCOUNT_AVATARS.md'));
 
         $routes = $this->readReleaseFile('routes/account.php');
-        $this->assertStringContainsString("/account/profile", $routes);
-        $this->assertStringContainsString("/account/characters", $routes);
-        $this->assertStringContainsString("characters.index", $routes);
-        $this->assertStringContainsString("profile.avatar.update", $routes);
+        $this->assertStringContainsString('/account/profile', $routes);
+        $this->assertStringContainsString('/account/characters', $routes);
+        $this->assertStringContainsString('characters.index', $routes);
+        $this->assertStringContainsString('profile.avatar.update', $routes);
 
         $setup = $this->readReleaseFile('deployment/windows/setup.ps1');
         $update = $this->readReleaseFile('deployment/windows/update.ps1');
@@ -471,7 +478,7 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('Account avatar directory', $doctor);
 
         $migration = $this->readReleaseFile('database/migrations/2026_07_22_000100_add_account_avatar_to_users_table.php');
-        $this->assertStringContainsString("\$table->string('avatar_filename', 190)->nullable()", $migration);
+        $this->assertStringContainsString('$table->string(\'avatar_filename\', 190)->nullable()', $migration);
 
         $component = $this->readReleaseFile('resources/views/components/account-avatar.blade.php');
         $this->assertStringContainsString('AccountAvatarCatalog::class', $component);
@@ -483,9 +490,9 @@ class ReleaseMetadataTest extends TestCase
         $this->assertStringContainsString('AccountAvatarCatalog::class', $modal);
 
         $preferenceMigration = $this->readReleaseFile('database/migrations/2026_07_22_000200_upgrade_character_directory_preferences.php');
-        $this->assertStringContainsString("\$table->unsignedSmallInteger('schema_version')->default(1)", $preferenceMigration);
-        $this->assertStringContainsString("'view_mode' => 'all'", $preferenceMigration);
-        $this->assertStringContainsString("'schema_version' => 2", $preferenceMigration);
+        $this->assertStringContainsString('$table->unsignedSmallInteger(\'schema_version\')->default(1)', $preferenceMigration);
+        $this->assertStringContainsString('\'view_mode\' => \'all\'', $preferenceMigration);
+        $this->assertStringContainsString('\'schema_version\' => 2', $preferenceMigration);
     }
 
     public function test_obsolete_preview_and_settings_placeholder_are_not_shipped(): void
