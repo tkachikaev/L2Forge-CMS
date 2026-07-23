@@ -6,6 +6,7 @@ use App\Auth\AdminRole;
 use App\Models\Admin;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 const KAEVCMS_INSTALL_SESSION = 'kaevcms_web_installer';
@@ -23,6 +24,11 @@ final class InstallerDatabaseConnectionException extends RuntimeException
 final class InstallerDatabasePrivilegeException extends RuntimeException
 {
     // Distinguishes insufficient database privileges during installation.
+}
+
+final class InstallerExistingInstallationException extends RuntimeException
+{
+    // Prevents a fresh installer run from silently reusing an existing owner account.
 }
 
 final class InstallerBusyException extends RuntimeException
@@ -261,6 +267,7 @@ function installerTranslations(string $language): array
         'site_name_invalid' => 'Название сайта должно содержать от 1 до 100 символов.',
         'database_connection_failed' => 'Не удалось подключиться к MySQL. Проверьте адрес, порт, имя базы, пользователя и пароль.',
         'database_privileges_failed' => 'Подключение установлено, но пользователю MySQL не хватает прав на создание и изменение таблиц.',
+        'database_existing_installation' => 'В выбранной базе уже существует владелец KaevCMS. Используйте пустую базу или восстановите пароль существующего владельца — введённые сейчас данные не были применены.',
         'installer_busy' => 'Установка уже выполняется в другом окне. Подождите несколько секунд и повторите попытку.',
         'unexpected_error' => 'Установка не завершена. Подробности записаны в закрытый журнал. Код ошибки: :reference',
         'password_confirmation_failed' => 'Пароли владельца не совпадают.',
@@ -328,6 +335,7 @@ function installerTranslations(string $language): array
         'site_name_invalid' => 'The website name must contain between 1 and 100 characters.',
         'database_connection_failed' => 'Could not connect to MySQL. Check the host, port, database name, username, and password.',
         'database_privileges_failed' => 'The connection works, but the MySQL user cannot create and modify tables.',
+        'database_existing_installation' => 'The selected database already contains a KaevCMS owner. Use an empty database or recover the existing owner password; the credentials entered here were not applied.',
         'installer_busy' => 'Installation is already running in another window. Wait a few seconds and try again.',
         'unexpected_error' => 'Installation was not completed. Details were written to the protected log. Error code: :reference',
         'password_confirmation_failed' => 'The owner passwords do not match.',
@@ -527,9 +535,27 @@ function testDatabaseConnection(array $database, bool $verifyPrivileges = true):
 {
     $pdo = openDatabaseConnection($database);
     $pdo->query('SELECT 1')->fetchColumn();
+    assertNoExistingAdministrators(existingAdministratorCount($pdo));
 
     if ($verifyPrivileges) {
         verifyDatabasePrivileges($pdo);
+    }
+}
+
+function existingAdministratorCount(PDO $pdo): int
+{
+    $statement = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'admins'");
+    if ((int) $statement->fetchColumn() < 1) {
+        return 0;
+    }
+
+    return (int) $pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn();
+}
+
+function assertNoExistingAdministrators(int $count): void
+{
+    if ($count > 0) {
+        throw new InstallerExistingInstallationException('Existing KaevCMS administrators were found.');
     }
 }
 
@@ -659,12 +685,13 @@ function performInstallation(string $root, string $publicRoot, string $envExampl
 
         callArtisanOrFail('migrate', ['--seed' => true, '--force' => true, '--no-interaction' => true]);
 
-        $owner = Admin::query()->where('role', AdminRole::Owner->value)->orderBy('id')->first();
-        if ($owner === null && Admin::query()->exists()) {
-            throw new InstallerOperationException('Administrators exist, but no owner account was found.');
-        }
-        if ($owner === null) {
-            $owner = Admin::query()->create([
+        callArtisanOrFail('kaevcms:release-version', ['--mark' => $version]);
+        callArtisanOrFail('optimize:clear');
+
+        $owner = DB::transaction(function () use ($administrator, $language): Admin {
+            assertNoExistingAdministrators(Admin::query()->lockForUpdate()->get(['id'])->count());
+
+            $created = Admin::query()->create([
                 'name' => $administrator['name'],
                 'email' => $administrator['email'],
                 'password' => Hash::make($administrator['password']),
@@ -672,10 +699,17 @@ function performInstallation(string $root, string $publicRoot, string $envExampl
                 'role' => AdminRole::Owner,
                 'locale' => $language,
             ]);
-        }
+            $created->refresh();
 
-        callArtisanOrFail('kaevcms:release-version', ['--mark' => $version]);
-        callArtisanOrFail('optimize:clear');
+            if (! $created->is_active
+                || $created->role !== AdminRole::Owner
+                || strtolower($created->email) !== $administrator['email']
+                || ! Hash::check($administrator['password'], $created->password)) {
+                throw new InstallerOperationException('Owner credentials could not be verified after creation.');
+            }
+
+            return $created;
+        });
 
         $lock = json_encode([
             'version' => $version,
@@ -1034,6 +1068,9 @@ function publicInstallerError(Throwable $exception, array $text, string $referen
     }
     if ($exception instanceof InstallerDatabasePrivilegeException) {
         return $text['database_privileges_failed'];
+    }
+    if ($exception instanceof InstallerExistingInstallationException) {
+        return $text['database_existing_installation'];
     }
     if ($exception instanceof InstallerBusyException) {
         return $text['installer_busy'];

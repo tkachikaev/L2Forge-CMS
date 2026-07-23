@@ -62,7 +62,12 @@ class WebInstallerReleaseTest extends TestCase
         $this->assertStringContainsString('field($text[\'db_password\'], \'db_password\', \'\', \'password\'', $installer);
         $this->assertStringNotContainsString('field($text[\'db_password\'], \'db_password\', $db[\'password\']', $installer);
         $this->assertStringContainsString('callArtisanOrFail(\'migrate\'', $installer);
+        $this->assertStringContainsString('assertNoExistingAdministrators(existingAdministratorCount($pdo))', $installer);
+        $this->assertStringContainsString('DB::transaction(function () use ($administrator, $language): Admin', $installer);
+        $this->assertStringContainsString('assertNoExistingAdministrators(Admin::query()->lockForUpdate()->get([\'id\'])->count())', $installer);
         $this->assertStringContainsString('Hash::make($administrator[\'password\'])', $installer);
+        $this->assertStringContainsString('Hash::check($administrator[\'password\'], $created->password)', $installer);
+        $this->assertStringNotContainsString('$owner = Admin::query()->where(\'role\', AdminRole::Owner->value)', $installer);
         $this->assertStringNotContainsString('shell_exec(', $installer);
         $this->assertStringNotContainsString('passthru(', $installer);
         $this->assertStringNotContainsString('proc_open(', $installer);

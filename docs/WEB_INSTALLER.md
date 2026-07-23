@@ -1,6 +1,6 @@
 # Web Installer
 
-KaevCMS 0.31.11 supports two safe hosting layouts.
+KaevCMS 0.32.10 supports two safe hosting layouts.
 
 ## Standard layout
 
@@ -35,9 +35,9 @@ The internal installer cannot be opened directly through `deployment/hosting/web
 
 1. Welcome and language selection.
 2. PHP 8.3+, extensions, safe deployment layout, required files, and writable directories.
-3. Website URL and MySQL verification, including CREATE, INSERT, ALTER, UPDATE, DELETE, and DROP through a random temporary table.
+3. Website URL and MySQL verification, including CREATE, INSERT, ALTER, UPDATE, DELETE, and DROP through a random temporary table. A database that already contains a KaevCMS administrator is rejected.
 4. Owner name, email, and password.
-5. Atomic `.env` creation, stable `APP_KEY`, migrations, seeding, owner creation, and release marking.
+5. Atomic `.env` creation, stable `APP_KEY`, migrations, seeding, transactional owner creation, immediate password verification, and release marking.
 6. Completion with links to the website and administration panel.
 
 ## Security and recovery
@@ -48,6 +48,7 @@ The internal installer cannot be opened directly through `deployment/hosting/web
 - Unexpected details are written to `storage/logs/installer.log` with a short reference code.
 - `.env` values are quoted and escaped; an interrupted retry preserves the existing `APP_KEY`.
 - `storage/app/installed.lock` blocks reinstallation; `storage/app/installing.lock` allows safe recovery from an incomplete installation.
+- Existing administrator rows are never silently reused. The installer requires an empty KaevCMS administrator table and verifies the newly stored owner password before locking the installation.
 
 Standalone regressions:
 

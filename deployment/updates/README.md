@@ -15,10 +15,10 @@ php deployment/updates/build-package.php `
     --root="C:\Releases\KaevCMS-0.33.0" `
     --output="C:\Releases\KaevCMS-update-to-0.33.0.zip" `
     --minimum=0.32.0 `
-    --maximum=0.32.9 `
+    --maximum=0.32.10 `
     --target=0.33.0 `
     --delete-file=deployment/updates/deletions.json `
-    --previous-root="C:\Releases\KaevCMS-0.32.9" `
+    --previous-root="C:\Releases\KaevCMS-0.32.10" `
     --update-history
 ```
 

@@ -73,6 +73,25 @@ try {
     }
     assertInstaller($validationFailed, 'Unsafe DSN host fragments must be rejected.');
 
+    assertNoExistingAdministrators(0);
+    $existingInstallationBlocked = false;
+    try {
+        assertNoExistingAdministrators(1);
+    } catch (InstallerExistingInstallationException) {
+        $existingInstallationBlocked = true;
+    }
+    assertInstaller($existingInstallationBlocked, 'An existing administrator must block a fresh installation instead of silently reusing its password.');
+
+    $existingInstallationMessage = publicInstallerError(
+        new InstallerExistingInstallationException('internal'),
+        $text,
+        'ABC12345',
+    );
+    assertInstaller(
+        $existingInstallationMessage === $text['database_existing_installation'],
+        'An existing installation must produce a stable localized message.',
+    );
+
     $lockPath = $temp.'/installing.lock';
     $firstLock = acquireInstallationLock($lockPath, 'first-token');
     $busyDetected = false;
